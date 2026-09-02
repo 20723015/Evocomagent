@@ -1,0 +1,61 @@
+{
+  "case_id": "citation_correct_2",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 11563,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 1.0,
+    "requires_human_match": 0.0,
+    "citation_match": 0.0,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.3333333333333333
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "偏远地区包邮政策 配送说明",
+          "top_k": 3
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "包邮 偏远地区 运费",
+          "top_k": 3
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 2,
+    "route": null,
+    "reply": "非常抱歉，关于「偏远地区包邮」的政策，我这边暂时没有检索到相关的帮助文档，暂时无法给您准确答复。为了不误导您，这类具体政策需要帮您核实后答复。\n\n建议您转接人工客服进一步确认（比如具体哪些地区属于偏远地区、以及包邮门槛等以平台实际政策为准）。\n\n请问还有其他可以帮您的吗？比如查询订单或商品信息，我都可以为您服务～ 😊",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

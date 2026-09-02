@@ -1,0 +1,59 @@
+{
+  "case_id": "rag_no_hit_08",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 10818,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": null,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "明星 直播带货 合作 安排"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "直播带货 主播合作 商家报名"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 2,
+    "route": null,
+    "reply": "抱歉让您久等了～😊\n\n我帮您检索了平台的相关政策和帮助文档，**目前没有查询到关于「邀请明星/达人直播带货」的相关安排信息**，这个业务超出了我作为客服能够处理的范畴。\n\n给您两个建议方向：\n1. **联系商家/平台商务合作渠道**：如果您是商家想报名参加直播带货合作，建议通过平台官方的商家后台或商务合作入口咨询，那里有专门负责直播资源对接的团队；\n2. **转接人工客服**：如需进一步确认平台是否有此类合作服务，我可以帮您转人工客服协助处理。\n\n请问还有其他购物相关的问题可以帮您吗？比如订单查询、退换货、商品咨询等，我都很乐意为您服务～",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

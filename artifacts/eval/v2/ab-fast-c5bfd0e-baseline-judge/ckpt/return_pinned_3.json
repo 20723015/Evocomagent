@@ -1,0 +1,1 @@
+{"case_id": "return_pinned_3", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确核实订单已发货状态，并提供退货或拒收两种可行方案，信息完整专业，语气得体，直接解决用户退款需求。"}, "faithfulness": {"score": 1.0, "reason": "回复中的订单详情、发货状态、物流信息等均与query_order返回数据一致，退货方案也符合process-return流程说明，未出现编造或矛盾信息。"}, "process_soundness": {"score": 2.0, "reason": "用户要求退款，只查询订单而未调用退款相关工具，缺少关键操作。"}}}

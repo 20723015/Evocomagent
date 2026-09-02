@@ -1,0 +1,61 @@
+{
+  "case_id": "kb_退换货政策_11",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 10926,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 1.0,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.5
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "定制商品 七天无理由退货",
+          "top_k": 3
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "哪些商品不支持七天无理由退货",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 2,
+    "route": null,
+    "reply": "很抱歉，我检索了咱们平台的相关政策文档，但目前没有查到关于「定制商品能否七天无理由退货」的明确说明。\n\n根据客服规范，这类文档未覆盖的政策细节我不能凭空推断或套用其他规则，需要帮您核实后答复。\n\n**建议您这样处理：**\n1. 我可以为您转接人工客服，由专人来核实定制商品的具体退换政策；\n2. 如果您是在下单前咨询，也建议您先联系店铺客服确认商品是否支持退货，以商品详情页标注为准。\n\n请问需要我帮您转接人工客服吗？或者您还有其他问题需要我帮忙处理？",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

@@ -1,0 +1,1 @@
+{"case_id": "return_multi_flow_1", "passed_rule": false, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确、完整、专业且语气得体，直接解决了退款申请问题，无多余或错误信息。"}, "faithfulness": {"score": 1.0, "reason": "回复中的订单号、商品、金额、退款原因、审核时效、举证材料、运费承担及拒收建议均可从工具返回数据中找到依据，未出现编造或矛盾信息。"}, "process_soundness": {"score": 3.0, "reason": "能完成退款申请，但存在重复加载技能及不必要的知识检索等冗余调用，顺序略有可优化空间。"}}}

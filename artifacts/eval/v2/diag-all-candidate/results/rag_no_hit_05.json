@@ -1,0 +1,75 @@
+{
+  "case_id": "rag_no_hit_05",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 9753,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": null,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "线下门店在哪里"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "实体店 门店地址 自提"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 2,
+    "route": null,
+    "reply": "抱歉，让您久等了～我检索了平台的门店相关说明，目前没有查询到关于线下门店的地址信息。\n\n建议您可以：\n1. **在并夕夕 App 内查看**：部分服务页面或商家详情里可能标注有自提/实体店信息，以页面实际展示为准；\n2. **转接人工客服**：如果需要了解具体的门店地址或自提网点，我可以帮您转接人工客服进一步核实。\n\n请问您是想查询某个具体门店，还是了解其他方面的信息呢？我可以继续帮您处理～",
+    "retrieved_sources": [],
+    "error": null,
+    "tool_outputs": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "线下门店在哪里"
+        },
+        "result": "{\"success\": true, \"backend\": \"es\", \"query\": \"线下门店在哪里\", \"results\": []}"
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "实体店 门店地址 自提"
+        },
+        "result": "{\"success\": true, \"backend\": \"es\", \"query\": \"实体店 门店地址 自提\", \"results\": []}"
+      }
+    ]
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "title": "客服 Agent · 体验",
+  "uid": "ecom-experience",
+  "editable": true,
+  "schemaVersion": 39,
+  "panels": [
+    {
+      "title": "单轮延迟 P95（chat_latency_seconds）",
+      "type": "timeseries",
+      "datasource": {"type": "prometheus"},
+      "targets": [{"expr": "histogram_quantile(0.95, sum by (le) (rate(chat_latency_seconds_bucket[5m])))"}]
+    },
+    {
+      "title": "首 event 延迟 / 整轮完成延迟（分位数）",
+      "type": "timeseries",
+      "datasource": {"type": "prometheus"},
+      "targets": [{"expr": "histogram_quantile(0.50, sum by (le) (rate(chat_latency_seconds_bucket[5m])))"}]
+    },
+    {
+      "title": "可用性：5xx 比率",
+      "type": "timeseries",
+      "datasource": {"type": "prometheus"},
+      "targets": [{"expr": "sum(rate(http_requests_total{status=~\"5..\"}[5m])) / sum(rate(http_requests_total[5m])) * 100"}]
+    },
+    {
+      "title": "会话锁冲突 / 限流（409/429）",
+      "type": "timeseries",
+      "datasource": {"type": "prometheus"},
+      "targets": [
+        {"expr": "rate(session_conflict_total[5m])"},
+        {"expr": "rate(rate_limited_total[5m])"}
+      ]
+    }
+  ]
+}

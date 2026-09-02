@@ -1,0 +1,1 @@
+{"case_id": "kb_cross_10", "passed_rule": false, "dims": {"answer_quality": {"score": 5.0, "reason": "客服准确完整地说明了生日礼盒和生日券的领取条件与使用方式，并引导至App确认，语气专业得体，直接解决了用户问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的生日礼盒、生日券、双倍积分等具体权益均与工具返回的会员权益文档一致，且未虚构额外细节。"}, "process_soundness": {"score": 5.0, "reason": "工具选择精准，先查知识库再用记忆辅助，顺序合理，无多余调用，能有效解决用户问题。"}}}

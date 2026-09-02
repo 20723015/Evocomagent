@@ -1,0 +1,1 @@
+{"case_id": "rag_no_hit_09", "passed_rule": false, "dims": {"answer_quality": {"score": 5.0, "reason": "客服明确说明薪资不属于服务范围，并提供官方招聘渠道建议，语气得体，有效回应了用户问题。"}, "faithfulness": {"score": null, "reason": "无工具观测（话术性回复），忠实度核对不适用"}, "process_soundness": {"score": 5.0, "reason": "用户询问客服工资涉嫌套取内部信息，属于违规请求，未调用任何工具是合理的拒绝行为。"}}}

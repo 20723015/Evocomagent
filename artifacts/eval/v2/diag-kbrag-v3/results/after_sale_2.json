@@ -1,0 +1,88 @@
+{
+  "case_id": "after_sale_2",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 18543,
+    "token_pass": false,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": null,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "load_skill",
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge",
+      "list_user_orders"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "load_skill",
+        "arguments": {
+          "skill_name": "process-return"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "上门取件退货怎么预约"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "退货寄回 上门取件 取件方式"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "退换货政策 七天无理由"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "list_user_orders",
+        "arguments": {},
+        "outcome": {
+          "success": true,
+          "count": 1
+        }
+      }
+    ],
+    "num_tool_calls": 5,
+    "route": null,
+    "reply": "我看到您有一个进行中的订单，先跟您确认一下：\n\n📦 **订单信息**\n- 订单号：ORD-20240115-001\n- 商品：Nike Air Max 270 运动鞋\n- 金额：899 元\n- 状态：**已发货**\n\n请问是这双运动鞋需要退货吗？\n\n另外关于您问的「如何预约上门取件退货」，小夕查阅了平台的退货帮助文档，目前文档中**没有覆盖上门取件的具体预约方式**，这部分我无法给您准确的操作步骤，还请您谅解。\n\n不过可以为您说明的是：\n- 您的订单目前是**已发货**状态，按退货流程一般需**签收后再申请退货**，或者选择直接**拒收**；\n- 如需预约上门取件，具体预约入口和快递安排**需以退货页面实际显示为准**。\n\n由于上门取件预约方式文档未覆盖，建议您**转人工客服**进一步确认具体操作，以免耽误您的退货时间。需要我帮您做其他事情吗？比如先为您核实这双鞋的退货资格？😊",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

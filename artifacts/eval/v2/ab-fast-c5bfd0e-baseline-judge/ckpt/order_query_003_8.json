@@ -1,0 +1,1 @@
+{"case_id": "order_query_003_8", "passed_rule": false, "dims": {"answer_quality": {"score": 3.0, "reason": "客服未能直接查询到用户指定订单，仅提供另一笔订单并询问，未解决核心问题，但态度专业得体。"}, "faithfulness": {"score": 1.0, "reason": "回复中关于订单无法访问及另一笔订单的订单号、商品、金额、状态均与list_user_orders返回数据一致，没有编造事实。"}, "process_soundness": {"score": 4.0, "reason": "工具选择基本合理，但查询指定订单时又调用list_user_orders略显冗余，可优化。"}}}

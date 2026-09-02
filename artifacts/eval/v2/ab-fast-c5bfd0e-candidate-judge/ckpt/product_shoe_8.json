@@ -1,0 +1,1 @@
+{"case_id": "product_shoe_8", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确完整地提供了用户询问的库存数量，并主动说明规格、补充价格和特点，语气友好得体，直接解决了问题。"}, "faithfulness": {"score": 1.0, "reason": "回复中的价格¥899、库存156件及黑色42码规格等数据均与工具返回的Nike Air Max 270产品信息一致。"}, "process_soundness": {"score": 5.0, "reason": "工具选择精准，直接查询产品库存，顺序合理，无多余调用。"}}}

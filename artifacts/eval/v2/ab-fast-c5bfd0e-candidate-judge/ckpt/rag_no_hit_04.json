@@ -1,0 +1,1 @@
+{"case_id": "rag_no_hit_04", "passed_rule": false, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确、完整、专业，直接解答了分期是否有利息的问题，并补充了免息和逾期情况，语气得体。"}, "faithfulness": {"score": 1.0, "reason": "客服回复关于花呗分期期数、手续费明示、3期免息活动、逾期利息等内容均与工具返回的政策文档一致，未编造具体事实。"}, "process_soundness": {"score": 5.0, "reason": "工具选择精准，直接检索知识库回答会员分期利息问题，顺序合理且无多余调用。"}}}

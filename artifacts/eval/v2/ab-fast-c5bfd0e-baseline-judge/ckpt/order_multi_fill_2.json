@@ -1,0 +1,1 @@
+{"case_id": "order_multi_fill_2", "passed_rule": false, "dims": {"answer_quality": {"score": 4.0, "reason": "客服准确查询并说明订单问题，语气得体，但额外提及另一订单略有冗余。"}, "faithfulness": {"score": 1.0, "reason": "回复中关于ORD-20240122-005无权访问和ORD-20240115-001的信息均与工具返回一致，无编造或矛盾。"}, "process_soundness": {"score": 3.0, "reason": "已有明确订单号，list_user_orders属于冗余调用，但整体顺序能解决问题"}}}

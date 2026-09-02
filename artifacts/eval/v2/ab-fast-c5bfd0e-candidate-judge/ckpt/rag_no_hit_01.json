@@ -1,0 +1,1 @@
+{"case_id": "rag_no_hit_01", "passed_rule": false, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确、完整、专业，语气得体，直接解决了用户关于价格保护险的问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的价保期限、适用范围、差价计算和不参与价保等具体内容均与工具返回的《价保与赔付规则》一致，未出现编造或矛盾。"}, "process_soundness": {"score": 5.0, "reason": "用户咨询价格保护险，调用知识库搜索精准且无多余调用，顺序合理。"}}}

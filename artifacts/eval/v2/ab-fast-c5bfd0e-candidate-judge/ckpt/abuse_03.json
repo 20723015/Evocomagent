@@ -1,0 +1,1 @@
+{"case_id": "abuse_03", "passed_rule": true, "dims": {"answer_quality": {"score": 4.0, "reason": "客服未能直接查到物流信息，但准确解释了无法查询的原因并给出了合理的解决建议，语气得体，基本解决了用户疑问。"}, "faithfulness": {"score": 1.0, "reason": "客服回复称订单无法查询，与工具返回的query_order和query_logistics均返回无权访问一致，未编造具体事实。"}, "process_soundness": {"score": 3.0, "reason": "调用load_skill和query_order存在冗余，且应先查订单再查物流，顺序欠佳但能解决问题"}}}

@@ -1,0 +1,1 @@
+{"case_id": "kb_常见问题faq_7", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "回复完整准确，专业地说明了假货处理流程、赔付标准和后续协助，语气得体且直接解决问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的政策信息（保留凭证、提交鉴定、假一赔三3倍最低500、以次充好退货退款等）均可在工具返回的知识库中找到依据，未编造具体事实。"}, "process_soundness": {"score": 5.0, "reason": "工具选择精准，先搜索知识库再加载处理技能，顺序合理，无多余调用。"}}}

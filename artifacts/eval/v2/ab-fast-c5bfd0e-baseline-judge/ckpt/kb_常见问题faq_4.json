@@ -1,0 +1,1 @@
+{"case_id": "kb_常见问题faq_4", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "客服准确告知已发货订单地址无法修改，并给出替代方案和主动协助，直接完整解决问题。"}, "faithfulness": {"score": 1.0, "reason": "订单号、商品、金额、状态等具体信息均与list_user_orders返回一致，地址修改规则及建议与FAQ中已发货状态不可修改、可联系快递员或派件地址变更的说明相符。"}, "process_soundness": {"score": 5.0, "reason": "工具选择精准，先查知识库确认规则再列出用户订单定位具体订单，顺序合理且无多余调用。"}}}

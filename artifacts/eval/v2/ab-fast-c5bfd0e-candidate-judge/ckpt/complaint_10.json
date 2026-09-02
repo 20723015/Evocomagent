@@ -1,0 +1,1 @@
+{"case_id": "complaint_10", "passed_rule": true, "dims": {"answer_quality": {"score": 4.0, "reason": "回复态度诚恳、引导用户提供具体信息以便处理，但尚未直接解决问题，略有冗余。"}, "faithfulness": {"score": null, "reason": "无工具观测（话术性回复），忠实度核对不适用"}, "process_soundness": {"score": 5.0, "reason": "用户问题为投诉，未提供具体订单或业务信息，未调用工具直接转人工处理是合理行为。"}}}

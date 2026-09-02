@@ -1,0 +1,1 @@
+{"case_id": "after_sale_3", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确完整地解答了家电安装的流程和确认方式，语气得体，直接解决了用户问题。"}, "faithfulness": {"score": 1.0, "reason": "回复中关于大件电器安装、费用明示、卫浴灯具单独购买SKU等表述均能在工具返回的规则中找到依据，未虚构具体事实。"}, "process_soundness": {"score": 4.0, "reason": "工具选择正确，两次搜索知识库略有冗余，但整体能解决用户问题。"}}}

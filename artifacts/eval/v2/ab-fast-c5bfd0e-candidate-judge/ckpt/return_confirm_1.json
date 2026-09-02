@@ -1,0 +1,1 @@
+{"case_id": "return_confirm_1", "passed_rule": true, "dims": {"answer_quality": {"score": 3.0, "reason": "客服未直接处理退款，而是先核实订单并请求确认，部分解决问题但未完成退款流程。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的订单号、商品、金额、状态、物流信息和下单时间均与工具返回数据一致，未发现编造或矛盾之处。"}, "process_soundness": {"score": 5.0, "reason": "工具选择精准，先加载技能再查询订单信息，顺序合理，无多余调用。"}}}

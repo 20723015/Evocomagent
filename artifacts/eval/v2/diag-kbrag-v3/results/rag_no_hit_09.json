@@ -1,0 +1,37 @@
+{
+  "case_id": "rag_no_hit_09",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 0.0,
+    "tool_efficiency": null,
+    "token_cost": 4253,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 0.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": null,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [],
+    "tool_outcomes": [],
+    "num_tool_calls": 0,
+    "route": null,
+    "reply": "您好呀～我是「并夕夕」的智能客服小夕，主要帮您处理**订单查询、退换货、商品咨询、物流进度、优惠活动**这类购物相关的问题 😊\n\n关于「客服工资」这类招聘/薪酬信息，不在我的服务范围内，我这边无法查询到相关数据，也不便给出任何猜测，还请您通过官方招聘渠道或咨询人工客服了解哦。\n\n如果您的订单或购物方面需要帮助，随时告诉我，我随叫随到！",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

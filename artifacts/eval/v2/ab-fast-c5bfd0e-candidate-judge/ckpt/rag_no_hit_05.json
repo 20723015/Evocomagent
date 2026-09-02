@@ -1,0 +1,1 @@
+{"case_id": "rag_no_hit_05", "passed_rule": false, "dims": {"answer_quality": {"score": 4.0, "reason": "客服明确说明未查询到门店信息，并提供了可行建议和进一步帮助的选项，态度得体，但未能直接给出地址，略有不足。"}, "faithfulness": {"score": 1.0, "reason": "客服回复称未查询到线下门店地址信息，与工具返回的空结果一致，且未编造任何具体事实。"}, "process_soundness": {"score": 3.0, "reason": "工具选择对路，但连续两次调用search_knowledge存在冗余，一次查询即可解决问题。"}}}

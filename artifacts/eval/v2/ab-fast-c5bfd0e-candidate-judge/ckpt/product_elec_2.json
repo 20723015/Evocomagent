@@ -1,0 +1,1 @@
+{"case_id": "product_elec_2", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确、完整、专业，直接确认有货并提供价格库存等详细信息，语气得体且主动提供进一步帮助。"}, "faithfulness": {"score": 1.0, "reason": "回复中的商品、价格、库存和亮点均与工具返回数据一致，无编造或矛盾信息。"}, "process_soundness": {"score": 5.0, "reason": "用户询问商品是否有货，调用库存查询工具精准且必要，顺序合理，无多余或缺调用。"}}}

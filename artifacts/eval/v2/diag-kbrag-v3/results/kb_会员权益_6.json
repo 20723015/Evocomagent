@@ -1,0 +1,61 @@
+{
+  "case_id": "kb_会员权益_6",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 10707,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 0.0,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "积分多久过期 有效期",
+          "top_k": 3
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "会员积分 过期 规则",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 2,
+    "route": null,
+    "reply": "抱歉让您久等了~ 我检索了平台的积分类帮助文档，但目前**没有查询到关于积分有效期的明确说明**，这部分的规则可能需要进一步核实。\n\n为了给您最准确的答复，建议您：\n\n1. **转接人工客服**咨询积分有效期详情；\n2. 或在 App 内「**我的-积分**」页面查看具体的积分使用说明，通常页面会有标注。\n\n很抱歉没能直接解答您的问题，请问还需要我帮您处理其他事情吗？比如查询订单或咨询退换货政策😊",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

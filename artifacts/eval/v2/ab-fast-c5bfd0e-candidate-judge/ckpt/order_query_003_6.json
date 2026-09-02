@@ -1,0 +1,1 @@
+{"case_id": "order_query_003_6", "passed_rule": false, "dims": {"answer_quality": {"score": 4.0, "reason": "客服虽未能直接查询到原订单，但主动提供账号下相似订单并询问确认，态度专业，基本解决了问题，略有冗余。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的订单信息、商品、金额、状态、快递及物流事件均与工具返回一致，未出现编造或矛盾内容。"}, "process_soundness": {"score": 3.0, "reason": "能解决问题但有冗余调用（load_skill、list_user_orders）且顺序欠佳，query_logistics虽补充物流但非必需。"}}}

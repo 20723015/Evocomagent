@@ -1,0 +1,58 @@
+{
+  "case_id": "return_confirm_1",
+  "passed": true,
+  "process": {
+    "tool_accuracy": null,
+    "tool_efficiency": null,
+    "token_cost": 11212,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": null
+  },
+  "result": {
+    "intent_match": 1.0,
+    "keyword_coverage": 1.0,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 1.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "load_skill",
+      "list_user_orders"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "load_skill",
+        "arguments": {
+          "skill_name": "process-return"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "list_user_orders",
+        "arguments": {},
+        "outcome": {
+          "success": true,
+          "count": 1
+        }
+      }
+    ],
+    "num_tool_calls": 2,
+    "route": null,
+    "reply": "我帮您查了一下，您目前的账户下查到这样一笔订单：\n\n- **订单号**：ORD-20240115-001\n- **商品**：Nike Air Max 270 运动鞋\n- **金额**：899.00 元\n- **下单时间**：2024-01-15 10:30\n- **状态**：已发货\n\n不过您提到的是**牛仔裤**，但订单里显示的是**运动鞋**，想跟您确认一下：请问您要退的是这笔订单吗？还是您购买牛仔裤用的可能是另一个账号呢？\n\n您确认一下，我再帮您继续处理后续的退款流程～",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

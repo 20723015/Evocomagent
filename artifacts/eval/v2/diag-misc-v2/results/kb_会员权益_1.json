@@ -1,0 +1,61 @@
+{
+  "case_id": "kb_会员权益_1",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 10486,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 0.0,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "会员有几个等级 会员等级划分",
+          "top_k": 3
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "会员等级 权益",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 2,
+    "route": null,
+    "reply": "抱歉让您久等了🙏 我刚刚检索了会员等级相关的政策文档，暂时没有找到会员等级划分的具体说明（不过可以确认我们平台的会员体系确实有等级之分）。\n\n为了给您准确的答复，这个信息我需要**转人工帮您进一步核实**，您可以稍后通过人工客服渠道咨询，会有专人为您解答会员等级及对应权益的详情。\n\n请问还有其他可以帮到您的吗？比如查询订单、物流或者商品信息，我都能为您服务～",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

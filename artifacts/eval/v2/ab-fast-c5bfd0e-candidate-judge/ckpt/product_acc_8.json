@@ -1,0 +1,1 @@
+{"case_id": "product_acc_8", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "客服直接、准确地告知了库存数量，信息完整，语气得体，完全解决了用户问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的商品名称、价格、库存、材质和适配型号均与工具返回数据一致，没有编造或矛盾信息。"}, "process_soundness": {"score": 5.0, "reason": "用户查询商品库存，调用query_product精准且无多余调用，顺序合理。"}}}

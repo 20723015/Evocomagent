@@ -1,0 +1,37 @@
+{
+  "case_id": "rag_no_hit_14",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 0.0,
+    "tool_efficiency": null,
+    "token_cost": 5098,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 0.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": null,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 1.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [],
+    "tool_outcomes": [],
+    "num_tool_calls": 0,
+    "route": null,
+    "reply": "您好，我是并夕夕的客服「小夕」~ 您问的仓库门禁系统品牌，属于我们公司内部仓储供应链的具体配置信息，这类内部运营数据不在客服可查询和公开的范围内，我这边确实无法为您核实或提供该信息，非常抱歉没能帮上忙。\n\n建议您通过官方渠道转接人工客服，或直接联系我们的商务/供应链对接同事进一步了解。除此之外，像订单查询、物流进度、商品咨询和售后服务这类购物问题，我随时都可以为您处理，欢迎继续找我哦~ 😊",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

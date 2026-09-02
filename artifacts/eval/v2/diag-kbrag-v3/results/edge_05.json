@@ -1,0 +1,60 @@
+{
+  "case_id": "edge_05",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 10339,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": null,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "可以开发票吗 发票开具流程"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "发票",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 2,
+    "route": null,
+    "reply": "抱歉让您久等了，我查了一下，关于「发票开具」的相关说明目前我们这边暂时没有检索到对应的政策文档，这类问题超出了我这边能直接为您处理的范围。\n\n建议您联系**在线人工客服**或通过**官方 App 内的「客服中心」**进一步咨询，他们会为您核实具体的开票流程和所需资料。给您带来不便，还请您谅解～\n\n请问还有其他可以帮您的吗？比如查询订单、物流进度等，我都可以为您效劳😊",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

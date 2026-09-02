@@ -1,0 +1,60 @@
+{
+  "case_id": "kb_配送说明_13",
+  "passed": true,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 10202,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 1.0,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 1.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "预售商品多久发货"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "预售 发货时间",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 2,
+    "route": null,
+    "reply": "您好，关于预售商品的发货时间，我已经检索了平台的相关帮助文档，但目前文档中暂时没有覆盖到「预售商品发货时效」的具体说明内容，无法给您一个确切的天数答复，实在抱歉 🙏\n\n建议您可以通过以下方式获取准确信息：\n1. **查看商品详情页**：预售商品的预计发货时间一般会在商品页面「预售说明」或「发货时间」一栏有明确标注，以页面展示为准。\n2. **查看订单页面**：您下单后，订单详情里通常也会显示预计发货时间。\n3. **转人工客服**：如果您需要更明确的答复，我可以帮您转接人工客服进一步核实。\n\n请问还需要我帮您查询其他方面的信息吗？比如您的订单情况，我也可以帮您看看～",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

@@ -1,0 +1,78 @@
+{
+  "case_id": "kb_配送说明_11",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 0.0,
+    "tool_efficiency": null,
+    "token_cost": 13687,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 0.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 0.0,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.5
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "load_skill",
+      "list_user_orders",
+      "query_order",
+      "query_logistics"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "load_skill",
+        "arguments": {
+          "skill_name": "track-order"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "list_user_orders",
+        "arguments": {},
+        "outcome": {
+          "success": true,
+          "count": 1
+        }
+      },
+      {
+        "name": "query_order",
+        "arguments": {
+          "order_id": "ORD-20240115-001"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "query_logistics",
+        "arguments": {
+          "order_id": "ORD-20240115-001"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 4,
+    "route": null,
+    "reply": "我帮您查到了订单 **ORD-20240115-001** 的物流信息，情况如下：\n\n**订单信息**\n- 商品：Nike Air Max 270 运动鞋（899元）\n- 状态：已发货\n\n**物流信息**\n- 快递公司：顺丰速运（运单号 SF1234567890）\n- 最新轨迹：\n  - 01-16 14:20 深圳南山区 · 快件已揽收\n  - 01-17 06:00 广州转运中心 · 已到达\n  - 01-17 22:00 上海转运中心 · 已到达\n  - **01-18 08:30 上海浦东区 · 正在派送中** 📦\n\n从记录看，您的包裹物流其实有正常更新，最新状态是**正在派送中**，预计送达时间为 **1 月 19 日**。目前一切正常，请您留意手机来电和收货地址，耐心等待即可。\n\n请问物流记录和您的快递到哪了的问题相符吗？如果到时候显示签收但您没收到货，您随时告诉我，我再帮您跟进处理～",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

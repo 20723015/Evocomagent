@@ -1,0 +1,1 @@
+{"case_id": "kb_常见问题faq_11", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确告知可注销及具体操作流程，并涵盖注意事项和恢复期限，信息完整专业，语气得体，直接解决了用户问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复内容与工具返回的Q13说明完全一致，包括注销路径、注意事项和30天数据保留期。"}, "process_soundness": {"score": 5.0, "reason": "工具选择精准，search_knowledge 直接用于查询注销账户相关信息，顺序合理且无多余调用。"}}}

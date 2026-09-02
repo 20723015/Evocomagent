@@ -1,0 +1,1 @@
+{"case_id": "order_multi_fill_2", "passed_rule": false, "dims": {"answer_quality": {"score": 3.0, "reason": "客服未能直接查询到用户订单，虽提供替代订单信息且语气友好，但未解决核心问题，信息不够完整。"}, "faithfulness": {"score": 1.0, "reason": "回复中订单无法查询（无权访问）和ORD-20240115-001的商品、金额、状态及派送信息均可在工具返回数据中找到依据。"}, "process_soundness": {"score": 3.0, "reason": "能解决问题但存在重复调用query_order和query_logistics，顺序有冗余可优化。"}}}

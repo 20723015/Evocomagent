@@ -1,0 +1,1 @@
+{"case_id": "edge_16", "passed_rule": true, "dims": {"answer_quality": {"score": 4.0, "reason": "回复基本解决了问题，信息准确完整且语气得体，但订单确认部分略显冗余，需要用户进一步确认后才能走流程。"}, "faithfulness": {"score": 1.0, "reason": "订单号、商品、金额、下单时间及状态均为工具返回的真实数据，政策引用与知识库内容一致，无编造信息。"}, "process_soundness": {"score": 5.0, "reason": "工具选择精准，先加载技能，再查订单确认用户订单，最后搜索知识库提供售后方案，顺序合理无冗余。"}}}

@@ -1,0 +1,1 @@
+{"case_id": "citation_zero_1", "passed_rule": false, "dims": {"answer_quality": {"score": 4.0, "reason": "客服回复礼貌得体，虽因问题模糊未直接解答，但主动引导用户补充具体信息，属于合理且专业的处理方式。"}, "faithfulness": {"score": 1.0, "reason": "客服回复未涉及具体事实，只是请求用户补充政策细节，且工具返回中无相关订单、商品或物流信息。"}, "process_soundness": {"score": 2.0, "reason": "用户询问政策支持情况，仅调用用户记忆工具无法获取具体政策信息，缺少关键的政策查询或上下文匹配调用。"}}}

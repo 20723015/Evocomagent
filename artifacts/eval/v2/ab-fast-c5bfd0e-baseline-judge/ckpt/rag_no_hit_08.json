@@ -1,0 +1,1 @@
+{"case_id": "rag_no_hit_08", "passed_rule": false, "dims": {"answer_quality": {"score": 3.0, "reason": "客服未直接明确能否安排明星，仅说明无相关服务信息并建议联系渠道，部分解决问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复称未查询到相关服务信息，与工具返回空结果一致，未编造具体事实。"}, "process_soundness": {"score": 5.0, "reason": "用户询问明星带货安排事项，调用知识库搜索相关政策和流程，工具选择精准且必要，顺序合理，无多余调用。"}}}

@@ -1,0 +1,1 @@
+{"case_id": "logistics_track_2", "passed_rule": false, "dims": {"answer_quality": {"score": 3.0, "reason": "客服未能直接查询到用户所询订单的物流进度，仅提供另一订单并请求确认，属于部分解决问题"}, "faithfulness": {"score": 1.0, "reason": "回复中的订单查询失败提示和列出的订单信息均与工具返回数据一致，无虚构内容。"}, "process_soundness": {"score": 3.0, "reason": "查询特定订单只需调用query_order，list_user_orders属于冗余调用，顺序也略可优化。"}}}

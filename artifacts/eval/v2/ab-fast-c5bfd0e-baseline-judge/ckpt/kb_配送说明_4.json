@@ -1,0 +1,1 @@
+{"case_id": "kb_配送说明_4", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "客服准确直接回答了港澳台不支持直接发货，并补充了国际渠道、范围、时效和运费等信息，完整专业且语气得体。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中关于配送范围、港澳台及海外需走国际入口、海外直邮7-15个工作日、跨境运费单独计算等信息均可从工具返回的配送说明和跨境与海外购资料中找到依据。"}, "process_soundness": {"score": 5.0, "reason": "查询发货范围属于知识库检索，调用search_knowledge精准且必要，无多余调用。"}}}

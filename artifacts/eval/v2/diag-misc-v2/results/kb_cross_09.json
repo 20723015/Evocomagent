@@ -1,0 +1,130 @@
+{
+  "case_id": "kb_cross_09",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 26690,
+    "token_pass": false,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 0.5,
+    "requires_human_match": 1.0,
+    "citation_match": 0.0,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.5
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "load_skill",
+      "list_user_orders",
+      "search_knowledge",
+      "search_knowledge",
+      "query_order",
+      "query_logistics",
+      "search_knowledge",
+      "search_knowledge",
+      "recall_user_memory"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "load_skill",
+        "arguments": {
+          "skill_name": "track-order"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "list_user_orders",
+        "arguments": {},
+        "outcome": {
+          "success": true,
+          "count": 1
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "订单多久发货 发货时效",
+          "top_k": 3
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "物流异常 催件 怎么处理",
+          "top_k": 3
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "query_order",
+        "arguments": {
+          "order_id": "ORD-20240115-001"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "query_logistics",
+        "arguments": {
+          "order_id": "ORD-20240115-001"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "物流催单 怎么申请 快递停滞",
+          "top_k": 3
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "发货时间 承诺 延迟发货赔偿",
+          "top_k": 3
+        },
+        "outcome": {}
+      },
+      {
+        "name": "recall_user_memory",
+        "arguments": {
+          "query": "物流催件"
+        },
+        "outcome": {
+          "success": false
+        }
+      }
+    ],
+    "num_tool_calls": 9,
+    "route": null,
+    "reply": "刚才那条记忆查询没有额外信息，不影响结论，我为您做个最终汇总：\n\n## ✅ 总结\n\n**您的订单已发货，物流正常推进中，无需催件：**\n\n| 项目 | 详情 |\n|---|---|\n| 订单号 | ORD-20240115-001 |\n| 商品 | Nike Air Max 270 运动鞋（黑色42码） |\n| 实付金额 | ¥899 |\n| 快递 | 顺丰速运 SF1234567890 |\n| 当前状态 | **上海浦东区，正在派送中** |\n| 预计送达 | 1月19日 |\n\n**关于您问的两个问题：**\n\n1. **多久发货**——您的订单已于 **1月16日** 揽收发出，目前已在派送环节，预计 **1月19日** 送达，请留意今日派送电话或快递柜通知。\n\n2. **物流异常怎么催件**——从轨迹看您的包裹**暂未出现异常**（每天都有新节点更新）。关于平台\"物流催单\"的具体操作指引，我这边检索后发现**文档未覆盖该细节**，无法凭空告知。若您的包裹后续出现**停滞超过3天无更新**或**派送异常**，建议转人工客服为您跟进处理，可以更高效地帮您解决。\n\n---\n\n请问您现在的包裹是否遇到了实际困扰？比如：\n- 派送迟迟没联系您？\n- 物流信息好几天没更新？\n\n告诉我具体情况，我可以针对性帮您处理；需要转人工客服催件跟进的话，我随时为您记录转接。😊",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

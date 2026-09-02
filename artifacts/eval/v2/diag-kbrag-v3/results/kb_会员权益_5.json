@@ -1,0 +1,59 @@
+{
+  "case_id": "kb_会员权益_5",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 12737,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 0.0,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "会员积分可以抵现金吗"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "会员权益 积分 使用规则"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 2,
+    "route": null,
+    "reply": "抱歉让您久等了～我查了一下会员积分的相关政策文档，目前暂时没有检索到「积分抵现金」这一规则的明确说明呢。\n\n这个情况超出了我能直接确认的范围，为了给您准确的答复，我需要帮您转接人工客服进一步核实哦。\n\n**小夕建议：**\n1. **转人工核实**：接入人工客服查询积分抵现是否有活动支持及具体规则；\n2. **以页面为准**：您也可以在「我的-会员中心-积分明细/积分商城」页面查看积分当前可用的场景说明，具体以页面展示为准。\n\n请问需要我帮您转接人工客服吗？😊",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "case_id": "edge_08",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 7374,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 0.0,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "快递在驿站存放多久会退回 自提点 超时退回",
+          "top_k": 3
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 1,
+    "route": null,
+    "reply": "很抱歉，我这边为您检索了退换货政策与配送相关文档，目前**没有找到关于驿站存放多久会被退回的明确规定**。\n\n关于驿站包裹的保管时限和退回规则，通常是由驿站和快递公司单方决定的，不同区域可能有所不同，建议您：\n\n1. **直接联系驿站/快递员**确认包裹存放时限，如有需要可以协商尽快取件或改派；\n2. 如需查询您具体订单的物流状态，也可以把订单号发给我，我帮您看看当前物流轨迹。\n\n由于该情况属于文档未覆盖的信息，为确保准确，建议您**转人工客服**进一步核实驿站保管及退回的具体规则。\n\n请问还有其他可以帮您的吗？如果您有订单号，我也很乐意帮您查一下物流进度～",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

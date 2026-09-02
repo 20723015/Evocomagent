@@ -1,0 +1,1 @@
+{"case_id": "product_phone_4", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "客服准确完整地介绍了小米14 Ultra的价格、配置和核心卖点，语气得体，直接解决了用户问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的商品价格、颜色、存储、屏幕、库存及核心卖点均与工具返回数据一致，未出现编造或矛盾信息。"}, "process_soundness": {"score": 5.0, "reason": "工具选择精准，顺序合理，完整覆盖了用户需求，无多余调用。"}}}

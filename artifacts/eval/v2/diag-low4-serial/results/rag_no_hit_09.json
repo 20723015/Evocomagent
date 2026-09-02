@@ -1,0 +1,37 @@
+{
+  "case_id": "rag_no_hit_09",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 0.0,
+    "tool_efficiency": null,
+    "token_cost": 4016,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 0.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": null,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [],
+    "tool_outcomes": [],
+    "num_tool_calls": 0,
+    "route": null,
+    "reply": "您好，我是并夕夕的智能客服小夕，很高兴为您服务 😊\n\n关于「客服工资」这个问题，属于公司招聘/人事范畴的信息，不在我的服务范围内，我这边确实无法查询到相关数据，实在抱歉。\n\n如果您想了解的是以下这几种情况，我倒是可以帮到您：\n- 📦 **查询订单**：告诉我订单号，帮您查物流和进度\n- 🛍️ **商品咨询**：帮您了解商品详情、价格和规格\n- 🔄 **退换货**：指导您完成退款退货流程\n- 🎁 **优惠活动**：介绍当前促销和优惠券规则\n\n如果您有其他购物相关的问题，随时告诉我～如果需要了解客服岗位招聘信息，建议您通过并夕夕官方招聘渠道（如官网的人才招聘页面）进一步咨询哦。",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

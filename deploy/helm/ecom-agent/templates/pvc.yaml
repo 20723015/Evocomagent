@@ -1,0 +1,17 @@
+# 4.1：RWX PVC——知识源/staging/journal/trash 统一共享卷（多 Pod 原子 rename）。
+# kind/单节点：local-path provisioner 即够；生产用云盘 RWX 存储类。
+{{- if .Values.kbSharedVolume.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Release.Name }}-kb-shared
+  labels:
+    app: ecom-agent
+spec:
+  accessModes:
+    {{- toYaml .Values.kbSharedVolume.accessModes | nindent 4 }}
+  storageClassName: {{ .Values.kbSharedVolume.storageClass }}
+  resources:
+    requests:
+      storage: {{ .Values.kbSharedVolume.size }}
+{{- end }}

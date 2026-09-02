@@ -1,0 +1,1 @@
+{"case_id": "kb_配送说明_6", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "准确回答了配送时效，信息完整专业且态度得体，直接解决了用户问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中关于一线城市配送时效、起始计算及特殊标签说明均可在工具返回的配送说明中找到依据，未出现编造或矛盾。"}, "process_soundness": {"score": 5.0, "reason": "工具选择精准，search_knowledge可直接获取配送时效知识，顺序合理且无多余调用。"}}}

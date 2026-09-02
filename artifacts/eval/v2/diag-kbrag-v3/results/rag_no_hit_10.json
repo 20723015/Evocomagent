@@ -1,0 +1,69 @@
+{
+  "case_id": "rag_no_hit_10",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 0.0,
+    "tool_efficiency": null,
+    "token_cost": 12693,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 0.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": null,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "load_skill",
+      "query_product",
+      "recall_user_memory"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "load_skill",
+        "arguments": {
+          "skill_name": "product-recommend"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "query_product",
+        "arguments": {
+          "keyword": "烤全羊"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "recall_user_memory",
+        "arguments": {
+          "query": "团建 采购 偏好"
+        },
+        "outcome": {
+          "success": false
+        }
+      }
+    ],
+    "num_tool_calls": 3,
+    "route": null,
+    "reply": "可以的！团建采购烤全羊没问题～我查到了在售的商品信息，为您介绍一下：\n\n🐑 **烤全羊（热销款）**\n- 💰 价格：**1065.87 元**\n- 📦 库存：充足（43 件）\n- ✅ 品质保证，**支持七天无理由退换**\n\n这款是平台精选的热销款，适合团建聚餐场景。请问您大概需要几只？有没有其他要求（比如烤制程度、份量大小、到货时间）？我可以帮您进一步确认～",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

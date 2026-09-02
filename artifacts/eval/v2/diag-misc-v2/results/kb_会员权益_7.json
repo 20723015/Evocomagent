@@ -1,0 +1,69 @@
+{
+  "case_id": "kb_会员权益_7",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 11122,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 0.0,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.5
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "生日福利 会员权益 生日礼"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "生日当天有什么优惠活动"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "会员生日权益"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 3,
+    "route": null,
+    "reply": "很抱歉，我检索了平台的会员权益与福利政策文档，目前没有查询到「生日福利」相关的具体内容，该情况属于文档未覆盖的部分 😥\n\n建议您通过以下方式进一步确认：\n1. 转接**人工客服**，帮您核实生日福利的具体规则\n2. 关注**并夕夕App内消息/会员中心**，生日权益通常会在生日当月以券包或推送形式发放，具体以页面显示为准\n\n需要我帮您转接人工客服吗？另外，如果您还有其他购物或订单方面的问题，我也可以随时为您服务～",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

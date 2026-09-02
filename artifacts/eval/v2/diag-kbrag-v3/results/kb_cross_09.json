@@ -1,0 +1,110 @@
+{
+  "case_id": "kb_cross_09",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 24102,
+    "token_pass": false,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 0.5,
+    "requires_human_match": 1.0,
+    "citation_match": 0.0,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.5
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "load_skill",
+      "search_knowledge",
+      "search_knowledge",
+      "list_user_orders",
+      "query_order",
+      "query_logistics",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "load_skill",
+        "arguments": {
+          "skill_name": "track-order"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "物流异常如何催件 发货时效多久"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "催件 物流 发货时间",
+          "top_k": 3
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "list_user_orders",
+        "arguments": {},
+        "outcome": {
+          "success": true,
+          "count": 1
+        }
+      },
+      {
+        "name": "query_order",
+        "arguments": {
+          "order_id": "ORD-20240115-001"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "query_logistics",
+        "arguments": {
+          "order_id": "ORD-20240115-001"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "物流配送时效 催单",
+          "top_k": 3
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 7,
+    "route": null,
+    "reply": "不好意思让您久等了，我先说明一下您这个订单的情况：\n\n**您的订单（ORD-20240115-001）目前物流一切正常，并没有异常哦**\n\n📦 **订单信息**\n- 商品：Nike Air Max 270 运动鞋（黑色 42码）\n- 金额：¥899\n- 发货时间：1月16日 14:20（下单次日即发货，顺丰速运）\n\n🚚 **最新物流轨迹**\n| 时间 | 地点 | 状态 |\n|------|------|------|\n| 1/16 14:20 | 深圳南山区 | 快件已揽收 |\n| 1/17 06:00 | 广州转运中心 | 已到达 |\n| 1/17 22:00 | 上海转运中心 | 已到达 |\n| 1/18 08:30 | 上海浦东区 | 正在派送中 |\n\n快件预计 **1月19日送达**，目前正在派送，今天应该就能到啦～\n\n关于您问的 **「多久发货」**：这笔订单是1月15日下单、**1月16日就发货了**，速度还是挺快的，所以不用再等发货咯 😊\n\n至于**催件流程和发货时效的详细政策说明**，我这边检索到的文档暂时没有覆盖到具体细则，涉及\"物流催单\"的具体操作和政策细节，建议您直接联系人工客服跟进会更准确——如果您需要我现在就帮您转接人工，或者还有其他订单想查，随时告诉我！",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

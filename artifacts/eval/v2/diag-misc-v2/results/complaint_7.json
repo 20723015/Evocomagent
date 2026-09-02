@@ -1,0 +1,37 @@
+{
+  "case_id": "complaint_7",
+  "passed": true,
+  "process": {
+    "tool_accuracy": null,
+    "tool_efficiency": null,
+    "token_cost": 5383,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": null
+  },
+  "result": {
+    "intent_match": 1.0,
+    "keyword_coverage": null,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 1.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [],
+    "tool_outcomes": [],
+    "num_tool_calls": 0,
+    "route": null,
+    "reply": "非常抱歉给您带来了这么糟糕的体验！我是客服小夕，很理解您的心情——被反复绕弯子确实很让人火大，我先给您赔个不是 🙏\n\n为了尽快帮您解决问题，我这边可以这样为您服务：\n\n1. **您直接告诉我具体问题**：比如订单、物流、退换货，我马上帮您查询核实，一步到位；\n2. **如果涉及我处理不了的范围**：我会立即为您转接人工客服，不浪费您的时间；\n3. **若您希望反馈刚才机器人的服务问题**：我也可以记录转达，避免类似情况再发生。\n\n请问您现在是遇到了哪个具体问题？或者需要我先帮您查一下最近的订单情况吗？您说一声，我立刻处理！",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

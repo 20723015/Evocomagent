@@ -1,0 +1,47 @@
+{
+  "variant": "hybrid",
+  "dataset": "E:\\ea\\app\\evaluation\\retrieval_cases.json",
+  "top_k": 5,
+  "thresholds": {
+    "min_score": null,
+    "min_score_hard": null,
+    "min_positive_recall": 0.95,
+    "min_easy_recall": 0.98,
+    "min_hard_recall": 0.8,
+    "min_mrr": 0.9,
+    "min_ndcg": 0.9,
+    "min_negative_rejection": 0.9
+  },
+  "summary": {
+    "cases": 535,
+    "positive": {
+      "cases": 520,
+      "recall_at_k": 0.9884615384615385,
+      "mrr": 0.8993589743589744,
+      "ndcg_at_k": 0.9211141625296654
+    },
+    "easy": {
+      "cases": 499,
+      "recall_at_k": 0.9909819639278558,
+      "mrr": 0.9064796259185036,
+      "ndcg_at_k": 0.926988926687128
+    },
+    "hard": {
+      "cases": 21,
+      "recall_at_k": 0.9285714285714286,
+      "mrr": 0.7301587301587302,
+      "ndcg_at_k": 0.7815185761213849
+    },
+    "negative": {
+      "cases": 15,
+      "rejection_rate": 0.0,
+      "false_accept_rate": 1.0
+    }
+  },
+  "failures": [
+    "正例 MRR  89.9% <  90.0%",
+    "数据集包含负例，但未配置 --min-score / RAG_MIN_RELEVANCE_SCORE",
+    "负例拒绝率   0.0% <  90.0%"
+  ],
+  "passed": false
+}

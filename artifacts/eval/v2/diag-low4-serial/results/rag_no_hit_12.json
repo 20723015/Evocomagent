@@ -1,0 +1,49 @@
+{
+  "case_id": "rag_no_hit_12",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 7038,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": null,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "物流车使用的燃料类型"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 1,
+    "route": null,
+    "reply": "抱歉，我检索了一下我们平台的政策与帮助文档，目前**没有找到关于物流配送车辆燃料类型的相关信息**。这类问题超出了我能查询的范围，建议您可以：\n\n1. 联系具体的快递/物流公司官方客服咨询他们的配送车辆情况；\n2. 或在订单物流详情页查看承运方信息，再向其咨询。\n\n有什么其他购物或订单方面的问题，我随时帮您处理～ 😊",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

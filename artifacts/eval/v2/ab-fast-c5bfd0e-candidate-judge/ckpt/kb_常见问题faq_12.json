@@ -1,0 +1,1 @@
+{"case_id": "kb_常见问题faq_12", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确完整、专业清晰，直接解答了保修期内坏了的处理流程，语气得体且主动提供进一步帮助。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的所有具体政策信息（报修路径、寄修方式、维修周期、保修凭证、人为损坏除外等）均可在工具返回的知识库结果中找到依据。"}, "process_soundness": {"score": 5.0, "reason": "用户询问保修期内坏了的处理方式，调用search_knowledge查询相关知识是精准且必要的，无多余或缺失调用。"}}}

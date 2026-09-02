@@ -1,0 +1,79 @@
+{
+  "case_id": "complaint_9",
+  "passed": true,
+  "process": {
+    "tool_accuracy": null,
+    "tool_efficiency": null,
+    "token_cost": 11395,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": null
+  },
+  "result": {
+    "intent_match": 1.0,
+    "keyword_coverage": null,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 1.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "recall_user_memory",
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "recall_user_memory",
+        "arguments": {
+          "query": "投诉 不满 问题"
+        },
+        "outcome": {
+          "success": false
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "投诉反馈渠道 客服不满 维权"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "投诉渠道 消费者维权 平台处理"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "客服服务 问题反馈 处理时效"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 4,
+    "route": null,
+    "reply": "非常抱歉给您带来了这么不好的体验！😔 您的心情我完全能理解，遇到问题迟迟得不到解决确实很让人着急，我先向您郑重地道个歉。\n\n您放心，我不是来敷衍您的。为了能真正帮您把问题解决掉，想先跟您确认几点：\n\n**1. 您具体遇到的是什么问题呢？**\n- 是订单发货/物流的问题？\n- 是商品质量问题需要退换货？\n- 还是其他方面（比如价格、优惠、售后）的问题？\n\n**2. 方便提供一下您的订单号吗？**\n\n只要您告诉我具体的情况，我会立刻帮您查询核实，把问题一步步跟进到底，绝不让您的问题悬着。\n\n另外，关于您提到要「在平台上曝光」这件事，我也非常理解您的情绪。如果您确实需要向平台正式投诉反馈，由于涉及人工专员跟进，**我会为您记录并转接给人工客服专员**，由专人对接处理您的诉求，确保您的反馈被认真对待。\n\n请问您遇到的具体问题是什么呢？我这就帮您查。🙏",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

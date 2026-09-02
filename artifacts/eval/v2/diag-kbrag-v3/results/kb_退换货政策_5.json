@@ -1,0 +1,61 @@
+{
+  "case_id": "kb_退换货政策_5",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 10509,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 1.0,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.5
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "质量问题退货 运费由谁承担",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "退货运费 承担规则 七天无理由",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 2,
+    "route": null,
+    "reply": "您好，很抱歉让您久等了🙏 我已经两次尝试为您检索平台关于「质量问题退货运费承担」的政策文档，但目前都未检索到相关明确规定。\n\n为了给您准确的答复，这个问题需要转接人工客服进一步核实，请您稍等，我来帮您转接～\n\n**接下来的人工客服会为您确认：**\n- 质量问题退货的运费承担规则\n- 您具体订单的适用情况\n\n请问还有其他可以帮您的吗？",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

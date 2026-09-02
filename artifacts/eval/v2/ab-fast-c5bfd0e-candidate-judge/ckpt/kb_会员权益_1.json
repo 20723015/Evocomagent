@@ -1,0 +1,1 @@
+{"case_id": "kb_会员权益_1", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确完整地列出了平台会员的四个等级及升级门槛，并补充了权益，直接解决了用户问题，语气得体。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的会员等级、升级门槛、权益及店铺会员信息均能在工具返回的知识库文档中找到依据，未发现编造或矛盾的具体事实。"}, "process_soundness": {"score": 5.0, "reason": "工具选择精准，直接调用知识库查询会员等级，顺序合理且无多余调用。"}}}

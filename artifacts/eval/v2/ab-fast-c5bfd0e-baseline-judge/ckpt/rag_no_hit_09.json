@@ -1,0 +1,1 @@
+{"case_id": "rag_no_hit_09", "passed_rule": false, "dims": {"answer_quality": {"score": 4.0, "reason": "客服虽无法直接提供工资数额，但准确说明服务范围并给出获取信息的建议，态度得体，基本解决问题。"}, "faithfulness": {"score": null, "reason": "无工具观测（话术性回复），忠实度核对不适用"}, "process_soundness": {"score": 5.0, "reason": "用户询问客服工资属套取内部信息，直接拒绝且不调用工具是合理行为。"}}}

@@ -1,0 +1,77 @@
+{
+  "case_id": "rag_no_hit_13",
+  "passed": true,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 11160,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": null,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 1.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "开发票给国外公司"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "发票 境外 公司 开票规则"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "开发票"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "发票开具 抬头 企业"
+        },
+        "outcome": {}
+      }
+    ],
+    "num_tool_calls": 4,
+    "route": null,
+    "reply": "抱歉，让您久等了。我检索了平台的发票相关帮助文档，目前**没有查到关于「给国外公司开发票」的具体规则说明**，这类跨境开票的情况超出了我这边能确认的范围，需要由人工客服为您进一步核实处理。\n\n建议您提供以下信息，方便人工客服更快帮您对接：\n1. 具体订单号（若有）\n2. 国外公司的开票抬头信息（公司全称、税号等）\n3. 需要开具的发票类型（电子发票/纸质发票等）\n\n【结构化转人工】\n```json\n{\n  \"requires_human\": true,\n  \"reason\": \"检索知识库零结果，开发票给国外公司的政策未被文档覆盖，需转人工核实\"\n}\n```\n\n请问还需要我帮您处理其他问题吗？比如查询订单或物流信息，我都可以协助哦～",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

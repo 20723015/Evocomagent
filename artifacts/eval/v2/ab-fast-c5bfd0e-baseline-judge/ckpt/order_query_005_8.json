@@ -1,0 +1,1 @@
+{"case_id": "order_query_005_8", "passed_rule": false, "dims": {"answer_quality": {"score": 3.0, "reason": "客服礼貌地说明查不到用户指定订单，并提供了类似订单供确认，但未直接解决用户查询该订单的问题，且未覆盖参考要点中的戴森和4299信息。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中关于ORD-20240122-005无权访问的说明及ORD-20240115-001的订单信息，均与工具返回数据完全一致，无编造事实。"}, "process_soundness": {"score": 3.0, "reason": "查询订单核心调用正确，但额外调用了物流和列表，存在冗余。"}}}

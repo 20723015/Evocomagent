@@ -1,0 +1,59 @@
+{
+  "case_id": "rag_no_hit_11",
+  "passed": true,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 11022,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": null,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 1.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "公司总部地址 在哪里"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "公司注册地址 办公地点"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 2,
+    "route": null,
+    "reply": "您好，我是客服小夕～ 很抱歉，关于公司总部的具体城市信息，我没有在官方资料中查询到，这个超出了我能直接答复的范围。建议您通过咱们平台的官方渠道（如官网「关于我们」页面）查看，或转接人工客服进一步确认。\n\n请问还有其他可以帮到您的吗？比如订单查询、退换货咨询等，我都很乐意协助 😊",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

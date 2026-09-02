@@ -1,0 +1,61 @@
+{
+  "case_id": "kb_退换货政策_13",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 10975,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 0.0,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "已激活的软件可以退款吗",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "软件激活后退货 七天无理由",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 2,
+    "route": null,
+    "reply": "非常抱歉，让您久等了🙏\n\n关于「已激活的软件能否退款」这个问题，我检索了平台的退换货政策和常见问题文档，**目前没有查询到相关的政策说明**，也就是说平台文档暂未覆盖这一情况，我无法为您确认具体的退款规则，实在不好意思。\n\n这种情况建议您转接**人工客服**进一步核实处理，他们会根据您订单的具体情况（商品类型、激活状态、订单时间等）给您准确的答复。\n\n请问需要我帮您转人工客服吗？另外，如果您方便提供一下订单号，我也可以先帮您查看一下订单的基本信息～",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

@@ -1,0 +1,1 @@
+{"case_id": "rag_no_hit_06", "passed_rule": false, "dims": {"answer_quality": {"score": 3.0, "reason": "客服未直接回答能否加购赠品，仅说明规则未覆盖并建议联系商家或提供订单号，解决不够直接。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的规则依据均来自工具返回，且未编造具体事实；关于‘下单后加购赠品’无明确说明也与检索结果空一致。"}, "process_soundness": {"score": 3.0, "reason": "重复调用 search_knowledge 存在冗余，但工具选择对路，能解决用户问题。"}}}

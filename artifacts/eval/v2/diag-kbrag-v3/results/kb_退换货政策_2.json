@@ -1,0 +1,82 @@
+{
+  "case_id": "kb_退换货政策_2",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 20886,
+    "token_pass": false,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 0.0,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "load_skill",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "七天无理由退货的条件",
+          "top_k": 4
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "退换货政策 七天无理由",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "load_skill",
+        "arguments": {
+          "skill_name": "process-return"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "退货政策 条件 运费",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 4,
+    "route": null,
+    "reply": "抱歉让您久等了~ 我这边尝试检索了多个关键词，但暂时没有查到《退换货政策》中关于\"七天无理由退货\"的详细条件说明。为了不给您提供不准确的信息，我需要为您转接人工客服做进一步核实。\n\n您也可以稍后关注订单详情页的\"售后服务\"入口，查看该订单是否支持七天无理由退货。\n\n请问还有什么其他可以帮到您的吗？比如查订单或物流进度都可以随时找我😊",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

@@ -1,0 +1,1 @@
+{"case_id": "product_phone_1", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确告知价格为5999元，信息完整专业，语气得体，直接解决用户问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的价格、配置、卖点、库存均与工具返回的query_product数据一致，未发现任何编造或矛盾信息。"}, "process_soundness": {"score": 4.0, "reason": "基本合理，调用了query_product查询价格，但load_skill可能属于冗余调用，略有可优化空间"}}}

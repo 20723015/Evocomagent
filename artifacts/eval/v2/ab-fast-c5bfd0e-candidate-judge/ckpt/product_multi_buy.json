@@ -1,0 +1,1 @@
+{"case_id": "product_multi_buy", "passed_rule": true, "dims": {"answer_quality": {"score": 3.0, "reason": "用户问题模糊，客服未先确认需求就直接推荐具体产品，可能不匹配实际购买意图，但态度和专业度尚可。"}, "faithfulness": {"score": 1.0, "reason": "客服提到的库存、商品名称与工具返回一致，询问下单平台和搜索方式不构成具体事实编造。"}, "process_soundness": {"score": 5.0, "reason": "工具选择与购物意图相关，顺序合理，无多余调用"}}}

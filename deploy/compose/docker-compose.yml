@@ -1,0 +1,133 @@
+# 4.2 本地可复现集成环境（Docker Compose）
+#
+#   docker compose -f deploy/compose/docker-compose.yml up -d
+#
+# 组件：MySQL 8 / Redis 7 / Elasticsearch 8.11.4（RRF 用 trial license）/
+# MinIO / bge-reranker（TEI）/ fake OpenAI+embedding+commerce（确定性无密钥）。
+# 应用服务默认不启动（评测脚本/CLI 直连依赖即可）；需要时 uncomment app。
+
+name: ecom-eval
+
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: ecom
+      MYSQL_USER: ecom
+      MYSQL_PASSWORD: ecom
+    ports:
+      - "13306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "16379:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.4
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - xpack.license.self_generated.type=trial   # RRF 需要白金特性（trial 启用）
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ports:
+      - "19200:9200"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:9200/_cluster/health?wait_for_status=yellow || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "19000:9000"
+      - "19001:9001"
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  reranker:
+    # bge-reranker-v2-m3（TEI 协议；模型目录挂载自 ./models）
+    image: ghcr.io/huggingface/text-embeddings-inference:1.5
+    command: ["--model-id", "/data", "--dtype", "float16"]
+    volumes:
+      - ../../models/bge-reranker-v2-m3:/data
+    ports:
+      - "8001:80"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:80/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+
+  fake-llm:
+    # 确定性 fake OpenAI（chat/embedding 同源）：无密钥跑通全链路与契约测试
+    build: ./fake_services
+    command: ["python", "-m", "fake_openai"]
+    ports:
+      - "18000:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:8000/health || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  fake-commerce:
+    build: ./fake_services
+    command: ["python", "-m", "fake_commerce"]
+    ports:
+      - "18080:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:8080/health || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # 应用服务（取消注释即可在容器内跑 uvicorn；评测一般从宿主机直连依赖）
+  # app:
+  #   build:
+  #     context: ../..
+  #     dockerfile: deploy/Dockerfile
+  #   environment:
+  #     DB_URL: mysql+pymysql://ecom:ecom@mysql:3306/ecom?charset=utf8mb4
+  #     REDIS_URL: redis://redis:6379/0
+  #     ES_URL: http://elasticsearch:9200
+  #     S3_ENDPOINT_URL: http://minio:9000
+  #     S3_BUCKET: ecom
+  #     RERANK_ENDPOINT_URL: http://reranker:80/rerank
+  #     OPENAI_BASE_URL: http://fake-llm:8000/v1
+  #     COMMERCE_BASE_URL: http://fake-commerce:8080
+  #     COMMERCE_BACKEND: http
+  #   ports:
+  #     - "18000-app:8000"
+  #   depends_on:
+  #     mysql: {condition: service_healthy}
+  #     redis: {condition: service_healthy}
+  #     elasticsearch: {condition: service_healthy}
+  #     minio: {condition: service_healthy}
+  #     fake-llm: {condition: service_healthy}
+  #     fake-commerce: {condition: service_healthy}
+
+volumes:
+  minio-data:

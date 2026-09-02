@@ -1,0 +1,1 @@
+{"case_id": "citation_correct_9", "passed_rule": false, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确、完整地说明了上门取件退货运费的计算规则，并主动提供进一步帮助，语气得体，直接解决了用户问题。"}, "faithfulness": {"score": 1.0, "reason": "回复中的运费险、上门取件、跨境商品等政策均来自工具返回的知识库，未出现编造的具体事实。"}, "process_soundness": {"score": 5.0, "reason": "工具选择精准，直接调用知识库查询退货运费规则，顺序合理且无多余调用。"}}}

@@ -1,0 +1,35 @@
+{
+  "title": "客服 Agent · 质量",
+  "uid": "ecom-quality",
+  "editable": true,
+  "schemaVersion": 39,
+  "panels": [
+    {
+      "title": "工具成功率（tool_calls_total）",
+      "type": "timeseries",
+      "datasource": {"type": "prometheus"},
+      "targets": [
+        {"expr": "sum by (tool) (rate(tool_calls_total{result=\"ok\"}[5m]))"},
+        {"expr": "sum by (tool) (rate(tool_calls_total{result=\"error\"}[5m]))"}
+      ]
+    },
+    {
+      "title": "转人工率（handoff_total）",
+      "type": "timeseries",
+      "datasource": {"type": "prometheus"},
+      "targets": [{"expr": "rate(handoff_total[5m])"}]
+    },
+    {
+      "title": "ReAct 步数分布（react_steps）",
+      "type": "timeseries",
+      "datasource": {"type": "prometheus"},
+      "targets": [{"expr": "sum by (le) (rate(react_steps_bucket[5m]))"}]
+    },
+    {
+      "title": "guardrail 命中率（日志计数/守护指标）",
+      "type": "timeseries",
+      "datasource": {"type": "prometheus"},
+      "targets": [{"expr": "rate(rate_limited_total{kind=\"budget\"}[5m])"}]
+    }
+  ]
+}

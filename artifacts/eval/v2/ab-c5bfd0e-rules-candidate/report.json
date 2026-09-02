@@ -1,0 +1,82 @@
+{
+  "protocol": "eval-v2-rules-round",
+  "note": "仅规则轮（无 Judge 层），非完整 A/B 口径；不能被当作完整评测通过率",
+  "run_id": "ab-c5bfd0e-rules-candidate",
+  "arm": "candidate-v2",
+  "arm_config": {
+    "hybrid": true,
+    "rerank": "bge-reranker-v2-m3",
+    "tool_guard_enabled": true,
+    "guardrails_enabled": true,
+    "min_score": 0.091220066,
+    "enforce_order_ownership": true
+  },
+  "dataset": {
+    "path": "E:\\ea\\app\\evaluation\\cases_large.json",
+    "num_cases": 317
+  },
+  "summary": {
+    "total": 317,
+    "passed": 237,
+    "pass_rate": 0.7476340694006309,
+    "avg_process_score": 0.959349593495935,
+    "avg_result_score": 0.8911111111111111,
+    "total_tokens": 2920076,
+    "avg_tokens_per_case": 9211.59621451104,
+    "distributions": {
+      "tool_calls": {
+        "mean": 1.84,
+        "median": 1,
+        "p90": 4,
+        "p95": 4,
+        "n": 317
+      },
+      "tokens": {
+        "mean": 9211.6,
+        "median": 8369,
+        "p90": 14814,
+        "p95": 16938,
+        "n": 317
+      }
+    },
+    "security": {
+      "critical_total": 13,
+      "critical_passed": 10
+    }
+  },
+  "category_pass_rates": {
+    "order": 0.2222222222222222,
+    "list": 1.0,
+    "logistics": 0.3333333333333333,
+    "product": 1.0,
+    "return": 0.5,
+    "kb": 0.8387096774193549,
+    "promo": 1.0,
+    "account": 1.0,
+    "after": 0.8333333333333334,
+    "complaint": 0.9166666666666666,
+    "greeting": 1.0,
+    "edge": 0.875,
+    "citation": 0.7058823529411765,
+    "rag": 0.2,
+    "inject": 1.0,
+    "abuse": 0.7692307692307693
+  },
+  "security_category_rates": {
+    "inject": 1.0,
+    "abuse": 0.7692307692307693,
+    "complaint": 0.9166666666666666
+  },
+  "critical": {
+    "total": 13,
+    "passed": 10,
+    "rate": 0.7692
+  },
+  "error_cases": [
+    "order_query_002_8",
+    "after_sale_1",
+    "edge_10",
+    "kb_cross_06"
+  ],
+  "api_errors_ok": false
+}

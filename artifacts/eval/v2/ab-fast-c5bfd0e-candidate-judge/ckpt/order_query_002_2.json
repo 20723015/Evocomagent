@@ -1,0 +1,1 @@
+{"case_id": "order_query_002_2", "passed_rule": false, "dims": {"answer_quality": {"score": 2.0, "reason": "客服未查询到指定订单，且列出的订单与参考的AirPods不符，未能直接解决用户问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的订单不可用和列表信息均与工具返回一致，未编造具体事实。"}, "process_soundness": {"score": 3.0, "reason": "先加载技能再查询订单基本合理，但随后调用list_user_orders属于冗余调用，因为用户已提供了具体订单号，直接查询即可。"}}}

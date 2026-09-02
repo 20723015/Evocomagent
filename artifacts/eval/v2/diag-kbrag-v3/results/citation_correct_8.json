@@ -1,0 +1,59 @@
+{
+  "case_id": "citation_correct_8",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 11097,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 0.0,
+    "requires_human_match": 1.0,
+    "citation_match": 0.0,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.3333333333333333
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "忘记密码怎么找回"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "密码重置 账号安全"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 2,
+    "route": null,
+    "reply": "您好，抱歉让您久等了～我检索了一下平台的帮助文档，暂时没有找到关于「密码找回」的具体说明文档 🙇\n\n不过账户密码属于账号安全相关的问题，为了保障您的账户安全，建议您这样处理：\n\n1. **官方 App 内操作**：在并夕夕 App 登录页面点击「忘记密码」，按页面提示通过绑定手机号验证等方式自助找回，这是最安全快捷的途径。\n2. **官方客服渠道**：如自助操作遇到问题，可通过 App 内「我的-官方客服」入口联系人工客服协助处理。\n\n具体的验证方式和操作细节，需以官方页面实际显示为准哦。由于咱们这边知识库暂时没有覆盖这份指引，如果需要我帮您转接人工客服进一步协助，您随时告诉我～",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

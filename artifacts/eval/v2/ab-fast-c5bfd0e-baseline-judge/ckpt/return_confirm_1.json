@@ -1,0 +1,1 @@
+{"case_id": "return_confirm_1", "passed_rule": false, "dims": {"answer_quality": {"score": 1.0, "reason": "客服回复为空，没有解决用户任何问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复为空，未涉及任何需要核查的具体事实，故不存在幻觉。"}, "process_soundness": {"score": 5.0, "reason": "工具选择精准，按订单定位到查询知识库的退款流程，顺序合理且无多余调用"}}}

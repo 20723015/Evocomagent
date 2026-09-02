@@ -1,0 +1,1 @@
+{"case_id": "list_orders_2", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "客服准确列出全部订单，信息完整且格式清晰，语气得体，直接解决了用户问题。"}, "faithfulness": {"score": 1.0, "reason": "回复中的订单号、商品、金额、状态和下单时间均与工具返回数据一致。"}, "process_soundness": {"score": 5.0, "reason": "工具选择精准，直接调用list_user_orders即可满足用户需求，无多余或缺失调用。"}}}

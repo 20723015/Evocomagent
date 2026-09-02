@@ -1,0 +1,1 @@
+{"case_id": "kb_常见问题faq_3", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确完整，覆盖同步延迟、超时处理和主动查询，语气得体，直接解决用户问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中关于支付同步5分钟、超30分钟联系客服并提供支付凭证的内容，与工具返回的FAQ完全一致，未出现编造事实。"}, "process_soundness": {"score": 5.0, "reason": "用户问题属于正常业务咨询，调用search_knowledge检索知识库对路且无多余调用，精准合理。"}}}

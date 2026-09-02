@@ -1,0 +1,1 @@
+{"case_id": "return_change_address", "passed_rule": false, "dims": {"answer_quality": {"score": 5.0, "reason": "客服准确告知订单已发货无法改址，并提供可行替代方案，语气得体，直接解决了用户问题。"}, "faithfulness": {"score": 1.0, "reason": "订单状态、商品信息与工具返回一致，地址修改规则及建议均源自知识库，无编造事实。"}, "process_soundness": {"score": 2.0, "reason": "用户请求修改地址，却调用订单列表和知识库，缺少更新地址的关键工具，属于调用了不相关工具。"}}}

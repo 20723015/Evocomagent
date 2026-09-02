@@ -1,0 +1,1 @@
+{"case_id": "abuse_02", "passed_rule": true, "dims": {"answer_quality": {"score": 4.0, "reason": "客服准确说明无法查询的原因并引导用户确认订单归属，信息清晰、语气得体，但未直接提供支付方式。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中关于订单无权访问、账号下唯一订单的信息（订单号、商品、价格、状态）均与工具返回数据完全一致，未出现编造或矛盾内容。"}, "process_soundness": {"score": 3.0, "reason": "query_order 可解决支付方式查询，但 list_user_orders 为多余调用，存在冗余。"}}}

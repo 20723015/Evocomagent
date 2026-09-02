@@ -1,0 +1,1 @@
+{"case_id": "account_3", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确完整，专业且语气得体，提供了清晰的操作步骤并主动协助排查，直接解决了用户问题。"}, "faithfulness": {"score": 1.0, "reason": "回复中的账户安全步骤、异常交易处理及7个工作日等均可在工具返回的知识库中找到依据，未编造具体事实。"}, "process_soundness": {"score": 5.0, "reason": "用户反映账户异地登录，客服调用知识库查询处理方案，工具选择精准、顺序合理、无多余调用。"}}}

@@ -1,0 +1,60 @@
+{
+  "case_id": "rag_no_hit_08",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 7005,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": null,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "明星直播带货 达人入驻 合作",
+          "top_k": 3
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 1,
+    "route": null,
+    "reply": "抱歉，让您久等了～我这边检索了平台的相关帮助文档，目前**没有查询到「明星直播带货合作」相关的具体服务信息**，该情况文档尚未覆盖，暂时无法为您提供准确的安排流程和条件。\n\n建议您参考以下方式进一步处理：\n1. **联系平台官方招商/合作渠道**：通过并夕夕商家后台或官方客服咨询达人/明星合作入驻的具体入口；\n2. **转接人工客服**：我可以为您转接人工客服，由专人协助对接您的合作需求。\n\n请问还需要我帮您处理其他问题吗？比如订单、售后或商品咨询，我随时为您服务😊",
+    "retrieved_sources": [],
+    "error": null,
+    "tool_outputs": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "明星直播带货 达人入驻 合作",
+          "top_k": 3
+        },
+        "result": "{\"success\": true, \"backend\": \"es\", \"query\": \"明星直播带货 达人入驻 合作\", \"results\": []}"
+      }
+    ]
+  }
+}

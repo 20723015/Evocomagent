@@ -1,0 +1,1 @@
+{"case_id": "kb_常见问题faq_8", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确完整地说明了丢件处理流程，语气得体并主动提供订单号协助，直接解决了用户问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的处理流程与知识库FAQ中Q8关于寄回商品丢失的内容完全一致，未出现工具返回中不存在的具体事实。"}, "process_soundness": {"score": 5.0, "reason": "用户咨询快递丢失处理流程，调用search_knowledge检索相关知识库，工具选择精准且无多余调用。"}}}

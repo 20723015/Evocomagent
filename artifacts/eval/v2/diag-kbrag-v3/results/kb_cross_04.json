@@ -1,0 +1,79 @@
+{
+  "case_id": "kb_cross_04",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 11321,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 1.0,
+    "requires_human_match": 0.0,
+    "citation_match": 0.0,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.3333333333333333
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "保修期内质量问题 寄回运费 谁承担"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "退换货运费 谁出 质量问题"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "运费",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "退换货政策",
+          "top_k": 5
+        },
+        "outcome": {}
+      }
+    ],
+    "num_tool_calls": 4,
+    "route": null,
+    "reply": "抱歉，让您久等了。关于「保修期内质量问题寄回运费由谁承担」这个问题，我多次检索了平台的退换货政策和运费相关文档，但**目前没有检索到明确覆盖这一细节的条款**。\n\n根据我们的核实原则，运费承担属于政策细节，我不能凭空推断或套用其他规定来回答您，以免给您错误信息。\n\n建议您**转接人工客服**进一步核实，具体以平台实际政策为准。我可以为您整理好需要核实的信息，方便人工客服快速处理：\n\n- **问题**：保修期内因质量问题寄回维修/退换，寄回运费由谁承担\n- **订单号**：（如有，请提供，便于快速定位）\n\n请问需要我帮您转人工客服处理吗？或者您还有其他问题我可以先帮您解答？",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

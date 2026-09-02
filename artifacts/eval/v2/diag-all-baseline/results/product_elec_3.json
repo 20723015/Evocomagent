@@ -1,0 +1,58 @@
+{
+  "case_id": "product_elec_3",
+  "passed": true,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 7354,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": 1.0,
+    "keyword_coverage": 1.0,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 1.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "query_product"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "query_product",
+        "arguments": {
+          "keyword": "Apple AirPods Pro 2"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 1,
+    "route": null,
+    "reply": "已经为您查到 **Apple AirPods Pro 2** 的配置信息啦～ 🎧\n\n**商品信息**\n- 💰 价格：**¥1799**\n- 📦 库存：89 件\n- 🎨 颜色：白色\n\n**核心配置**\n- **主动降噪**：支持主动降噪功能\n- **自适应透明模式**：智能调节环境音\n- **个性化空间音频**：沉浸式环绕听感\n- **充电接口**：USB-C 充电\n- **连接方式**：蓝牙 5.3\n- **续航**：单次约 6 小时（开启降噪状态下）\n\n请问您还想了解其他方面吗？比如降噪效果对比、搭配保护壳配件，或者需要我帮您下单呢？😊",
+    "retrieved_sources": [],
+    "error": null,
+    "tool_outputs": [
+      {
+        "name": "query_product",
+        "arguments": {
+          "keyword": "Apple AirPods Pro 2"
+        },
+        "result": "{\"success\": true, \"products\": [{\"product_id\": \"SHOE-270-BK-42\", \"name\": \"Nike Air Max 270 运动鞋\", \"category\": \"运动鞋\", \"price\": 899.0, \"stock\": 156, \"description\": \"经典气垫缓震，透气网面鞋身，适合日常跑步和休闲穿搭\", \"specs\": {\"颜色\": \"黑色\", \"尺码\": \"42\", \"材质\": \"网面+合成革\"}}, {\"product_id\": \"ELEC-APP-002\", \"name\": \"Apple AirPods Pro 2\", \"category\": \"耳机\", \"price\": 1799.0, \"stock\": 89, \"description\": \"主动降噪，自适应透明模式，个性化空间音频，USB-C 充电\", \"specs\": {\"颜色\": \"白色\", \"连接方式\": \"蓝牙5.3\", \"续航\": \"6小时(ANC开启)\"}}, {\"product_id\": \"PHONE-MI14U-BK\", \"name\": \"小米14 Ultra 手机\", \"category\": \"手机\", \"price\": 5999.0, \"stock\": 42, \"description\": \"骁龙8 Gen3，徕卡光学四摄，2K 护眼屏，5000mAh 大电池\", \"specs\": {\"颜色\": \"黑色\", \"存储\": \"16GB+512GB\", \"屏幕\": \"6.73英寸 2K AMOLED\"}}, {\"product_id\": \"HOME-DYSON-V15\", \"name\": \"戴森 V15 Detect 吸尘器\", \"category\": \"家电\", \"price\": 4299.0, \"stock\": 23, \"description\": \"激光探测微尘，压电式声学传感器，LCD 屏幕实时显示吸入颗粒\", \"specs\": {\"颜色\": \"金色\", \"续航\": \"60分钟\", \"吸力\": \"230AW\"}}, {\"product_id\": \"ACC-AP-CASE-01\", \"name\": \"AirPods 保护壳（透明）\", \"category\": \"配件\", \"price\": 29.9, \"stock\": 500, \"description\": \"TPU 透明软壳，防摔防刮，精准开孔\", \"specs\": {\"材质\": \"TPU\", \"适配\": \"AirPods Pro 2\"}}]}"
+      }
+    ]
+  }
+}

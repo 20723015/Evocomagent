@@ -1,0 +1,90 @@
+# 阶段二 2.6：K8s 部署物默认值（生产/kind 覆盖见 values-production.yaml / values-kind.yaml）
+
+replicaCount: 2
+
+image:
+  repository: registry.example.com/ecom-agent
+  tag: latest
+  pullPolicy: IfNotPresent
+
+# 镜像内不含 .env：所有配置走环境变量（pydantic-settings 原生支持小写→大写映射）
+env:
+  MODEL_NAME: gpt-4o-mini
+  MEMORY_ENABLED: "true"
+  RAG_BACKEND: numpy
+  # ---- 状态外置（阶段二）----
+  SESSION_STORE_BACKEND: redis
+  REDIS_URL: redis://redis-master:6379/0
+  REDIS_REQUIRED: "true"
+  SESSION_LOCK_TTL_SECONDS: "300"
+  MEMORY_CONSOLIDATE_EVERY: "10"
+  MEMORY_CONSOLIDATE_IDLE_MINUTES: "30"
+  MEMORY_CONSOLIDATE_SCAN_MINUTES: "5"
+
+envFromSecret: "ecom-agent-secrets"  # OPENAI_API_KEY 等
+
+# 4.1：默认不创建 Secret（去掉 REPLACE_ME 占位）——部署必填 existingSecret；
+# 开发/kind 可 secret.create=true + secret.data 由 Chart 创建
+secret:
+  create: false
+  data: {}
+
+service:
+  type: ClusterIP
+  port: 8000
+
+resources:
+  requests:
+    cpu: 500m
+    memory: 1Gi
+  limits:
+    cpu: "2"
+    memory: 2Gi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+  # 并发数：HPA 按 CPU 为主，并发扩缩在压测后补充 custom metric
+
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+# SIGTERM：uvicorn 优雅退出（drain 在途请求并持久化）；给足等待时间
+terminationGracePeriodSeconds: 45
+
+# 4.1：RWX 共享卷——知识源/staging/journal/trash 统一挂载（多 Pod 原子 rename 前提）
+kbSharedVolume:
+  enabled: false
+  storageClass: standard
+  size: 10Gi
+  mountPath: /kb-shared
+  accessModes: ["ReadWriteMany"]   # 生产 RWX（共享卷）；kind 单节点用 RWO
+  srcPath: /app/app/agent/rag/knowledge   # 镜像内知识库源（init 复制到共享卷）
+
+# evolution 沉淀 CronJob（阶段六 6.2 上生产；4.1 参数化：
+# 默认 dry-run 预览，正式发布必须显式 dryRun=false）
+evolutionJob:
+  enabled: false
+  schedule: "30 3 * * *"   # 每天 03:30
+  image: ""
+  dryRun: true             # 4.1：默认安全预览；正式发布显式 false + args
+  args: ["--with-eval"]
+
+# 2.9 数据库迁移 Job（pre-install/pre-upgrade hook；成功后 Deployment 才滚动）
+migration:
+  enabled: true
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: "1"
+      memory: 512Mi
+
+ingress:
+  enabled: false
+  className: nginx
+  host: agent.example.com

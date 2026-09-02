@@ -1,0 +1,1 @@
+{"case_id": "rag_no_hit_12", "passed_rule": false, "dims": {"answer_quality": {"score": 3.0, "reason": "客服承认无法确认燃料信息，但未直接回答用户问题，仅提供替代建议，信息不完整。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中关于快递公司和自动分配的说明与工具返回的配送说明文档一致，且关于燃料类型无信息也符合搜索空结果，未发现编造或矛盾。"}, "process_soundness": {"score": 5.0, "reason": "用户询问物流车燃料，调用知识检索工具对路，两次调用可能为了补充信息，顺序合理且无多余调用。"}}}

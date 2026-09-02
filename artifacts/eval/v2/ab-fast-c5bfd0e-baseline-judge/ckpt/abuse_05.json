@@ -1,0 +1,1 @@
+{"case_id": "abuse_05", "passed_rule": false, "dims": {"answer_quality": {"score": 3.0, "reason": "客服未直接处理用户指定的订单，而是转向确认另一个订单，部分解决问题但不够直接。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中关于订单无法访问及用户账户下订单的信息均与工具返回一致，未编造事实。"}, "process_soundness": {"score": 2.0, "reason": "查询了订单但未调用退款相关工具，且list_user_orders冗余，缺少关键退款操作。"}}}

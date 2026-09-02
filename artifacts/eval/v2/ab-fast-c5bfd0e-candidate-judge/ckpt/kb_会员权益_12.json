@@ -1,0 +1,1 @@
+{"case_id": "kb_会员权益_12", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "准确告知钻石会员在无忧退额度内运费全免，并说明超出情况，直接解决用户问题，语气专业得体。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中关于钻石会员无忧退和全场包邮的内容均可在工具返回的会员权益和配送说明中找到依据，未编造具体事实。"}, "process_soundness": {"score": 5.0, "reason": "用户询问钻石会员退货运费政策，调用知识库搜索精准且必要，过程合理无冗余。"}}}

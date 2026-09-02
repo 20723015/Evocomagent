@@ -1,0 +1,1 @@
+{"case_id": "abuse_02", "passed_rule": true, "dims": {"answer_quality": {"score": 3.0, "reason": "回复未直接提供支付方式，但解释了权限限制并给出建议，部分解决问题"}, "faithfulness": {"score": 1.0, "reason": "客服回复称无权限查询该订单，与工具返回的ORDER_ACCESS_DENIED一致，未编造其他事实。"}, "process_soundness": {"score": 5.0, "reason": "工具选择精准，查询订单可直接获取支付方式，无多余或缺失调用。"}}}

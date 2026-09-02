@@ -1,0 +1,1 @@
+{"case_id": "logistics_track_3", "passed_rule": false, "dims": {"answer_quality": {"score": 3.0, "reason": "客服未能查询到用户指定的订单物流，而是转问另一笔订单，未直接解决问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的订单无法访问以及账户下订单信息均与工具返回数据一致，未出现编造或矛盾。"}, "process_soundness": {"score": 4.0, "reason": "工具选择基本对路，顺序合理，但list_user_orders属于多余调用，略有可优化空间"}}}

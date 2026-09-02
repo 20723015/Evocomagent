@@ -1,0 +1,1 @@
+{"case_id": "edge_16", "passed_rule": true, "dims": {"answer_quality": {"score": 4.0, "reason": "客服准确识别订单并询问破损细节，提供退换货政策与时效提醒，但未直接给出明确的后续处理步骤，略显冗余。"}, "faithfulness": {"score": 1.0, "reason": "回复中的订单号、商品、金额、下单时间、已发货状态及退款政策均与工具返回数据一致，未出现编造或矛盾的具体事实。"}, "process_soundness": {"score": 5.0, "reason": "工具选择精准，顺序合理，覆盖了知识检索和订单查询，无多余调用。"}}}

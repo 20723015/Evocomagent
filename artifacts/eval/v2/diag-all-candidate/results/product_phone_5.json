@@ -1,0 +1,58 @@
+{
+  "case_id": "product_phone_5",
+  "passed": true,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 7349,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": 1.0,
+    "keyword_coverage": 1.0,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 1.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "query_product"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "query_product",
+        "arguments": {
+          "keyword": "小米14 Ultra"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 1,
+    "route": null,
+    "reply": "我查询到这款手机的信息啦：\n\n📱 **小米14 Ultra 手机**\n- **价格**：¥5999\n- **颜色**：黑色\n- **存储**：16GB + 512GB\n- **屏幕**：6.73英寸 2K AMOLED\n- **核心配置**：骁龙8 Gen3、徕卡光学四摄、2K护眼屏、5000mAh大电池\n- **库存**：有货（42件）\n\n请问您对这款手机感兴趣吗？我可以帮您进一步了解它的功能、参与的活动，或者直接下单哦～😊",
+    "retrieved_sources": [],
+    "error": null,
+    "tool_outputs": [
+      {
+        "name": "query_product",
+        "arguments": {
+          "keyword": "小米14 Ultra"
+        },
+        "result": "{\"success\": true, \"products\": [{\"product_id\": \"PHONE-MI14U-BK\", \"name\": \"小米14 Ultra 手机\", \"category\": \"手机\", \"price\": 5999.0, \"stock\": 42, \"description\": \"骁龙8 Gen3，徕卡光学四摄，2K 护眼屏，5000mAh 大电池\", \"specs\": {\"颜色\": \"黑色\", \"存储\": \"16GB+512GB\", \"屏幕\": \"6.73英寸 2K AMOLED\"}}]}"
+      }
+    ]
+  }
+}

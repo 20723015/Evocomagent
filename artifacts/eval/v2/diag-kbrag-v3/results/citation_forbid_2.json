@@ -1,0 +1,71 @@
+{
+  "case_id": "citation_forbid_2",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 14055,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 1.0,
+    "requires_human_match": 0.0,
+    "citation_match": 0.0,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.3333333333333333
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "积分使用规则"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "积分 兑换 规则 会员",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "积分怎么用 积分规则",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 3,
+    "route": null,
+    "reply": "很抱歉，我这边检索了平台的知识库，暂时没有查到「积分使用规则」相关的文档内容，这部分信息我无法为您确切断言，可能需要进一步核实。\n\n建议您可以：\n1. **联系人工客服**：转接平台人工客服，由他们为您查询积分的具体使用规则；\n2. **查看平台相应页面**：在并夕夕 App 的「我的账户」或相关积分中心页面查看积分说明，以页面展示为准。\n\n给您带来不便十分抱歉🙏 如有其他订单、商品或售后问题，我随时为您服务～",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

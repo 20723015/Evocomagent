@@ -1,0 +1,1 @@
+{"case_id": "order_query_003_4", "passed_rule": false, "dims": {"answer_quality": {"score": 4.0, "reason": "客服准确指出订单号不在当前账户，并主动提供近似订单，但未直接查询用户指定订单物流，略有冗余。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的订单号错误提示和当前账户订单信息均与工具返回一致，未编造具体事实。"}, "process_soundness": {"score": 3.0, "reason": "能通过query_order和query_logistics解决问题，但最后list_user_orders属于冗余调用，且load_skill为前置步骤，整体有优化空间。"}}}

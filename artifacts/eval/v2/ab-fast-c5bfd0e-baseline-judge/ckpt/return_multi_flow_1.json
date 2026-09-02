@@ -1,0 +1,1 @@
+{"case_id": "return_multi_flow_1", "passed_rule": false, "dims": {"answer_quality": {"score": 4.0, "reason": "客服详细说明已发货状态的退款处理方案，信息准确、专业且语气得体，但需用户进一步选择方案，未能直接完成退款申请。"}, "faithfulness": {"score": 0.0, "reason": "客服回复中虚构了商品存在‘开胶’的质量问题，工具返回数据中并无此事实依据。"}, "process_soundness": {"score": 2.0, "reason": "存在冗余调用（重复load_skill、无必要的search_knowledge和recall_user_memory），且缺少申请退款的关键工具调用"}}}

@@ -1,0 +1,61 @@
+{
+  "case_id": "citation_forbid_1",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 10658,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 1.0,
+    "requires_human_match": 1.0,
+    "citation_match": 0.0,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.6666666666666666
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "配送要多久 快递 多久到货",
+          "top_k": 3
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "发货时效 预计送达时间",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 2,
+    "route": null,
+    "reply": "抱歉让您久等了～我这边检索了配送相关的政策文档，暂时没有找到统一的配送时效说明，配送时间通常和商家发货时间、收货地址、快递公司有关，以实际订单页面显示为准，这部分需要进一步核实。\n\n不过没关系，我可以帮您做两件事：\n\n1. **查询具体订单的物流进度**——如果您有具体订单，告诉我订单号，我可以帮您查物流轨迹和预计进度；\n2. **查看您的订单列表**——如果您不记得订单号，我也可以帮您拉出近期的订单供您确认。\n\n对了，您是想了解**某一笔订单的配送情况**，还是想了解**新下单大概多久能到**呢？告诉我，我帮您具体查一下～😊",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

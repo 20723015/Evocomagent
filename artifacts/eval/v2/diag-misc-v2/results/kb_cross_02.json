@@ -1,0 +1,72 @@
+{
+  "case_id": "kb_cross_02",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 11000,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 1.0,
+    "requires_human_match": 0.0,
+    "citation_match": 0.0,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.3333333333333333
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "黄金会员 偏远地区 包邮",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "会员权益 包邮 配送",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "偏远地区 运费 免运费",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 3,
+    "route": null,
+    "reply": "抱歉亲，我帮您认真检索了会员权益和配送相关的政策文档，目前没有查到关于「黄金会员寄偏远地区是否包邮」的具体说明 😥\n\n这类政策细节我需要帮您进一步核实后才能准确答复，避免给您错误的承诺。我已为您记录这个问题，建议转接人工客服为您确认宝贝所在地的具体邮费政策。\n\n**建议您这样操作：**\n1. 联系人工客服时，提供您的会员等级和收货地址（省市/地区）\n2. 也可以在下单页输入地址后查看系统自动计算的运费，以订单页实际显示为准\n\n请问还有其他可以帮到您的吗？比如我可以帮您查询订单或商品信息~ 如果确认转人工，我可以为您转接过去 🥰",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

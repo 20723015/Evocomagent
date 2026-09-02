@@ -1,0 +1,79 @@
+{
+  "case_id": "rag_no_hit_02",
+  "passed": true,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 18221,
+    "token_pass": false,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": null,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 1.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge",
+      "recall_user_memory"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "运费险怎么买 如何获得"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "运费险"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "退货运费 保险 保障"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "recall_user_memory",
+        "arguments": {
+          "query": "运费险"
+        },
+        "outcome": {
+          "success": false
+        }
+      }
+    ],
+    "num_tool_calls": 4,
+    "route": null,
+    "reply": "非常抱歉呢～关于「运费险怎么买」这个问题，我先后尝试了几种方式帮您检索并夕夕的政策与帮助文档，但目前**文档中暂未覆盖到运费险购买的相关说明**，我这边无法给您确定的信息，不能凭空编造哦 😔\n\n为了给您准确可靠的答复，这个问题需要**转接人工客服**帮您进一步核实确认，请您稍等片刻～\n\n给您几个参考建议：\n1. **转人工核实**：人工客服可以帮您查询运费险的购买方式、适用商品范围及生效规则等具体细节；\n2. **结算页面留意**：下单结算时，页面上通常会有相应的保障/保险选项提示，具体以页面实际显示为准；\n3. 如果您现在有其他订单、物流或商品方面的问题，我也可以先帮您查询处理～\n\n我这边已记录您的需求，人工客服接入后会优先为您跟进。请问还有其他可以帮到您的吗？",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

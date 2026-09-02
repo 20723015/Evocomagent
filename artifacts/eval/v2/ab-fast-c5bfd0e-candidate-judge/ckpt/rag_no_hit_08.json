@@ -1,0 +1,1 @@
+{"case_id": "rag_no_hit_08", "passed_rule": true, "dims": {"answer_quality": {"score": 3.0, "reason": "客服未能直接解决用户问题，但提供了合理建议和替代渠道，信息准确且语气得体。"}, "faithfulness": {"score": 1.0, "reason": "客服回复称知识库未找到明星合作入驻说明，与工具返回结果中仅含直播间购物规则、无相关合作信息一致，未编造具体事实。"}, "process_soundness": {"score": 5.0, "reason": "用户询问明星带货安排，调用知识库查询相关规则是精准且必要的，无多余调用。"}}}

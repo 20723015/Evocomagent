@@ -1,0 +1,59 @@
+{
+  "case_id": "kb_常见问题faq_5",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 10660,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 0.0,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.5
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "刚买完就降价 能退差价吗 价格保护 保价"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "价格保护 差价补偿 降价退差价规则"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 2,
+    "route": null,
+    "reply": "抱歉，我刚检索了平台的帮助文档，目前没有查询到关于「降价退差价（价格保护）」的具体政策说明。\n\n这种情况通常需要结合您订单的实际商品、下单时间和当时活动规则来判断，建议您转人工客服为您进一步核实，以免给您不准确的信息。\n\n请问需要我帮您转接人工吗？或者您也可以通过订单详情页找到「价格保护/差价补偿」入口自助查询一下哦～\n\n如果还有其他问题（比如查询订单、售后等），随时告诉我！😊",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

@@ -1,0 +1,1 @@
+{"case_id": "rag_no_hit_06", "passed_rule": true, "dims": {"answer_quality": {"score": 4.0, "reason": "回复准确、专业、语气得体，虽未直接给出确定结论但提供了合理的处理方向，略有冗余可更简洁。"}, "faithfulness": {"score": 1.0, "reason": "工具返回的知识库结果中确实没有关于下单后能否加购赠品的规定，客服未编造具体事实，仅说明文档未覆盖并提供处理方向。"}, "process_soundness": {"score": 4.0, "reason": "工具选择对路，顺序合理，但连续两次搜索知识库略有冗余，可优化为一次精准查询。"}}}

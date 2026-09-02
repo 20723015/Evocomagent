@@ -1,0 +1,49 @@
+{
+  "case_id": "rag_no_hit_11",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 7020,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": null,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "公司总部在哪个城市"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 1,
+    "route": null,
+    "reply": "抱歉，我查询了一下我们平台的知识库，暂时没有找到关于「公司总部所在城市」的相关信息，无法给您准确的答复，还请您谅解。\n\n如果您想确认公司注册地址或总部信息，建议您通过以下方式获取官方信息：\n1. **并夕夕 App 内**：进入「我的」→「设置」→「关于我们」查看官方公示信息\n2. **官方网站**：查看官网页脚的企业信息公示内容\n3. **转接人工客服**：如果您需要更准确的信息，我可以帮您转接人工客服进一步核实\n\n请问还有什么其他可以帮您的吗？比如查询订单物流、商品咨询等，我都可以随时为您服务～ 😊",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

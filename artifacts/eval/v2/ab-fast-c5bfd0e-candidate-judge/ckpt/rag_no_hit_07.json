@@ -1,0 +1,1 @@
+{"case_id": "rag_no_hit_07", "passed_rule": false, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确告知暂不支持比特币，列出可用支付方式，语气得体，直接解决问题。"}, "faithfulness": {"score": 0.0, "reason": "工具返回未提及比特币等数字货币，客服回复编造了“暂不支持比特币支付”这一具体事实，与工具数据不符。"}, "process_soundness": {"score": 4.0, "reason": "两次搜索知识库基本能回答比特币支付问题，但存在一定冗余，可优化为一次精准查询。"}}}

@@ -1,0 +1,61 @@
+{
+  "case_id": "rag_no_hit_08",
+  "passed": true,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 9781,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": null,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 1.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "明星直播带货 邀请明星 达人合作",
+          "top_k": 3
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "商家直播 合作达人 带货规则",
+          "top_k": 3
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 2,
+    "route": null,
+    "reply": "您好，关于「安排明星来直播间带货」这一需求，我帮您检索了平台的相关政策文档，目前**未找到该项服务的对应说明**，这部分内容不在我能处理的范围之内，非常抱歉。\n\n建议您可以联系**人工客服**进一步咨询，他们会为您核实是否有可对接的达人/明星合作渠道及相关流程。\n\n请问还有其他我能帮您处理的问题吗？比如订单查询、商品咨询或退换货方面的需求～😊",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

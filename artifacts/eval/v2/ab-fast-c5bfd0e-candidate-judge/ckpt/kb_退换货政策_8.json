@@ -1,0 +1,1 @@
+{"case_id": "kb_退换货政策_8", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确说明支持仅退款的情形，并主动提供订单查询帮助，完整专业且语气得体，直接解决了用户问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的仅退款适用场景、审核时效等均与知识库《退换货政策》一致，且未编造具体订单、商品或物流事实。"}, "process_soundness": {"score": 5.0, "reason": "工具选择精准，先搜索知识库再加载技能，顺序合理，无多余调用。"}}}

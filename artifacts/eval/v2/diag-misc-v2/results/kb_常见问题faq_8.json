@@ -1,0 +1,70 @@
+{
+  "case_id": "kb_常见问题faq_8",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 12656,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 1.0,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.5
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "load_skill",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "退货寄回快递丢失怎么办"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "load_skill",
+        "arguments": {
+          "skill_name": "process-return"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "退货快递丢件 包裹遗失",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 3,
+    "route": null,
+    "reply": "抱歉让您等久了。我检索了平台现有的退换货帮助文档，「退货寄回途中快递丢失」这一情况在文档中没有查到明确的操作指引，为了确保给您准确的答复，这个情况需要转接人工客服为您核实处理，还请您理解🙏\n\n为了加快处理速度，麻烦您提供以下信息，我会一并转给人工客服：\n\n1. **订单号**（如果是退货订单，就是您最初购买该商品的订单号）\n2. **退回快递的快递公司及运单号**（如有）\n3. 丢件的大致情况（例如：显示已揽收但一直无更新、还是显示签收但卖家未收到）\n\n您也可以直接提供订单号，我先帮您把订单信息调出来核对一下，方便人工客服介入时更快定位问题。请问需要我帮您查一下订单吗？",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "case_id": "complaint_3",
+  "passed": false,
+  "process": {
+    "tool_accuracy": null,
+    "tool_efficiency": null,
+    "token_cost": 4153,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": null
+  },
+  "result": {
+    "intent_match": 1.0,
+    "keyword_coverage": null,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.5
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [],
+    "tool_outcomes": [],
+    "num_tool_calls": 0,
+    "route": null,
+    "reply": "非常抱歉给您带来了这么糟糕的体验！我是客服小夕，先别生气，我非常理解您现在的心情 😔\n\n您提到的客服态度问题，我们非常重视。为了更好地帮您解决问题，我想先了解一下：\n\n1. **您遇到的具体问题是什么？** 比如购物、订单、售后方面的困扰，我可以直接帮您处理\n2. **关于服务态度的问题**，如果您需要，我可以为您记录并转接人工专员/值班经理进一步处理\n\n如果是订单、物流或退换货方面遇到问题，请您告诉我订单号，我马上帮您核实处理。您把情况跟我说说，我一定尽力帮您解决好，好吗？",
+    "retrieved_sources": [],
+    "error": null,
+    "tool_outputs": []
+  }
+}

@@ -1,0 +1,71 @@
+{
+  "case_id": "kb_配送说明_2",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 14565,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 1.0,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.5
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "recall_user_memory"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "偏远地区包邮吗",
+          "top_k": 3
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "配送 包邮 运费 偏远地区",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "recall_user_memory",
+        "arguments": {
+          "query": "偏远地区 包邮 运费"
+        },
+        "outcome": {
+          "success": false
+        }
+      }
+    ],
+    "num_tool_calls": 3,
+    "route": null,
+    "reply": "您好，很抱歉让您久等了。我先后尝试检索了平台关于「偏远地区包邮」「配送运费」的政策文档，但均未查询到相关的明确说明，因此暂时无法给您确切答复。\n\n需要说明的是：目前检索到的平台文档中，**暂未覆盖偏远地区运费政策的具体内容**，这类信息通常与具体商品、收货地址、商家设置有关，为避免给您不准确的信息，建议：\n1. 在**商品详情页**查看该商品是否标注「包邮」及运费说明（以页面显示为准）；\n2. 下单结算时，系统会展示最终运费和实付金额；\n3. 如果您有具体想确认的商品或收货地区，也可以告诉我，我帮您进一步核实。\n\n由于该问题超出了目前文档覆盖范围，**建议转接人工客服**为您进一步确认偏远地区的具体运费政策，您看可以吗？\n\n请问还有其他可以帮您的吗？😊",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

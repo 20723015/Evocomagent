@@ -1,0 +1,1 @@
+{"case_id": "edge_10", "passed_rule": false, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确引用政策，直接解答了能否退一件的问题，并主动提供后续协助，语气得体且信息完整。"}, "faithfulness": {"score": 1.0, "reason": "回复引用的部分退款政策内容和转人工建议均可在工具返回的退换货政策及流程说明中找到依据，未编造具体事实。"}, "process_soundness": {"score": 4.0, "reason": "工具选择基本对路，load_skill后search_knowledge可解决问题，但load_skill稍冗余，略有优化空间。"}}}

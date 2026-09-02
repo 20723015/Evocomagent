@@ -1,0 +1,1 @@
+{"case_id": "kb_常见问题faq_5", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确完整，涵盖价保规则并主动提供查询帮助，语气得体，直接解决问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的价保期限、范围、不参与情形均与工具返回的知识库内容一致，未编造具体订单或商品信息。"}, "process_soundness": {"score": 5.0, "reason": "工具选择精准，先查知识库再回忆用户信息，顺序合理，无多余调用，能有效解决退差价问题。"}}}

@@ -1,0 +1,1 @@
+{"case_id": "order_query_002_6", "passed_rule": false, "dims": {"answer_quality": {"score": 3.0, "reason": "客服未直接查询用户指定订单，而是提示无权访问并给出另一订单，未能完全解决用户问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中关于无权访问的提示和当前账户订单信息均与工具返回数据一致，未编造事实。"}, "process_soundness": {"score": 3.0, "reason": "调用序列中有冗余工具，用户明确指定订单号，应先直接query_order，load_skill和list_user_orders并非必需，顺序也略有冗余。"}}}

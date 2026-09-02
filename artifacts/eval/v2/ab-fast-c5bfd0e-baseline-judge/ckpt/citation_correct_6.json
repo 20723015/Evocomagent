@@ -1,0 +1,1 @@
+{"case_id": "citation_correct_6", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确完整地提供了普通快递配送时效表，并补充了例外情况，语气得体且主动帮助查询具体订单，直接解决了用户问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的配送时效表、时效计算起点、特殊商品及大促延迟说明均能在工具返回的《配送说明》和《大促活动总规则》中找到依据，未出现编造或矛盾信息。"}, "process_soundness": {"score": 5.0, "reason": "用户询问普通快递配送时效，调用知识库检索工具精准对路，顺序合理且无多余调用。"}}}

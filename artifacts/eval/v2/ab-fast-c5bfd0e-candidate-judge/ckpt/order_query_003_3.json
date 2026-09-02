@@ -1,0 +1,1 @@
+{"case_id": "order_query_003_3", "passed_rule": false, "dims": {"answer_quality": {"score": 5.0, "reason": "客服准确识别了账户内的订单并提供完整物流信息，语气得体，直接解决了用户对发货状态的疑问。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中关于订单ORD-20240115-001的商品、金额、状态及物流轨迹等信息均与工具返回数据一致，无编造或矛盾。"}, "process_soundness": {"score": 3.0, "reason": "能解决问题但存在冗余调用，如list_user_orders和重复query_order可优化。"}}}

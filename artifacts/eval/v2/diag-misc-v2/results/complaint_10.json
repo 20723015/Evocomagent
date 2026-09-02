@@ -1,0 +1,48 @@
+{
+  "case_id": "complaint_10",
+  "passed": true,
+  "process": {
+    "tool_accuracy": null,
+    "tool_efficiency": null,
+    "token_cost": 9551,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": null
+  },
+  "result": {
+    "intent_match": 1.0,
+    "keyword_coverage": null,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 1.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "list_user_orders"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "list_user_orders",
+        "arguments": {},
+        "outcome": {
+          "success": true,
+          "count": 1
+        }
+      }
+    ],
+    "num_tool_calls": 1,
+    "route": null,
+    "reply": "我已经帮您查到了您的订单信息，跟您核对一下：\n\n- **订单号**：ORD-20240115-001\n- **商品**：Nike Air Max 270 运动鞋\n- **金额**：899.00 元\n- **状态**：已发货\n\n请问您遇到的问题具体是哪个方面的呢？比如：\n\n1. **物流问题**：迟迟不发货、快递太慢、物流信息异常？\n2. **商品问题**：收到的商品与描述/宣传不符、有质量问题？\n3. **服务问题**：客服响应慢、售后处理不满意？\n\n您说「实际行动拉胯」，方便具体描述一下是哪一环节让您失望了吗？这样我可以帮您一步步核实并跟进处理，一定给您一个满意的答复。🙏",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

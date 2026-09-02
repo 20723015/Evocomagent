@@ -1,0 +1,1 @@
+{"case_id": "promo_6", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "准确完整地说明了白银会员优惠券的面额和使用规则，语气得体，直接解决问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中白银会员的优惠券、优先排队和退换货减免，以及黄金/钻石会员的券信息，均可在工具返回的会员权益文档中找到依据，未出现虚构事实。"}, "process_soundness": {"score": 5.0, "reason": "用户询问白银会员券的具体样式，属于正常业务咨询，调用知识库搜索工具精准合理，无多余或缺失调用。"}}}

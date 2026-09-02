@@ -1,0 +1,59 @@
+{
+  "case_id": "rag_no_hit_15",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 10469,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": null,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "recall_user_memory",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "recall_user_memory",
+        "arguments": {
+          "query": "商品 口味 偏好"
+        },
+        "outcome": {
+          "success": false
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "商品可以定制颜色口味吗"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 2,
+    "route": null,
+    "reply": "我这边帮您查了一下，目前平台文档里暂时没有检索到关于「商品自定义颜色/口味」的相关政策呢。为了更准确帮您解答，想再和您确认一下：\n\n1. **您说的是哪件商品呀？**（比如具体的零食、饮品或其他商品名称）\n2. 您是想了解这款商品**有没有粉色/香芋味的规格**，还是想咨询**能否定制**？\n\n如果您告诉我具体的商品，我可以帮您查一下它在售的规格和口味～另外，关于**定制类需求**，因为这个情况平台文档暂未覆盖，比如是否支持定制、如何定制，可能需要**转人工客服进一步确认**，您看可以吗？😊",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

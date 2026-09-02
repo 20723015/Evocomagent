@@ -1,0 +1,78 @@
+{
+  "case_id": "rag_no_hit_15",
+  "passed": true,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 14825,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": null,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 1.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "recall_user_memory",
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "recall_user_memory",
+        "arguments": {},
+        "outcome": {
+          "success": false
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "商品可以定制口味颜色吗"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "定制口味 颜色 特殊要求"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "食品定制口味 专属定制支持吗",
+          "top_k": 3
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 4,
+    "route": null,
+    "reply": "明白了～目前我已经多次检索政策文档，关于「粉色香芋味」这种定制颜色/口味的需求，文档中确实没有相关规则支持，系统暂时无法为您确认是否可以制作，也无法代您下单定制。\n\n为了不耽误您，**这边需要转接人工专员**进一步核实该商品是否支持定制，以及具体的定制方案和价格。您先别急，可以提供一下具体是哪款商品（商品名称或链接），方便人工专员精准对接～\n\n如果还有其他问题，比如查询订单、退换货、商品推荐等，我也可以随时帮您处理。祝您购物愉快！🥰",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

@@ -1,0 +1,1 @@
+{"case_id": "product_shoe_7", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "客服准确确认有货并提供价格、颜色、尺码、库存等完整信息，主动询问需求并给出建议，语气得体，直接解决了用户问题。"}, "faithfulness": {"score": 1.0, "reason": "回复中商品价格、颜色、尺码、库存和卖点均与query_product返回数据一致，无编造信息。"}, "process_soundness": {"score": 4.0, "reason": "工具选择基本对路，但recall_user_memory在查询库存场景中非必需，略有冗余可优化。"}}}

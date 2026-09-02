@@ -1,0 +1,1 @@
+{"case_id": "citation_forbid_1", "passed_rule": false, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确完整地提供了不同收货地区的配送时效，并补充了出库时间和特殊商品说明，直接解决了用户问题，语气得体。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的配送时效表格、48小时出库及特殊标签说明均能在工具返回的『配送说明.md』和『常见问题FAQ.md』中找到依据，无编造或矛盾。"}, "process_soundness": {"score": 5.0, "reason": "用户询问配送时长，调用知识库搜索配送时效信息精准且必要，无多余调用。"}}}

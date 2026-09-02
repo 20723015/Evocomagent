@@ -1,0 +1,1 @@
+{"case_id": "product_elec_5", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "准确、完整、专业、语气得体，直接解答了价格问题并提供了相关商品信息。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的价格、库存、描述、规格以及保护壳信息均与工具返回数据一致，无虚构或矛盾内容。"}, "process_soundness": {"score": 5.0, "reason": "用户询问产品价格，直接调用query_product查询，工具选择精准、顺序合理、无多余调用。"}}}

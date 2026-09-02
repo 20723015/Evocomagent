@@ -1,0 +1,69 @@
+{
+  "case_id": "citation_correct_10",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 10457,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 0.0,
+    "requires_human_match": 0.0,
+    "citation_match": 0.0,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "代收点取件超时会怎样"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "快递代收点 包裹 存放 超时 取件"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "包裹超时未取 退回"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 3,
+    "route": null,
+    "reply": "小夕查询了平台的相关政策文档，但目前关于「代收点取件超时」的具体处理规则暂时没有检索到明确记载呢😥\n\n这种情况超出小夕当前能确认的范围，为了给您准确的答复，建议您转接人工客服进一步核实处理～\n\n请问还有其他可以帮您的吗？比如订单查询、物流进度等，小夕都会帮您跟进哦。",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

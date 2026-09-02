@@ -1,0 +1,1 @@
+{"case_id": "order_query_003_6", "passed_rule": false, "dims": {"answer_quality": {"score": 3.0, "reason": "客服未直接查询到用户指定订单，但准确说明原因并提供替代订单确认，部分解决问题且语气得体。"}, "faithfulness": {"score": 1.0, "reason": "回复中所述订单无权访问和当前账户订单信息均与工具返回一致，无编造事实。"}, "process_soundness": {"score": 3.0, "reason": "能解决问题但存在冗余调用，如query_logistics和list_user_orders并非必需，且顺序可优化。"}}}

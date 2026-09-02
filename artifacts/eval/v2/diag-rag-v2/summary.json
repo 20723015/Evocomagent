@@ -1,0 +1,14 @@
+{
+  "run_id": "diag-rag-v2",
+  "arm": "candidate-v2",
+  "set": "artifacts/eval/v2/.rag_ids.txt",
+  "total": 15,
+  "new_run": 15,
+  "resumed": 0,
+  "passed": 12,
+  "failures": [
+    "rag_no_hit_06",
+    "rag_no_hit_09",
+    "rag_no_hit_10"
+  ]
+}

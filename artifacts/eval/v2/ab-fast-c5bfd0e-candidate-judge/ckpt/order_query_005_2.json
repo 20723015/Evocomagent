@@ -1,0 +1,1 @@
+{"case_id": "order_query_005_2", "passed_rule": false, "dims": {"answer_quality": {"score": 3.0, "reason": "客服未直接查询到用户指定订单状态，但提供了替代订单信息并请求核对，部分解决了问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中关于订单无法访问、账户下唯一订单的信息（订单号、商品、价格、状态、下单时间）均与工具返回数据一致，未出现编造或矛盾内容。"}, "process_soundness": {"score": 3.0, "reason": "能解决问题但存在冗余调用，已有具体订单号却额外调用list_user_orders，且load_skill并非必要步骤。"}}}

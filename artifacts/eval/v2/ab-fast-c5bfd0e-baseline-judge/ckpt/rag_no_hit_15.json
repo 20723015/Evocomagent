@@ -1,0 +1,1 @@
+{"case_id": "rag_no_hit_15", "passed_rule": false, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确说明定制政策，语气得体，并提供后续核实渠道和替代商品，直接有效解决了用户疑问。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的定制范围描述与知识库一致，香芋商品信息来自商品查询结果，未发现编造或矛盾事实。"}, "process_soundness": {"score": 5.0, "reason": "工具选择精准，先查知识再查产品，顺序合理且无多余调用"}}}

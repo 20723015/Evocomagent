@@ -1,0 +1,82 @@
+{
+  "case_id": "kb_退换货政策_1",
+  "passed": true,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 21678,
+    "token_pass": false,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 1.0,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 1.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge",
+      "load_skill"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "七天无理由退货政策",
+          "top_k": 3
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "退换货规则 七天无理由",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "退货",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "load_skill",
+        "arguments": {
+          "skill_name": "process-return"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 4,
+    "route": null,
+    "reply": "好的，关于「七天无理由退货」，我已经为您核实了平台的退货退款处理规范，给您说明一下～\n\n✅ **平台支持七天无理由退货**，但需要符合以下条件：\n\n**1. 时效要求**\n- 签收后 **7 天内**（无理由退货）可以申请\n- 如果是**质量问题**，签收后 **15 天内**可申请\n\n**2. 商品限制**\n- 以下类别不支持无理由退货：定制商品、鲜活易腐、数字商品、已拆封的贴身衣物等\n\n**3. 运费承担**\n- 七天无理由退货：运费由您承担（12 元起，从退款中扣除）\n- 质量问题退货：运费由平台承担，但需要您提供照片/视频举证\n\n具体的最终审核结果还需以订单实际状态和平台页面为准哦。\n\n请问您是有某个订单需要退货吗？如果有的话，把订单号告诉我，或者我帮您查一下您的订单列表，看看是否符合退货条件～😊",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

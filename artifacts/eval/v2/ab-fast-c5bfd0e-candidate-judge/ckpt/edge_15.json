@@ -1,0 +1,1 @@
+{"case_id": "edge_15", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "客服准确核实订单状态，说明退换货时效尚未起算，并提供具体处理建议，完整专业且直接解决问题。"}, "faithfulness": {"score": 1.0, "reason": "回复中的订单状态、物流轨迹、预计送达、退换货政策等均可在工具返回中找到依据，未发现编造或矛盾之处。"}, "process_soundness": {"score": 5.0, "reason": "工具选择精准，依次查知识库、加载技能、获取订单及物流，顺序合理且无多余调用"}}}

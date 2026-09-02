@@ -1,0 +1,1 @@
+{"case_id": "kb_cross_04", "passed_rule": false, "dims": {"answer_quality": {"score": 5.0, "reason": "客服准确完整地解答了保修期内寄回运费由品牌方承担的问题，信息清晰、语气得体，直接解决了用户疑问。"}, "faithfulness": {"score": 1.0, "reason": "客服回复内容与工具返回的《售后维修与延保》政策完全一致，未编造任何具体事实。"}, "process_soundness": {"score": 5.0, "reason": "用户询问保修期内运费承担规则，调用知识库搜索精准且无多余调用，顺序合理。"}}}

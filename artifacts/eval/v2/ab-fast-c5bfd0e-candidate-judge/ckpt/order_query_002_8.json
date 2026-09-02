@@ -1,0 +1,1 @@
+{"case_id": "order_query_002_8", "passed_rule": false, "dims": {"answer_quality": {"score": 3.0, "reason": "客服未直接查询用户询问的订单，而是建议另一笔订单，部分解决问题但信息不够完整清晰。"}, "faithfulness": {"score": 1.0, "reason": "回复中关于ORD-20240120-002无法访问、以及ORD-20240115-001的商品、金额、状态均与工具返回数据一致，无编造事实。"}, "process_soundness": {"score": 4.0, "reason": "基本合理，但先加载技能再查询订单，且额外调用list_user_orders有一定冗余，可优化为直接query_order。"}}}

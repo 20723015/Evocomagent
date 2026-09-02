@@ -1,0 +1,60 @@
+{
+  "case_id": "kb_配送说明_5",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 10338,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 0.0,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.5
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "一般发什么快递 配送 快递公司"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "快递配送说明",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 2,
+    "route": null,
+    "reply": "您好，我是小夕～关于发货使用的快递公司，我这边查了一下平台的配送说明文档，暂时没有找到明确的规定信息。😊\n\n不同商品、不同商家发什么快递通常以实际发货为准，具体承运快递公司会在您的订单物流信息中显示。\n\n建议您：\n1. 提供具体订单号，我帮您查询该订单的物流信息（包含快递公司）；\n2. 或发送订单号后，我可以一并帮您看看发货进度。\n\n如需进一步核实平台对快递公司的统一规定，这部分文档暂未覆盖，我这边需要为您转人工客服做进一步确认～\n\n请问您想查哪个订单呢？把订单号发给我，我马上帮您看看！",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

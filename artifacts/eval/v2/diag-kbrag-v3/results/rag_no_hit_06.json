@@ -1,0 +1,81 @@
+{
+  "case_id": "rag_no_hit_06",
+  "passed": true,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 14507,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": null,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 1.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "下单后能加购赠品吗 赠品规则",
+          "top_k": 3
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "赠品 加购 订单修改",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "赠品赠送规则",
+          "top_k": 3
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "订单修改 增补商品",
+          "top_k": 3
+        },
+        "outcome": {}
+      }
+    ],
+    "num_tool_calls": 4,
+    "route": null,
+    "reply": "抱歉久等了～我帮您查了一下，关于「下单后加购赠品」这个操作，平台目前的相关政策文档里暂时没有覆盖到具体说明。\n\n这类订单修改一般需要视订单当前状态而定，建议我为您转接人工客服进一步确认。您看可以吗？转人工前如果想让我先帮您查一下订单信息，也可以直接告诉我订单号哦～\n\n**转人工提示**：关于「下单后加购赠品」的规则，系统政策文档未覆盖，需转人工进一步核实处理。",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

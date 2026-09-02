@@ -1,0 +1,1 @@
+{"case_id": "kb_配送说明_10", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确告知48小时存放时限，直接解答用户问题，语气得体且专业。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的“驿站/自提柜存放超48小时未取，包裹可能被退回商家”与工具返回中《物流异常与投诉处理》签收异常条款完全一致。"}, "process_soundness": {"score": 5.0, "reason": "用户询问快递代收点保管期限，调用知识检索工具精准且必要，无多余调用。"}}}

@@ -1,0 +1,49 @@
+{
+  "case_id": "rag_no_hit_07",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 7223,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": null,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "支持比特币支付吗 支付方式"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 1,
+    "route": null,
+    "reply": "小夕为您查询了一下，目前平台知识库中**没有**关于「比特币支付」相关支付方式的记录，这类支付渠道我们暂时无法确认，需帮您核实后答复。\n\n为了不耽误您的时间，建议您可以：\n1. **转接人工客服**进一步核实可用的支付方式；\n2. 或者您也可以查看**下单支付页面**，页面上展示的支付渠道即为当前支持的方式。\n\n请问还有其他可以帮您的吗？😊",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

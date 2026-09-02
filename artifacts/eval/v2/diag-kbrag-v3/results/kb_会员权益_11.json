@@ -1,0 +1,72 @@
+{
+  "case_id": "kb_会员权益_11",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 10616,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 1.0,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.5
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "黄金会员免邮费吗",
+          "top_k": 3
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "会员免运费权益",
+          "top_k": 3
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "黄金会员权益",
+          "top_k": 3
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 3,
+    "route": null,
+    "reply": "您好，非常抱歉，关于「黄金会员免邮」这个问题，我检索了平台相关的会员权益和配送政策文档，目前**没有查询到明确的相关说明**。\n\n为了给您最准确、真实的信息，建议您转接**人工客服**进一步核实，以免给您提供不准确的政策信息。\n\n您可以随时联系人工客服，报上「黄金会员免邮」这个需求，他们会为您详细解答～\n\n另外，如果您还有其他关于订单、商品或售后的任何问题，我也很乐意继续为您服务哦！😊",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

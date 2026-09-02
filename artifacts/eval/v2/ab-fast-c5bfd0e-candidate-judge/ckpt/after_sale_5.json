@@ -1,0 +1,1 @@
+{"case_id": "after_sale_5", "passed_rule": true, "dims": {"answer_quality": {"score": 3.0, "reason": "回复信息准确专业，但未能直接给出换货全程所需时间，仅说明无法预估并引导进一步核实，未完全解决用户问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的15天、1-3个工作日、运费由并夕夕承担、配送时效不包含退换货寄回重发时间等均可在工具返回的退换货政策和配送说明中找到依据，未出现编造或矛盾信息。"}, "process_soundness": {"score": 5.0, "reason": "用户咨询换货时效，调用知识库精准且无多余调用，过程合理。"}}}

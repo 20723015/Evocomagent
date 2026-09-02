@@ -1,0 +1,69 @@
+{
+  "case_id": "kb_配送说明_9",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 11151,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 0.0,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "签收包裹时需要注意什么"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "收货签收注意事项 验货"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "快递签收 检查商品"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 3,
+    "route": null,
+    "reply": "很抱歉，关于「签收注意事项」这个问题，我查阅了并夕夕的相关帮助文档，目前没有检索到对应的政策说明（该部分文档暂时未覆盖到），无法给您准确、可靠的答复，建议您稍后转接人工客服进一步确认。\n\n如果您手头有正在配送的订单，我可以帮您查询具体的物流轨迹和派送进度，方便您安排签收。需要的话，请提供一下订单号，或者我也可以先帮您把近期的订单列出来。",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

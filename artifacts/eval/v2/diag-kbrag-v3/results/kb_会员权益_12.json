@@ -1,0 +1,78 @@
+{
+  "case_id": "kb_会员权益_12",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 14079,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 0.0,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.5
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "钻石会员退货运费免吗"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "退货运费 会员权益"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "钻石会员权益 运费"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "会员退货运费政策",
+          "top_k": 5
+        },
+        "outcome": {}
+      }
+    ],
+    "num_tool_calls": 4,
+    "route": null,
+    "reply": "您好，我是客服小夕~ 😊 关于您问的「钻石会员退货运费是否免」这个问题，我刚刚检索了平台的会员权益和退换货相关政策文档，暂时**没有查到关于钻石会员退货运费豁免的明确规定**。\n\n为了不误导您，我不能凭空给您承诺。建议您——\n1. **直接在订单的售后服务页面查看**：实际退货时页面会显示本次运费的实际承担情况，以页面为准；\n2. **联系人工客服核实**：我可以帮您对接人工客服进一步确认钻石会员的具体运费权益细节。\n\n请问还有其他可以帮到您的吗？比如查询订单或查看退货流程～",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

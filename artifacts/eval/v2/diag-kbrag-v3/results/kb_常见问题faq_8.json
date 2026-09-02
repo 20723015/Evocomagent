@@ -1,0 +1,91 @@
+{
+  "case_id": "kb_常见问题faq_8",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 17818,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 0.0,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "load_skill",
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "寄回的退货快递丢失了怎么办",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "load_skill",
+        "arguments": {
+          "skill_name": "process-return"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "退货快递丢失 丢件 赔付",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "退货运费险 快递丢件 责任",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "退货快递丢失处理方式",
+          "top_k": 5
+        },
+        "outcome": {}
+      }
+    ],
+    "num_tool_calls": 5,
+    "route": null,
+    "reply": "为您查询了一下相关的政策文档，很抱歉，目前知识库中暂未检索到关于「退货快递丢失」的具体处理条款，这种情况超出了我能直接为您处理的范围，需要为您转接人工客服专员进一步跟进核实。\n\n不过为了帮您高效衔接人工处理，麻烦您先确认以下信息：\n\n1. **哪笔退货订单**涉及快递丢失？（可提供订单号，或告诉我商品名称和下单时间）\n2. **退回的快递单号**是什么？目前物流显示在哪个环节停滞/丢失？\n\n温馨提示：寄回商品的快递如确认丢失，通常需要核实快递面单、寄件记录等凭证，建议您先保存好寄件时的快递单号截图和物流记录，以便专员协助您向快递公司追查赔付。\n\n您可以把订单号或快递信息发我，我这边先帮您查询一下订单情况，人工专员也会尽快与您联系～ 请问还有其他可以帮您的吗？",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

@@ -1,0 +1,82 @@
+{
+  "case_id": "kb_退换货政策_11",
+  "passed": true,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 14598,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 1.0,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 1.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge",
+      "recall_user_memory"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "定制商品 七天无理由 退货",
+          "top_k": 3
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "定制商品可以退货吗",
+          "top_k": 3
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "七天无理由退货 不适用 商品",
+          "top_k": 3
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "recall_user_memory",
+        "arguments": {
+          "query": "定制商品 退货 订单"
+        },
+        "outcome": {
+          "success": false
+        }
+      }
+    ],
+    "num_tool_calls": 4,
+    "route": null,
+    "reply": "好的，我已经在为您跟进啦！如果您的定制商品订单需要核实退货情况，欢迎提供订单号，我会第一时间帮您查询处理 😊",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

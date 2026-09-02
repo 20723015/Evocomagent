@@ -1,0 +1,1 @@
+{"case_id": "rag_no_hit_03", "passed_rule": false, "dims": {"answer_quality": {"score": 4.0, "reason": "回复准确说明了文档未明确提及优惠券转让，并建议以App规则为准，信息完整且语气得体，但未给出直接肯定/否定结论，略有保守。"}, "faithfulness": {"score": 1.0, "reason": "回复中关于优惠券无转让条款、礼品卡转让规则、叠加规则和有效期等描述均在工具返回中有依据，未编造具体事实。"}, "process_soundness": {"score": 4.0, "reason": "调用知识库查询优惠券转让规则是合理的，但连续两次搜索略有多余，可优化为一次精准查询。"}}}

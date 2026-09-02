@@ -1,0 +1,86 @@
+{
+  "case_id": "after_sale_4",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 11647,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": null,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "list_user_orders",
+      "search_knowledge",
+      "recall_user_memory",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "list_user_orders",
+        "arguments": {},
+        "outcome": {
+          "success": true,
+          "count": 1
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "商品可以寄回维修吗 售后维修流程"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "recall_user_memory",
+        "arguments": {},
+        "outcome": {
+          "success": false
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "售后维修质保政策"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "质量问题如何处理 退换货流程"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 5,
+    "route": null,
+    "reply": "您好小夕为您核实了一下您的情况：\n\n📦 我查到您有一个订单：\n- **订单号**：ORD-20240115-001\n- **商品**：Nike Air Max 270 运动鞋\n- **金额**：899.00 元\n- **状态**：已发货\n\n关于「寄回维修」这项服务，我检索了平台的帮助文档，目前**暂未覆盖维修类政策的具体说明**（例如是否支持寄回维修、维修时效、运费承担等），这一点我无法凭猜测为您答复，需要为您转接人工客服进一步核实确认，请您谅解🙏\n\n建议您可以：\n1. **转人工客服**，提供订单号 ORD-20240115-001 和您遇到的问题详情（如商品出现了什么故障、是否在质保期内），由专员为您核实维修方案；\n2. 同时也可以留意订单详情页是否有「申请售后/联系卖家」入口，具体安排以后台页面显示为准。\n\n请问需要我帮您把情况登记转接人工吗？或者还有其他可以帮您的地方～",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

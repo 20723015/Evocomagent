@@ -1,0 +1,37 @@
+{
+  "case_id": "rag_no_hit_14",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 0.0,
+    "tool_efficiency": null,
+    "token_cost": 3635,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 0.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": null,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [],
+    "tool_outcomes": [],
+    "num_tool_calls": 0,
+    "route": null,
+    "reply": "您好，我是并夕夕的客服小夕～关于仓库门禁系统的品牌信息，这涉及公司内部设施情况，不在我可查询和答复的范围内哦。\n\n如果您是遇到收货、发货、物流方面的问题，或者想咨询商品、订单、退换货等，我都可以帮您处理。如果有其他需要帮助的地方，请随时告诉我～😊",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

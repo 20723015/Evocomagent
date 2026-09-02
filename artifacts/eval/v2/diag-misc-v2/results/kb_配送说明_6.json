@@ -1,0 +1,71 @@
+{
+  "case_id": "kb_配送说明_6",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 13841,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 0.0,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.5
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "一线城市多久能送到 配送时效"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "配送时间",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "快递 配送 几天到",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 3,
+    "route": null,
+    "reply": "很抱歉让您久等了～我先后检索了几次配送相关的政策文档，目前都没有找到「一线城市配送时效」的明确说明，这部分信息暂时无法为您确认，需要帮您核实后答复。\n\n在等待核实的同时，也想跟您确认一下：\n\n1. **如果您已经有下单**：方便把订单号发给我吗？我可以帮您查询该订单的具体物流进度，这样能更准确地预估送达时间。\n2. **如果您还在选购**：不同商品、不同仓发货地的配送时效可能不一样，建议以商品详情页展示的配送说明为准。\n\n由于该项信息文档暂未覆盖，我可以为您转接人工客服进一步核实配送时效，您看这样可以吗？",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

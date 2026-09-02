@@ -1,0 +1,49 @@
+{
+  "case_id": "rag_no_hit_11",
+  "passed": true,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 6803,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": null,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 1.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "公司总部地址在哪个城市"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 1,
+    "route": null,
+    "reply": "抱歉，关于总部城市这类公司信息，我这边文档里没有查询到相关内容，无法给您准确的答复，建议您联系人工客服核实一下哦。\n\n您还有其他购物相关的问题需要帮助吗？比如订单查询、商品咨询、退换货等，我都可以帮您处理～ 😊",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

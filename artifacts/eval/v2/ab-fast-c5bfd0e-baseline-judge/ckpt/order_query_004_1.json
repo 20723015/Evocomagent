@@ -1,0 +1,1 @@
+{"case_id": "order_query_004_1", "passed_rule": false, "dims": {"answer_quality": {"score": 2.0, "reason": "客服未能查询用户指定订单，擅自提供另一订单信息，偏离问题且包含不准确信息。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的订单信息、物流轨迹均与工具返回数据一致，没有编造或矛盾之处。"}, "process_soundness": {"score": 3.0, "reason": "已通过 query_order 查到订单详情，后续 list_user_orders 和 query_logistics 属于冗余调用，顺序上应先定位订单再查询状态。"}}}

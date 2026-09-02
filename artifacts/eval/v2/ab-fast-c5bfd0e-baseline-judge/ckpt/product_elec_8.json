@@ -1,0 +1,1 @@
+{"case_id": "product_elec_8", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "准确告知库存数量，信息完整，语气得体，直接解决了用户问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中关于Apple AirPods Pro 2的价格、库存、规格和功能均与工具返回数据一致，未出现编造或矛盾信息。"}, "process_soundness": {"score": 5.0, "reason": "用户询问库存，调用query_product查询产品库存是精准且必要的，无多余或缺失调用。"}}}

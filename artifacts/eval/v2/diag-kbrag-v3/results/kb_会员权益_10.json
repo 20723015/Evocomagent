@@ -1,0 +1,69 @@
+{
+  "case_id": "kb_会员权益_10",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 10760,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 0.0,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "新人优惠券有哪些"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "新用户 优惠 券 领取"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "新人专享 优惠 活动"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 3,
+    "route": null,
+    "reply": "非常抱歉，我刚刚在系统里帮您查了一下新人优惠券的相关政策，暂时没有检索到对应的优惠信息文档呢 😅\n\n这种情况下为了避免给您提供不准确的信息，我需要帮您转接人工客服进一步核实新人优惠的具体内容（比如优惠券面额、使用门槛、领取方式等），以页面实际展示为准哦。\n\n请问您是否愿意转人工客服为您处理呢？您也可以先看看 App 首页的「新人专区」入口，通常新人优惠都会在那边展示～ 需要我帮您做点别的吗？比如查订单或者了解其他商品优惠？",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

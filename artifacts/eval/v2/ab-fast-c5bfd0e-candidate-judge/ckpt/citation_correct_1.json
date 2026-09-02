@@ -1,0 +1,1 @@
+{"case_id": "citation_correct_1", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确完整地解答了七天无理由退货的政策，涵盖适用条件、例外商品和运费规则，语气专业得体，直接解决了用户问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的七天无理由退货适用范围、不适用商品、运费规则及大促赠品处理均能在工具返回的知识库中找到对应依据，未出现编造或矛盾的具体事实。"}, "process_soundness": {"score": 5.0, "reason": "工具选择精准，针对退货政策问题调用知识库搜索，顺序合理且无多余调用"}}}

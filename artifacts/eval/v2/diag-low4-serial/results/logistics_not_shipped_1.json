@@ -1,0 +1,90 @@
+{
+  "case_id": "logistics_not_shipped_1",
+  "passed": true,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 17101,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": 1.0,
+    "keyword_coverage": 1.0,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 1.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "load_skill",
+      "query_order",
+      "query_logistics",
+      "list_user_orders",
+      "query_logistics"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "load_skill",
+        "arguments": {
+          "skill_name": "track-order"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "query_order",
+        "arguments": {
+          "order_id": "ORD-20240120-002"
+        },
+        "outcome": {
+          "success": false,
+          "code": "ORDER_ACCESS_DENIED"
+        }
+      },
+      {
+        "name": "query_logistics",
+        "arguments": {
+          "order_id": "ORD-20240120-002"
+        },
+        "outcome": {
+          "success": false,
+          "code": "ORDER_ACCESS_DENIED"
+        }
+      },
+      {
+        "name": "list_user_orders",
+        "arguments": {},
+        "outcome": {
+          "success": true,
+          "count": 1
+        }
+      },
+      {
+        "name": "query_logistics",
+        "arguments": {
+          "order_id": "ORD-20240115-001"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 5,
+    "route": null,
+    "reply": "我帮您查到了情况，说明如下：\n\n**关于您提供的订单号 ORD-20240120-002**\n经核实，这笔订单不属于您当前账户的订单，系统无法访问它的信息（可能是订单号有误，或下单账户不同）。\n\n**您当前账户下的订单（ORD-20240115-001）**\n- 商品：Nike Air Max 270 运动鞋，金额 899 元\n- 状态：**已发货**\n- 承运：顺丰速运，运单号 SF1234567890\n- 最新物流：1月18日 08:30 到达**上海浦东区，正在派送中** 🚚\n\n近期物流轨迹如下：\n1. 1月16日 14:20 深圳南山区 · 快件已揽收\n2. 1月17日 06:00 广州转运中心 · 已到达\n3. 1月17日 22:00 上海转运中心 · 已到达\n4. 1月18日 08:30 上海浦东区 · 正在派送中\n\n请问您想查的是这笔 Nike 运动鞋的订单吗？如果确认是它，您的快递今天正在派送，请留意收货电话即可～ 如果还有其他订单号，也可以告诉我，我再帮您核实。😊",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

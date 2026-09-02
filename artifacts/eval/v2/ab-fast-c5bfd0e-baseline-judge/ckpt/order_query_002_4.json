@@ -1,0 +1,1 @@
+{"case_id": "order_query_002_4", "passed_rule": false, "dims": {"answer_quality": {"score": 3.0, "reason": "客服未直接查询到目标订单进度，但解释了无权限原因并提供替代订单信息及进一步协助，部分解决问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的订单无权限和当前账号订单信息均与工具返回数据完全一致。"}, "process_soundness": {"score": 4.0, "reason": "工具选择基本合理，但先query_order后再调用list_user_orders略显冗余，略有可优化空间。"}}}

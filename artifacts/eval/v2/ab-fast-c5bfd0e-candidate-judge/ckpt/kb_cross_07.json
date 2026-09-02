@@ -1,0 +1,1 @@
+{"case_id": "kb_cross_07", "passed_rule": false, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确、完整、专业，语气得体，直接解答了会员退换货权益问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的会员退换货权益和基础政策均与工具返回的会员权益和退换货政策文档一致，未发现编造或矛盾。"}, "process_soundness": {"score": 4.0, "reason": "调用知识库查询权益是合理的，额外召回用户记忆略有多余，但整体能解决问题。"}}}

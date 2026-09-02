@@ -1,0 +1,38 @@
+{
+  "case_id": "greeting_12",
+  "passed": true,
+  "process": {
+    "tool_accuracy": null,
+    "tool_efficiency": null,
+    "token_cost": 3567,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": null
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": null,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 1.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [],
+    "tool_outcomes": [],
+    "num_tool_calls": 0,
+    "route": null,
+    "reply": "我是并夕夕平台的智能客服助手「小夕」～虽然我不是真人，但我会尽全力为你提供专业、贴心的服务！无论是查订单、退换货、商品咨询还是售后问题，都可以随时告诉我哦～😊\n\n请问有什么可以帮到你的吗？",
+    "retrieved_sources": [],
+    "error": null,
+    "tool_outputs": []
+  }
+}

@@ -1,0 +1,1 @@
+{"case_id": "rag_no_hit_01", "passed_rule": false, "dims": {"answer_quality": {"score": 5.0, "reason": "客服准确澄清价格保护险实为价保服务，完整说明规则并主动提供进一步帮助，直接解决问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的价保规则（7天/15天、实付金额对比、不参与价保商品类型）均与工具返回的《价保与赔付规则》一致，未编造具体订单或物流信息。"}, "process_soundness": {"score": 5.0, "reason": "用户询问价格保护险，调用知识库查询是精准且必要的，无多余或缺失调用。"}}}

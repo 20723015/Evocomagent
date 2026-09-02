@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>运营工作台 · 并夕夕智能客服</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛠️</text></svg>">
+<link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+<div class="ops-wrap">
+  <header class="ops-header">
+    <a class="back" href="/"><span aria-hidden="true">←</span> 返回对话</a>
+    <h1>🛠 运营工作台</h1>
+    <span class="spacer"></span>
+    <label class="uid-row" style="width:230px">用户<input id="opsUser" maxlength="64" spellcheck="false" aria-label="检索用户标识"></label>
+  </header>
+
+  <div class="tabs" role="tablist" aria-label="工作台功能">
+    <button class="tab" role="tab" id="tabBtnHandoffs" data-tab="handoffs" aria-selected="true" aria-controls="tab-handoffs" tabindex="0">转人工工单</button>
+    <button class="tab" role="tab" id="tabBtnSearch" data-tab="search" aria-selected="false" aria-controls="tab-search" tabindex="-1">对话全文检索</button>
+    <button class="tab" role="tab" id="tabBtnUpload" data-tab="upload" aria-selected="false" aria-controls="tab-upload" tabindex="-1">知识库文档</button>
+  </div>
+
+  <section id="tab-handoffs" role="tabpanel" aria-labelledby="tabBtnHandoffs">
+    <div class="toolbar">
+      <label class="sr-only" for="statusFilter">工单状态筛选</label>
+      <select id="statusFilter">
+        <option value="pending" selected>待处理</option>
+        <option value="resolved">已处理</option>
+        <option value="all">全部</option>
+      </select>
+      <button id="refreshTickets" class="btn btn-outline">刷新</button>
+      <span class="spacer" style="flex:1"></span>
+      <span class="hint">requires_human / guardrail 命中时自动生成工单</span>
+    </div>
+    <div class="ticket-list" id="ticketBox"></div>
+  </section>
+
+  <section id="tab-search" role="tabpanel" aria-labelledby="tabBtnSearch" hidden>
+    <div class="toolbar">
+      <label class="sr-only" for="searchQ">检索关键词</label>
+      <input type="text" id="searchQ" class="grow" placeholder="关键词，如：退款 / 发货 / AirPods">
+      <label class="sr-only" for="searchSession">限定会话 ID</label>
+      <input type="text" id="searchSession" placeholder="限定会话 ID（可选）" style="width:200px">
+      <label class="sr-only" for="searchLimit">返回条数</label>
+      <select id="searchLimit">
+        <option value="20">20 条</option>
+        <option value="50" selected>50 条</option>
+        <option value="100">100 条</option>
+      </select>
+      <button id="doSearch" class="btn btn-primary">检索</button>
+    </div>
+    <div class="search-results" id="searchBox">
+      <div class="empty-state">
+        <span class="es-icon" aria-hidden="true">🔎</span>
+        <div class="es-title">输入关键词开始检索</div>
+        <div class="es-hint">基于 MySQL → ES 的对话全文索引（阶段八）</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="tab-upload" role="tabpanel" aria-labelledby="tabBtnUpload" hidden>
+    <div class="toolbar">
+      <label class="sr-only" for="kbFile">选择知识库文档</label>
+      <input type="file" id="kbFile" class="grow" aria-label="选择知识库文档">
+      <button id="kbUploadBtn" class="btn btn-primary" disabled>上传并入库</button>
+    </div>
+    <div class="upload-progress" id="kbProgress" hidden aria-live="polite">
+      <div class="bar"><div class="bar-fill" id="kbProgressFill" style="width:0%"></div></div>
+      <span id="kbProgressText" class="hint"></span>
+    </div>
+    <div class="doc-list" id="kbDocs">
+      <div class="empty-state">
+        <span class="es-icon" aria-hidden="true">📄</span>
+        <div class="es-title">暂无知识库文档</div>
+        <div class="es-hint">上传 md/txt/pdf/docx/html，经版本化重建后进入 Agent 检索（分片断点续传 + 溯源元数据）</div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div id="srStatus" class="sr-only" role="status" aria-live="polite"></div>
+
+<script src="/js/common.js"></script>
+<script src="/js/ops.js"></script>
+</body>
+</html>
+

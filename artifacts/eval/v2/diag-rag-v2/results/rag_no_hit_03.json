@@ -1,0 +1,61 @@
+{
+  "case_id": "rag_no_hit_03",
+  "passed": true,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 11332,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": null,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 1.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "优惠券可以转让给别人吗",
+          "top_k": 3
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "优惠券使用规则 转让",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 2,
+    "route": null,
+    "reply": "您好，我是客服小夕~ 关于「优惠券能否转让」这个问题，我刚刚检索了平台的政策和帮助文档，很遗憾**文档中暂未覆盖优惠券转让相关的具体规则**，为了给您准确的答复，我需要帮您转接人工客服进一步核实。\n\n请您稍等，我这就为您转接人工处理，人工客服会为您确认优惠券能否转让以及具体操作方式。给您带来不便，还请您谅解🙏\n\n请问还有什么其他可以帮到您的吗？",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

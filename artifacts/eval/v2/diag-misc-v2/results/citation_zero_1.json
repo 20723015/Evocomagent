@@ -1,0 +1,47 @@
+{
+  "case_id": "citation_zero_1",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 0.0,
+    "tool_efficiency": null,
+    "token_cost": 8740,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 0.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 0.0,
+    "requires_human_match": 0.0,
+    "citation_match": 0.0,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "recall_user_memory"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "recall_user_memory",
+        "arguments": {},
+        "outcome": {
+          "success": false
+        }
+      }
+    ],
+    "num_tool_calls": 1,
+    "route": null,
+    "reply": "您好呀，我是客服小夕～😊\n\n您提到的「这个政策」，我这边暂时还不确定具体指哪一项呢。为了给您准确的答复，可以麻烦您说得更具体一些吗？比如：\n\n- 是关于**退换货**（如七天无理由退货）？\n- 还是**配送时效/包邮**相关？\n- 或是**会员权益**、**优惠活动**方面？\n\n您把具体想问的政策告诉我，我马上帮您查询确认～",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

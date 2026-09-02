@@ -1,0 +1,1 @@
+{"case_id": "kb_常见问题faq_13", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确完整地提供了在线客服和电话客服的工作时间，并说明人工转接排队情况，语气得体，直接解决了用户问题。"}, "faithfulness": {"score": 1.0, "reason": "回复中的客服工作时间与工具返回的《物流异常与投诉处理》文档内容一致，未出现编造或矛盾的具体事实。"}, "process_soundness": {"score": 5.0, "reason": "工具选择精准，直接调用知识库查询客服上班时间，无多余调用。"}}}

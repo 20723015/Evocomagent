@@ -1,0 +1,1 @@
+{"case_id": "order_query_002_1", "passed_rule": false, "dims": {"answer_quality": {"score": 3.0, "reason": "客服未能提供所查询订单的状态，但说明了原因并提供了替代订单建议，部分解决了问题。"}, "faithfulness": {"score": 1.0, "reason": "回复中关于订单无权访问、现有订单数量及订单ORD-20240115-001的信息均与工具返回一致，未编造具体事实。"}, "process_soundness": {"score": 3.0, "reason": "查询特定订单状态只需调用 query_order，后续 list_user_orders 属于多余调用，顺序上 load_skill 也非必需。"}}}

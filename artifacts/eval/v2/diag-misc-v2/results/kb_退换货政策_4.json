@@ -1,0 +1,82 @@
+{
+  "case_id": "kb_退换货政策_4",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 19119,
+    "token_pass": false,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 0.0,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge",
+      "recall_user_memory"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "七天无理由退货运费谁承担",
+          "top_k": 3
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "七天无理由退货 运费",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "退换货政策 运费承担",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "recall_user_memory",
+        "arguments": {
+          "query": "退货 运费"
+        },
+        "outcome": {
+          "success": false
+        }
+      }
+    ],
+    "num_tool_calls": 4,
+    "route": null,
+    "reply": "根据检索结果，我这边**暂时没有查询到「七天无理由退货运费由谁承担」的官方政策条文**，因此无法给您一个确切的答复，还请您理解 🙏\n\n**目前的核实情况：**\n- 我检索了平台的退换货政策文档，未命中关于「七天无理由退货运费归属」的明确说明\n- 为不误导您，我不会凭空给出运费承担方的结论\n\n**建议您通过以下方式确认：**\n1. **订单售后页面**：进入对应订单的「申请售后/退货」页面，系统会直接显示本次退货运费由谁承担及预估金额，这是最准确的方式；\n2. **提供订单号**：如果您有具体订单，可以把订单号发给我，我帮您查询订单详情并进一步核实；\n3. **转人工客服**：该政策细节文档未覆盖，建议转接人工客服为您确认。\n\n请问您是想先查一下某个具体订单的售后信息吗？😊",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

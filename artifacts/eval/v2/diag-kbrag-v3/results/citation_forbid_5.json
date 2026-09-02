@@ -1,0 +1,61 @@
+{
+  "case_id": "citation_forbid_5",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 10696,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 1.0,
+    "requires_human_match": 0.0,
+    "citation_match": 0.0,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.3333333333333333
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "修改收货地址的规则",
+          "top_k": 3
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "地址修改 收货地址 更改",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 2,
+    "route": null,
+    "reply": "您好，很抱歉，我这边检索了平台的帮助文档，暂时没有查询到关于「修改收货地址」的具体规则说明😔。\n\n为了给您准确的答复，建议您将问题转接人工客服进一步处理。您可以这样做：\n\n1. **在 App 内**：进入「我的」→「官方客服」→ 转人工，说明需要修改收货地址；\n2. **通过订单页**：如果订单已提交，也可以在订单详情页尝试点击「修改地址」查看是否支持修改；\n3. 修改地址的具体限制（如是否已发货、能否修改等），请以订单页面实际显示为准。\n\n请问还有其他可以帮您的吗？比如查询订单或物流信息，我都可以为您服务～",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

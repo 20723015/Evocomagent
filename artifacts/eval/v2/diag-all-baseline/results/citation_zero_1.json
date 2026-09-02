@@ -1,0 +1,58 @@
+{
+  "case_id": "citation_zero_1",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 0.0,
+    "tool_efficiency": null,
+    "token_cost": 6686,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 0.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 0.0,
+    "requires_human_match": 0.0,
+    "citation_match": 0.0,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "recall_user_memory"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "recall_user_memory",
+        "arguments": {
+          "query": "政策"
+        },
+        "outcome": {
+          "success": false
+        }
+      }
+    ],
+    "num_tool_calls": 1,
+    "route": null,
+    "reply": "您好，我是客服小夕😊 您提到的「这个政策」我这边还不太确定具体是指哪一项呢，为了给您准确的答复，可以麻烦您补充一下吗？比如：\n\n- 是关于**退换货**的政策？\n- 还是**配送/物流**相关的？\n- 或者是**会员权益、优惠活动**方面的问题？\n\n您说得越具体，我就能越快帮您核实清楚哦～",
+    "retrieved_sources": [],
+    "error": null,
+    "tool_outputs": [
+      {
+        "name": "recall_user_memory",
+        "arguments": {
+          "query": "政策"
+        },
+        "result": "{\"success\": false, \"error\": \"记忆系统未启用\"}"
+      }
+    ]
+  }
+}

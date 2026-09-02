@@ -1,0 +1,69 @@
+{
+  "case_id": "kb_常见问题faq_9",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 14667,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 0.0,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "忘记密码怎么办 如何重置密码"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "密码找回 账户登录问题"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "账号安全 登录 密码"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 3,
+    "route": null,
+    "reply": "您好，抱歉让您久等了～\n\n关于「忘记密码」的处理方式，我这边检索了平台的帮助文档，暂时没有查到相关的具体说明，这部分内容需要进一步核实。\n\n考虑到这涉及账户安全问题，为了保障您的账户信息安全，建议您通过以下方式处理：\n\n1. **官方渠道操作**：在登录页面点击「忘记密码/找回密码」，按照页面提示通过绑定的手机号或邮箱进行验证重置（具体以页面实际显示为准）；\n2. **转人工客服**：如果您操作过程中遇到问题，或需要进一步协助，我可以为您**转接人工客服**处理，他们会帮您核实账户信息。\n\n请问您需要我帮您转接人工客服吗？或者还有其他问题我可以帮您解答？😊\n\n---\n\n**转人工标识**：`requires_human: true`（密码重置相关内容平台文档暂未覆盖，需人工进一步核实协助）",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

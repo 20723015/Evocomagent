@@ -1,0 +1,113 @@
+{
+  "protocol": "eval-v2",
+  "frozen": true,
+  "dataset": {
+    "path": "E:\\ea\\app\\evaluation\\cases_large.json",
+    "sha256": "c3a79fa14d331ab52b4d7a1cec46eeabe6e53a990b80d6fd2b04a7e0d70f073c",
+    "num_cases": 317
+  },
+  "git": {
+    "commit": "728585002323e266f543e1b4aa5a85a47ef934b6"
+  },
+  "prompts": {
+    "sha256": "e194f81caf6879c51c6baf5fb2eae58ebafedac261d4c043c2d9b649494f3755"
+  },
+  "model": {
+    "under_test": "DeepSeek-V4-Flash-0731",
+    "judge": "",
+    "use_judge": false,
+    "temperature": 0.7,
+    "max_tokens": 2048
+  },
+  "retrieval": {
+    "backend": "es",
+    "hybrid": false,
+    "hybrid_recall_k": 60,
+    "rerank": "none",
+    "rerank_model": "",
+    "embedding_model": "bge-m3",
+    "embedding_provider": "sophnet",
+    "embedding_endpoint": "https://www.sophnet.com/api/open-apis/projects/74tM3K15eJPqCtrzJcIms3/easyllms/embeddings",
+    "embedding_endpoint_sha256": "c9c53f58a0118fa5e69d36aa4f43164ba50ef4ac44b3a8b1c9a83e26520a2dee",
+    "rerank_endpoint": "http://127.0.0.1:8001",
+    "rerank_endpoint_sha256": "d412c05c8726a92259f446e3c79ffc81dfc27b2841cdf18a825c44fab8b71241",
+    "min_score": null
+  },
+  "guardrails": {
+    "enabled": true,
+    "retrieval_fence_enabled": true,
+    "citation_check_enabled": true,
+    "tool_call_guard_enabled": true
+  },
+  "threshold": {
+    "pass": 0.6
+  },
+  "execution": {
+    "mode": "single",
+    "use_judge": false,
+    "base_url": "https://www.sophnet.com/api/open-apis/v1",
+    "base_url_sha256": "c789a3f0c021b2246f04d5a0318a7f937d4ac44b580b136caeb31b6387a58c37"
+  },
+  "config": {
+    "dataset_path": "E:\\ea\\app\\evaluation\\cases_large.json",
+    "model": "DeepSeek-V4-Flash-0731",
+    "judge_model": "",
+    "mode": "single",
+    "use_judge": false,
+    "openai_base_url": "https://www.sophnet.com/api/open-apis/v1",
+    "openai_base_url_sha256": "c789a3f0c021b2246f04d5a0318a7f937d4ac44b580b136caeb31b6387a58c37",
+    "temperature": 0.7,
+    "llm_max_tokens": 2048,
+    "multi_agent_enabled": false,
+    "eval_pass_threshold": 0.6,
+    "rag": {
+      "backend": "es",
+      "embedding_model": "bge-m3",
+      "embedding_provider": "sophnet",
+      "embedding_endpoint": "https://www.sophnet.com/api/open-apis/projects/74tM3K15eJPqCtrzJcIms3/easyllms/embeddings",
+      "embedding_endpoint_sha256": "c9c53f58a0118fa5e69d36aa4f43164ba50ef4ac44b3a8b1c9a83e26520a2dee",
+      "hybrid": false,
+      "hybrid_recall_k": 60,
+      "rerank": "none",
+      "rerank_endpoint": "http://127.0.0.1:8001",
+      "rerank_endpoint_sha256": "d412c05c8726a92259f446e3c79ffc81dfc27b2841cdf18a825c44fab8b71241",
+      "rerank_model": "",
+      "min_relevance_score": null,
+      "kb_index_path": "app/sessions/kb_index.json",
+      "chroma_persist_dir": "app/sessions/chroma"
+    },
+    "guardrails": {
+      "enabled": true,
+      "block_terms": "",
+      "retrieval_fence_enabled": true,
+      "citation_check_enabled": true,
+      "business_only_scope": false
+    },
+    "tool_guard": {
+      "enabled": true,
+      "max_calls_per_name": 2,
+      "search_max_calls": 3
+    },
+    "authorization": {
+      "enforce_order_ownership": false,
+      "refund_confirmation_required": false
+    },
+    "commerce_backend": "mock",
+    "ab_arm": {
+      "hybrid": true,
+      "rerank": "bge-reranker-v2-m3",
+      "tool_guard_enabled": true,
+      "guardrails_enabled": true,
+      "min_score": 0.091220066,
+      "enforce_order_ownership": true
+    }
+  },
+  "runtime": {
+    "python": "3.12.2",
+    "deps_sha256": "31df2f407ef46e90887c67e331148e86c1a64662310752a049f0fff81ef78f36",
+    "rng_seed": ""
+  },
+  "config_hash": "9d355148a4fe2a2e167542cfe6302656916c5105a0363fef92a96e65c69734a1",
+  "run_id": "ab-fast-c5bfd0e-candidate-rules",
+  "arm": "candidate"
+}

@@ -1,0 +1,85 @@
+{
+  "case_id": "after_sale_5",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 14765,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": null,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "换货需要多久 处理时效"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "换货流程 多长时间"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "退换货政策 时效"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "七天无理由退换货"
+        },
+        "outcome": {}
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "退换货"
+        },
+        "outcome": {}
+      }
+    ],
+    "num_tool_calls": 5,
+    "route": null,
+    "reply": "抱歉让您久等了～我这边多次检索了退换货相关政策文档，目前**没有检索到关于换货具体办理时长的明确说明**，这个时效信息需要帮您进一步核实后才能答复，我不能凭空给您一个大概的时间，以免误导您。\n\n不过我可以先帮您确认一下换货订单的情况哦：\n- 如果您已经发起了换货申请，可以把**订单号**发给我，我帮您查询订单和物流的最新进度，看看目前进行到哪一步了～ 📦\n- 如果您还没申请换货，也可以告诉我**想换的商品和原因**，我可以帮您核实是否符合换货条件。\n\n另外，关于**具体的换货处理时长**，由于文档未覆盖这部分信息，建议您转接人工客服进一步确认，我会在这里帮您同步~ \n\n请问您这边是已经发起了换货，还是准备申请呢？😊",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

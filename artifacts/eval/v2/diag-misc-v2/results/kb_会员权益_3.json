@@ -1,0 +1,82 @@
+{
+  "case_id": "kb_会员权益_3",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 17640,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 0.0,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge",
+      "recall_user_memory"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "钻石会员有哪些权益特权",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "会员等级权益",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "钻石会员",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "recall_user_memory",
+        "arguments": {
+          "query": "会员"
+        },
+        "outcome": {
+          "success": false
+        }
+      }
+    ],
+    "num_tool_calls": 4,
+    "route": null,
+    "reply": "非常抱歉，我这边已经多次检索了会员权益的政策文档，但都没有找到关于「钻石会员特权」的详细说明，暂时无法给您准确答复。\n\n为了确保信息准确，这个问题需要转接人工客服帮您进一步核实，避免给您不完整或错误的信息。您可以直接联系在线人工客服，或者稍等片刻，会有客服专员为您解答。\n\n给您带来不便非常抱歉！另外，如果您有其他问题，比如**查询订单、物流进度、退换货或商品咨询**，都可以随时告诉我，我很乐意为您服务哦😊",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

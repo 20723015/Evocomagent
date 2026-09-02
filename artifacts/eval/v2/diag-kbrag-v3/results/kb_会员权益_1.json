@@ -1,0 +1,61 @@
+{
+  "case_id": "kb_会员权益_1",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 10896,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 0.0,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.5
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "会员等级有哪些",
+          "top_k": 3
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "会员权益 等级 钻石",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 2,
+    "route": null,
+    "reply": "您好，非常抱歉 😊 我这边检索了平台的政策与帮助文档，暂时没有查询到「会员等级」的详细说明，这部分信息目前文档还未覆盖。\n\n不过您别担心，我可以为您做两件事：\n\n1. **帮您转接人工客服**，由专业人员为您详细解答会员等级及对应权益；\n2. 如果您记得具体想了解的内容（比如某一等级专属权益、升级条件等），也可以告诉我，我再帮您进一步核实。\n\n请问您更倾向于哪种方式呢？或者您可以告诉我具体想了解哪方面的会员信息，我再帮您确认～",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

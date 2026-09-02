@@ -1,0 +1,1 @@
+{"case_id": "kb_常见问题faq_2", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确完整地列出了支持的支付方式，语气得体，直接解决了用户问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中关于支持/不支持支付方式及大额订单短信验证的信息均可在工具返回的知识库中找到依据，未出现编造或矛盾内容。"}, "process_soundness": {"score": 0.0, "reason": "过程评分解析失败: Expecting value: line 1 column 1 (char 0)"}}}

@@ -1,0 +1,1 @@
+{"case_id": "kb_退换货政策_8", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确完整地说明了仅退款的适用场景和流程，语气得体，直接解决了用户问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中关于仅退款适用场景、1-3个工作日退款时效等均可从工具返回的退换货政策中找到依据，未发现编造或矛盾的事实。"}, "process_soundness": {"score": 5.0, "reason": "针对用户关于退款政策的咨询，调用search_knowledge查询知识库是精准且必要的，无多余调用，顺序合理。"}}}

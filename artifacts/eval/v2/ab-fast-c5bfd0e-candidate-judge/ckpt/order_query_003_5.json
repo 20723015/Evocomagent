@@ -1,0 +1,1 @@
+{"case_id": "order_query_003_5", "passed_rule": false, "dims": {"answer_quality": {"score": 4.0, "reason": "客服准确告知用户查询不到指定订单并提供了另一笔订单信息，但未明确说明原订单号不存在，略有冗余。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的订单号、商品、金额、下单时间及状态均与list_user_orders返回的数据一致，未出现编造或矛盾信息。"}, "process_soundness": {"score": 3.0, "reason": "已调用相关工具，但list_user_orders多余，冗余调用影响效率。"}}}

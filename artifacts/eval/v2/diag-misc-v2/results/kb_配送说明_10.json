@@ -1,0 +1,70 @@
+{
+  "case_id": "kb_配送说明_10",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 15608,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 0.0,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "快递放在代收点多久不取会被退回"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "代收点 驿站 包裹 保管 退回 时效"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "包裹存放 未取 退回 几天",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 3,
+    "route": null,
+    "reply": "非常抱歉，我检索了平台的政策文档，暂时**没有查到**关于\"快递在代收点存放多久未取会被退回\"的具体时效说明，这类时效通常由快递公司/驿站自行制定，每个快递网点规定可能不一样，我不方便给您凭空估算一个天数，以免误导您。😅\n\n给您两个建议：\n1. **看物流详情**：如果您有具体订单，可以告诉我订单号，我帮您查一下当前的物流轨迹，看看包裹现在在哪里、驿站/快递方有没有发送存放提醒。\n2. **联系快递员/驿站**：以包裹实际收到的短信或取件通知里的提示为准，一般取件通知上都会写明保管天数，超过期限会有退回提醒。\n\n关于代收点具体的保管天数，属于快递网点规定，平台文档未覆盖，这部分我需要帮您转人工进一步核实确认，您看可以吗？另外，需要我帮您查一下具体某个订单的物流情况吗？😊",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

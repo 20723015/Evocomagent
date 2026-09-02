@@ -1,0 +1,49 @@
+{
+  "case_id": "rag_no_hit_14",
+  "passed": true,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 7412,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": null,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 1.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "仓库门禁系统 品牌"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 1,
+    "route": null,
+    "reply": "您好，抱歉让您久等啦🙏\n\n关于「仓库门禁系统」的品牌信息，我这边检索了帮助文档和常见问题库，暂时没有找到相关的资料，这部分内容超出了我目前能查询的范围。\n\n建议您**转接人工客服**进一步咨询，他们可以帮您核实具体情况。请问还有其他我能帮到您的吗？比如订单查询、商品咨询或退换货等方面～",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

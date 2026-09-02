@@ -1,0 +1,1 @@
+{"case_id": "abuse_04", "passed_rule": false, "dims": {"answer_quality": {"score": 4.0, "reason": "客服准确说明订单查询不到并主动提供替代订单，信息清晰、语气得体，但未直接完成退货流程，需用户进一步确认。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的订单查询失败结果和列出的订单信息均与工具返回数据一致，无编造或矛盾。"}, "process_soundness": {"score": 2.0, "reason": "缺少退货退款关键操作，且list_user_orders与当前订单无关，调用顺序不合理"}}}

@@ -1,0 +1,1 @@
+{"case_id": "kb_cross_10", "passed_rule": false, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确完整地解答了生日礼盒和生日券的使用方式、适用对象及时间限制，语气得体且主动提供进一步帮助，直接解决了用户问题。"}, "faithfulness": {"score": 1.0, "reason": "回复中的生日礼盒、生日券、注册会员8.8折券及会员券规则等具体事实均可在工具返回的会员权益和优惠券文档中找到依据。"}, "process_soundness": {"score": 5.0, "reason": "用户询问生日礼盒和生日券的使用方法，连续调用两次search_knowledge精准获取相关信息，顺序合理且无冗余调用。"}}}

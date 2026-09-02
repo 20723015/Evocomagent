@@ -1,0 +1,1 @@
+{"case_id": "edge_02", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "客服准确完整地说明了预售商品发货时间以详情页公示为准，并主动提供订单查询帮助，语气得体，直接解决了用户问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复关于预售商品发货时间的内容与工具返回的FAQ中‘预售商品按详情页公示发货时间为准’完全一致，未编造具体事实。"}, "process_soundness": {"score": 5.0, "reason": "用户询问预售发货时间，调用知识库查询是精准且必要的，顺序合理无多余调用。"}}}

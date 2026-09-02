@@ -1,0 +1,69 @@
+{
+  "case_id": "kb_cross_01",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 10303,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 0.0,
+    "requires_human_match": 0.0,
+    "citation_match": 0.0,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "钻石会员退换货运费"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "会员退货运费 权益"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "退换货运费谁承担"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 3,
+    "route": null,
+    "reply": "抱歉让您久等了～我检索了退换货政策和会员权益相关文档，目前系统里**没有找到**关于「钻石会员退换货运费是否减免」的明确说明。\n\n根据规定，我不能凭空推断政策细节。为了给您准确的答复，这个情况需要帮您核实后再答复，我建议您转接人工客服进一步确认，专员会为您查询最准确的会员权益细则。\n\n其他如退换货政策、配送时效等问题您都可以随时问我，我继续为您服务～😊",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

@@ -1,0 +1,1 @@
+{"case_id": "kb_配送说明_11", "passed_rule": false, "dims": {"answer_quality": {"score": 5.0, "reason": "客服准确查询物流轨迹，主动提供催单等解决方案，信息完整专业，语气得体，直接解决了用户问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的订单号、商品、金额、快递、运单号、预计送达时间和物流轨迹均与工具返回数据完全一致，无编造信息。"}, "process_soundness": {"score": 5.0, "reason": "工具选择精准，先加载技能、定位订单，再查询物流，顺序合理且无多余调用。"}}}

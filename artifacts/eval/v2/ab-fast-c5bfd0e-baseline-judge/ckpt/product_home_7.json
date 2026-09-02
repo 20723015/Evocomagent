@@ -1,0 +1,1 @@
+{"case_id": "product_home_7", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确完整，直接确认有货并给出关键信息，语气得体，有效解决了用户下单需求。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的库存、价格、颜色、续航、吸力及亮点均能在工具返回数据中找到依据，无编造或矛盾信息。"}, "process_soundness": {"score": 5.0, "reason": "用户询问特定商品是否有货，调用商品查询工具精准且必要，顺序合理无冗余。"}}}

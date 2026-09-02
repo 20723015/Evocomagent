@@ -1,0 +1,1 @@
+{"case_id": "citation_correct_5", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确、完整、专业，直接解决了用户关于质量问题退货运费规则的问题，且语气得体。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的质量问题退换货运费规则、时效、适用情形、举证材料及退款时效均与知识库返回内容一致，七天无理由运费规则也与工具返回相符，未发现编造或矛盾。"}, "process_soundness": {"score": 5.0, "reason": "用户询问质量问题退货运费规则，调用知识库搜索工具精准对路，顺序合理且无多余调用。"}}}

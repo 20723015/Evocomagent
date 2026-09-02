@@ -1,0 +1,59 @@
+{
+  "case_id": "kb_会员权益_2",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 10351,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 0.0,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.5
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "如何升级到黄金会员"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "会员等级 黄金会员 权益 升级条件"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 2,
+    "route": null,
+    "reply": "非常抱歉，让您久等了🙏\n\n我帮您检索了会员等级相关的政策文档，但目前**暂时没有查询到关于「黄金会员升级」的具体说明**。为了不误导您，这类信息我不能凭经验推断，需要更准确的官方政策依据。\n\n给您两个建议方案：\n\n1. **转接人工客服**：由专业人员帮您核实黄金会员的升级条件、规则和当前进度；\n2. **关注站内会员中心**：您也可以在 App 内「我的-会员中心」查看会员等级进度与升级提示，以页面实际显示为准。\n\n请问需要我帮您转接人工客服处理吗？😊",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

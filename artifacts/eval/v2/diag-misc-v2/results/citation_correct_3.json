@@ -1,0 +1,71 @@
+{
+  "case_id": "citation_correct_3",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 10748,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 1.0,
+    "requires_human_match": 1.0,
+    "citation_match": 0.0,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.6666666666666666
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "recall_user_memory",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "钻石会员有哪些权益",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "recall_user_memory",
+        "arguments": {
+          "query": "会员等级"
+        },
+        "outcome": {
+          "success": false
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "会员等级 权益 优惠",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 3,
+    "route": null,
+    "reply": "很抱歉，我检索了会员权益相关的帮助文档，目前没有找到「钻石会员」权益的详细说明，这部分内容暂时无法为您确认。\n\n这类权益信息需要以官方最新公示为准，为避免给您错误信息，建议您：\n\n1. **转接人工客服**：我可以为您转接人工客服，请专员帮您查询钻石会员的完整权益清单；\n2. **查看会员中心**：您也可以在 App「我的 → 会员中心」页面查看您的会员等级及对应权益详情，那里显示的信息是最准确的。\n\n请问您还需要我协助查询其他问题吗？比如订单、物流或退换货方面的，我都随时为您服务 😊",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

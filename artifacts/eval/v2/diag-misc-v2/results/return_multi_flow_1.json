@@ -1,0 +1,136 @@
+{
+  "case_id": "return_multi_flow_1",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 49267,
+    "token_pass": false,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": 1.0,
+    "keyword_coverage": 0.0,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.6666666666666666
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "load_skill",
+      "list_user_orders",
+      "query_order",
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge",
+      "apply_refund",
+      "list_user_orders"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "load_skill",
+        "arguments": {
+          "skill_name": "process-return"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "list_user_orders",
+        "arguments": {},
+        "outcome": {
+          "success": true,
+          "count": 1
+        }
+      },
+      {
+        "name": "query_order",
+        "arguments": {
+          "order_id": "ORD-20240115-001"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "已发货订单退货 拒收 七天无理由 运费承担"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "七天无理由退货政策 运费由谁承担"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "退换货政策"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "拒收 退款"
+        },
+        "outcome": {}
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "质量问题 退换货"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "apply_refund",
+        "arguments": {
+          "order_id": "ORD-20240115-001",
+          "reason": "商品质量问题：鞋子开胶"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "list_user_orders",
+        "arguments": {},
+        "outcome": {
+          "success": true,
+          "count": 1
+        }
+      }
+    ],
+    "num_tool_calls": 10,
+    "route": null,
+    "reply": "您的退款申请已经帮您提交过啦，无需重复申请哦～😊\n\n小夕帮您确认一下当前状态：\n\n📋 **订单与退款信息**\n- 订单号：ORD-20240115-001\n- 商品：Nike Air Max 270 运动鞋（899元）\n- 订单状态：已发货\n- 退款原因：商品质量问题（鞋子开胶）\n- 退款状态：**已提交，正在审核中**（预计1-3个工作日）\n\n请您耐心等待审核结果，审核通过后平台会通知您退货地址，您按指引寄回即可。如果包裹还没收到，也可以选择**拒收**，会更省事～\n\n请问还有什么需要帮忙的吗？",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

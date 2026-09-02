@@ -1,0 +1,1 @@
+{"case_id": "citation_forbid_4", "passed_rule": false, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确完整地说明了发票开具规则、类型和注意事项，语气亲切得体，并主动询问用户需求，直接解决了问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的发票类型、开具时间、抬头提交时限及合并开票规则均与工具返回的知识库内容一致，未发现编造或矛盾。"}, "process_soundness": {"score": 5.0, "reason": "工具选择精准，直接搜索知识库即可解答开票问题，无多余调用。"}}}

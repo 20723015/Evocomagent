@@ -1,0 +1,77 @@
+{
+  "case_id": "kb_退换货政策_13",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 10886,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 1.0,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.5
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "已激活的软件可以退货吗"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "软件类商品七天无理由退货"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "哪些商品不适用七天无理由退货"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "数字商品虚拟商品退货规则"
+        },
+        "outcome": {}
+      }
+    ],
+    "num_tool_calls": 4,
+    "route": null,
+    "reply": "抱歉让您久等了～关于「已激活的软件能否退货」这个情况，我这边检索了平台的政策与帮助文档，暂时没有找到针对软件/数字商品激活后退货的明确说明，因此我不能凭空给您答复😥。\n\n建议您先联系**人工客服**进一步确认这个问题，稍后请留意人工客服的接入。另外，如果您是就某个具体订单咨询退货，也可以把**订单号**发给我，我可以帮您先核实订单的信息～\n\n请问还有其他可以帮到您的吗？",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

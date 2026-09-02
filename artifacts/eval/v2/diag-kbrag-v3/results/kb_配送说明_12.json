@@ -1,0 +1,116 @@
+{
+  "case_id": "kb_配送说明_12",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 27430,
+    "token_pass": false,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 1.0,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.5
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "load_skill",
+      "list_user_orders",
+      "query_order",
+      "query_logistics",
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "load_skill",
+        "arguments": {
+          "skill_name": "track-order"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "list_user_orders",
+        "arguments": {},
+        "outcome": {
+          "success": true,
+          "count": 1
+        }
+      },
+      {
+        "name": "query_order",
+        "arguments": {
+          "order_id": "ORD-20240115-001"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "query_logistics",
+        "arguments": {
+          "order_id": "ORD-20240115-001"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "快递被错派给别人 物流异常处理"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "物流派送异常 未收到包裹 怎么办"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "已签收但未收到包裹"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "快递配送异常 联系客服"
+        },
+        "outcome": {}
+      }
+    ],
+    "num_tool_calls": 8,
+    "route": null,
+    "reply": "非常抱歉给您带来这样的困扰，我先帮您把订单和物流情况核实了一遍，情况如下：\n\n**订单信息**\n- 订单号：ORD-20240115-001\n- 商品：Nike Air Max 270 运动鞋（1双）\n- 金额：899.00 元\n- 快递：顺丰速运，运单号 SF1234567890\n\n**最新物流轨迹**\n- 01-16 14:20 深圳南山区 · 快件已揽收\n- 01-17 06:00 广州转运中心 · 已到达\n- 01-17 22:00 上海转运中心 · 已到达\n- 01-18 08:30 上海浦东区 · **正在派送中**\n- 预计送达：2024-01-19\n\n需要跟您说明的是，从系统里的物流记录看，这个包裹目前的状态是「**正在派送中**」，还没有显示签收记录。您提到的「被错派给别人」的情况我们会认真核实处理。\n\n关于「包裹被错派/错投」这类物流异常情况，我们平台的自助政策文档目前没有覆盖该场景的处理细则，为了尽快帮您解决，我需要把您的情况转接给**人工客服专员**进一步跟进核实（他们会联系快递公司核实派送情况，必要时为您定位寻件）。请您放心，我们会全程跟进，尽快给您答复。\n\n请问还有其他需要我协助的吗？",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

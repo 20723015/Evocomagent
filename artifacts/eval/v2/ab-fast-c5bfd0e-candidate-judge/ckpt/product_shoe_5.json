@@ -1,0 +1,1 @@
+{"case_id": "product_shoe_5", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "客服准确回答了价格899元，并补充了款式、库存等信息，语气得体，直接解决了用户问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的鞋名、价格、颜色尺码、材质、特点和库存均与工具返回的第一条商品数据一致，没有编造或矛盾。"}, "process_soundness": {"score": 5.0, "reason": "工具选择精准，query_product直接满足查询价格需求，顺序合理且无多余调用"}}}

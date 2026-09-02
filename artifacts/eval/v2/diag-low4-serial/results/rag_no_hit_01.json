@@ -1,0 +1,61 @@
+{
+  "case_id": "rag_no_hit_01",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 10036,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": null,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "价格保护险 价保",
+          "top_k": 3
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "降价 保价 价格保护",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 2,
+    "route": null,
+    "reply": "不好意思让您久等了～我帮您检索了一下平台的价格保护相关政策，目前**在帮助文档中没有查到关于「价格保护险」的明确规定**。\n\n由于这个问题涉及平台政策和保险条款，我需要帮您进一步核实后才能给您准确答复，无法现在就给您承诺或推测。\n\n您看是否需要我为您做以下安排呢？\n1. **转接人工客服**，由专门的人员帮您核实价格保护险的具体规则；\n2. **留下您的问题描述**（比如是在哪个商品上看到的价格保护险、想了解什么内容），我来帮您登记跟进；\n3. 如果您是想咨询**现有订单降价后能否申请差价补偿**，也可以把订单号告诉我，我先帮您查一下订单和相关的售后政策。\n\n您更倾向哪种方式呢？😊",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

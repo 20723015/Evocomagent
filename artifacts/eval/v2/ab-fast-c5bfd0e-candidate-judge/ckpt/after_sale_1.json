@@ -1,0 +1,1 @@
+{"case_id": "after_sale_1", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确完整地说明了保修期内维修流程、适用范围及注意事项，语气专业得体并主动询问订单号以进一步协助，直接解决了用户问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的维修流程、适用范围及报修路径均与工具返回的《售后维修与延保》和《常见问题FAQ》内容一致，未出现编造信息。"}, "process_soundness": {"score": 5.0, "reason": "工具选择精准，直接搜索知识库即可解答保修维修流程，顺序合理且无多余调用"}}}

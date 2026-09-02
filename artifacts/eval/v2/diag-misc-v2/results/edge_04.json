@@ -1,0 +1,70 @@
+{
+  "case_id": "edge_04",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 15562,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 1.0,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.5
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "recall_user_memory"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "青海西宁是否包邮 偏远地区配送邮费政策"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "偏远地区包邮 邮费规则 配送说明",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "recall_user_memory",
+        "arguments": {
+          "query": "青海 西宁 地区 收货"
+        },
+        "outcome": {
+          "success": false
+        }
+      }
+    ],
+    "num_tool_calls": 3,
+    "route": null,
+    "reply": "抱歉让您久等了！我已经为您多次检索了配送与邮费相关的政策文档，但目前文档中**没有明确覆盖「青海西宁」的包邮规定**。\n\n根据咱们平台的配送政策，不同地区（尤其偏远地区）的包邮情况可能会有所差异，具体是否包邮通常以下单时**结算页面显示的邮费为准**。\n\n由于文档未覆盖这一情况，我无法给您确切的答复，需要为您转接人工客服进一步核实，还请您谅解。请问还有其他可以帮您的吗？😊",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

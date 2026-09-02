@@ -1,0 +1,59 @@
+{
+  "case_id": "kb_配送说明_1",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 10355,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 0.0,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "满多少钱包邮 包邮政策"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "包邮 运费 免运费标准"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 2,
+    "route": null,
+    "reply": "抱歉让您久等了～我检索了官方政策文档，目前没有查询到关于「满多少钱包邮」的具体标准说明，这个信息我这边无法确认，不能随意给您一个数字。\n\n需要帮您转接人工客服进一步核实，或者您也可以关注商品详情页的运费说明（页面通常会标注是否包邮），以页面显示为准哦～\n\n请问还有其他可以帮您的吗？😊",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

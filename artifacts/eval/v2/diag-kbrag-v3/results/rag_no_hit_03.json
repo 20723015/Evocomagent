@@ -1,0 +1,49 @@
+{
+  "case_id": "rag_no_hit_03",
+  "passed": true,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 7296,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": null,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 1.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "优惠券可以转让给别人吗"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 1,
+    "route": null,
+    "reply": "抱歉让您久等啦～我刚刚检索了平台的政策文档，暂时**没有找到关于优惠券能否转让的明确说明**😥\n\n为了给您准确的答复，这种情况需要转接人工客服进一步核实处理。\n\n**建议您通过以下方式联系人工客服：**\n1. 在 App 内「我的-官方客服」入口发起在线咨询\n2. 拨打平台客服热线，提供您的账号信息以便快速定位\n\n您也可以留下想要转让的具体券种，我记录一下，方便后续帮您跟进～请问还有其他可以帮到您的吗？",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

@@ -1,0 +1,1 @@
+{"case_id": "complaint_11", "passed_rule": true, "dims": {"answer_quality": {"score": 4.0, "reason": "回复专业得体，准确核实订单并引导用户提供必要信息，但尚未直接解决退款问题，需进一步处理。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的订单信息（订单号、商品、金额、下单时间、已发货状态）均与工具返回一致，且未提及工具中不存在的退款处理记录，政策说明也来自知识库依据。"}, "process_soundness": {"score": 4.0, "reason": "工具选择基本合理，顺序符合先加载技能再查订单最后查知识，但search_knowledge略有冗余可优化"}}}

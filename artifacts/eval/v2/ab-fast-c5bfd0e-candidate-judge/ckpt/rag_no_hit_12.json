@@ -1,0 +1,1 @@
+{"case_id": "rag_no_hit_12", "passed_rule": false, "dims": {"answer_quality": {"score": 3.0, "reason": "客服诚实说明无法查询燃料信息并给出建议渠道，但未直接回答用户问题，属于部分解决。"}, "faithfulness": {"score": 1.0, "reason": "客服回复称未找到关于物流车辆燃料类型的信息，与工具返回的空结果一致，未编造具体事实。"}, "process_soundness": {"score": 4.0, "reason": "工具选择对路，但连续两次调用同一个知识检索工具略显冗余，一次检索通常即可解决问题。"}}}

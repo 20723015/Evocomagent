@@ -1,0 +1,59 @@
+{
+  "case_id": "edge_12",
+  "passed": false,
+  "process": {
+    "tool_accuracy": null,
+    "tool_efficiency": null,
+    "token_cost": 11537,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": null
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": null,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "客服上班时间 工作时间"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "客服服务时间"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 2,
+    "route": null,
+    "reply": "很抱歉，关于客服的具体上下班时间，我这边暂时未能查到准确的公开信息，需要帮您核实后答复。😊\n\n您的这个问题我无法直接确认，建议您：\n1. **转接人工客服**进一步确认具体的服务时间安排\n2. 关注平台页面上的在线客服入口，页面一般会显示当前是否在线服务\n\n请问还有其他可以帮您的吗？",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

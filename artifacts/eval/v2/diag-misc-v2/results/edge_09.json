@@ -1,0 +1,79 @@
+{
+  "case_id": "edge_09",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 17961,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": null,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "退款金额上限是多少"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "退款 金额 上限 限额",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "退款到账时间 退换货政策"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "退款上限 退款金额 限额 每次退款",
+          "top_k": 5
+        },
+        "outcome": {}
+      }
+    ],
+    "num_tool_calls": 4,
+    "route": null,
+    "reply": "抱歉，我再次尝试检索后，帮助文档中依然没有关于「退款金额上限」的规定信息。\n\n根据我的处理原则，对于文档未覆盖、无法确认的内容，我不会凭空推断。**「退款金额上限」这一政策细节需要转人工客服为您进一步核实**，人工客服可以给您准确的答复。\n\n在转人工之前，如果您方便告诉我具体是哪个订单，我可以先帮您查询订单金额和当前状态，辅助您了解该订单可退款的实际情况。\n\n请问需要我帮您查询吗？或者还有其他问题可以帮您？🙂\n\n（人工客服为您核实退款金额上限相关政策，请您稍候转接。）",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

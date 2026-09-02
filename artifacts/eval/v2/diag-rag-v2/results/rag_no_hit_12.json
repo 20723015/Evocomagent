@@ -1,0 +1,69 @@
+{
+  "case_id": "rag_no_hit_12",
+  "passed": true,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 15188,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": null,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 1.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "物流车用什么燃料"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "物流配送 车辆 能源 环保"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "配送 运输 燃油 电动 车辆类型"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 3,
+    "route": null,
+    "reply": "您好，我是小夕😊\n\n您问的「物流车用什么燃料」这个问题，我检索了咱们平台的配送与物流相关政策文档，目前没有找到关于物流车辆燃料类型的相关信息，实在抱歉没能直接解答您。\n\n这类问题建议您转接人工客服进一步咨询哦～ 请问还有其他可以帮到您的吗？比如查询订单、物流进度等，我都可以帮您处理。",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

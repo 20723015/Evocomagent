@@ -1,0 +1,1 @@
+{"case_id": "edge_04", "passed_rule": true, "dims": {"answer_quality": {"score": 3.0, "reason": "回复详细说明了运费规则，但未直接给出青海西宁是否包邮的明确答案，需用户自行查询，部分解决问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的运费规则、偏远地区说明和会员特权均来自工具返回的配送说明，未编造具体事实，且对青海西宁是否加收的不确定性表述合理。"}, "process_soundness": {"score": 5.0, "reason": "工具选择精准，调用知识库查询包邮政策，符合用户问题，无多余调用。"}}}

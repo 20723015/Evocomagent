@@ -1,0 +1,1 @@
+{"case_id": "product_home_7", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确告知有货和价格，直接解决了下单咨询，且语气得体、信息完整专业。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的商品名称、颜色、价格、库存状态、续航、吸力及核心卖点均与工具返回的query_product数据一致，未出现编造或矛盾信息。"}, "process_soundness": {"score": 4.0, "reason": "基本合理，但recall_user_memory对查询库存非必要，略有冗余"}}}

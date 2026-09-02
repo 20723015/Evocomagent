@@ -1,0 +1,37 @@
+{
+  "case_id": "citation_zero_1",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 0.0,
+    "tool_efficiency": null,
+    "token_cost": 4173,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 0.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 0.0,
+    "requires_human_match": 0.0,
+    "citation_match": 0.0,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [],
+    "tool_outcomes": [],
+    "num_tool_calls": 0,
+    "route": null,
+    "reply": "您好呀，我是客服小夕😊 您说的「这个政策」是指哪方面的呢？为了给您准确的答复，麻烦您再说明一下～\n\n比如：\n- **退换货**相关的（七天无理由、质量问题退换等）\n- **配送**相关的（发货时效、偏远地区、配送范围等）\n- **会员权益**相关的（钻石/铂金会员有什么特权等）\n- 或者其他您关心的规则\n\n您把具体想问的点告诉我，我马上帮您核实！",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

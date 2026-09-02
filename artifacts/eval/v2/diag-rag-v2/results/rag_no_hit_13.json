@@ -1,0 +1,69 @@
+{
+  "case_id": "rag_no_hit_13",
+  "passed": true,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 10424,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": null,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 1.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "发票 国外公司 境外 开票"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "发票开具规则 企业发票 开票对象"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "发票"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 3,
+    "route": null,
+    "reply": "抱歉让您久等了🙏 关于「开发票给国外公司」这个问题，我检索了平台现有的发票政策文档，**没有找到相关的明确规定**。\n\n按照平台规则，这类涉及境外主体开票的情况比较复杂，我这边无法直接给您确认答复，需要转接人工客服帮您进一步核实处理。\n\n建议您转人工后，可以提前准备好以下信息，方便客服快速帮您办理：\n- 订单号或企业采购信息\n- 开票抬头（国外公司名称及税号等资料）\n\n我这就为您转接人工客服协助处理，您看可以吗？",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

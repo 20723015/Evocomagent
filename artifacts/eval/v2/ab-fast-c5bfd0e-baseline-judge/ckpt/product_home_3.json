@@ -1,0 +1,1 @@
+{"case_id": "product_home_3", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确完整地提供了戴森V15 Detect吸尘器的核心配置和价格，语气得体，直接解决了用户问题。"}, "faithfulness": {"score": 1.0, "reason": "回复中的价格、库存、颜色、续航、吸力及核心配置均与工具返回数据一致，无编造或矛盾。"}, "process_soundness": {"score": 5.0, "reason": "直接调用query_product查询产品配置，工具选择精准且无多余调用。"}}}

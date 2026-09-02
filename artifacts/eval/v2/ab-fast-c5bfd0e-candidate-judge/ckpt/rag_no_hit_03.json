@@ -1,0 +1,1 @@
+{"case_id": "rag_no_hit_03", "passed_rule": false, "dims": {"answer_quality": {"score": 3.0, "reason": "客服未直接回答能否转让，但如实说明文档未明确并提供核实渠道，属于部分解决问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的券类型、叠加规则、有效期均可在工具返回的知识库文档中找到依据，关于转让未明确说明也与空结果一致。"}, "process_soundness": {"score": 3.0, "reason": "重复调用两次相同的知识搜索工具，存在冗余调用，但能解决问题"}}}

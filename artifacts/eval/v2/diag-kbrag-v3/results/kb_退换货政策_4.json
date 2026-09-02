@@ -1,0 +1,59 @@
+{
+  "case_id": "kb_退换货政策_4",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 10597,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 0.0,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "七天无理由退货 运费谁出"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "七天无理由退换货政策"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 2,
+    "route": null,
+    "reply": "非常抱歉给您添麻烦了～我刚才检索了平台的相关政策文档，暂时没有查到关于「七天无理由退货运费承担」的明确规定，这个细节我需要帮您进一步核实后才能给您准确答复。\n\n由于该政策细节在现有文档中未覆盖，建议您通过以下方式处理：\n\n1. **转接人工客服**：您在订单页面点击「联系客服」，选择人工，会有专员为您核实退货运费的具体规则；\n2. **查看订单页面**：实际退货运费情况通常会以您订单页面的退货详情显示为准，您也可以在下单商品详情页查看退换货说明。\n\n给您带来不便实在抱歉，这个情况我这边确实需要人工进一步确认后才能给您确切答复，还请您理解🙏",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

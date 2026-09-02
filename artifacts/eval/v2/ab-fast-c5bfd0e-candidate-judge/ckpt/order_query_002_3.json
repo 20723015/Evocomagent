@@ -1,0 +1,1 @@
+{"case_id": "order_query_002_3", "passed_rule": false, "dims": {"answer_quality": {"score": 5.0, "reason": "客服准确指出订单不存在，并提供替代订单帮助用户，信息完整、语气得体，直接解决了问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的订单列表与list_user_orders返回一致，且指出ORD-20240120-002无权访问与query_order返回相符，无编造事实。"}, "process_soundness": {"score": 3.0, "reason": "存在多余调用（load_skill、list_user_orders），但核心查询顺序合理，能解决问题。"}}}

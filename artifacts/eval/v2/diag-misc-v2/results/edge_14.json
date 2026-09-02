@@ -1,0 +1,69 @@
+{
+  "case_id": "edge_14",
+  "passed": true,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 14927,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": null,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 1.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "吸尘器需要上门安装吗"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "吸尘器 安装"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "商品安装服务 上门安装"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 3,
+    "route": null,
+    "reply": "您好，我是客服小夕😊 关于「吸尘器是否需要上门安装」这个问题，我检索了咱们的知识库，但暂时没有查到相关安装政策的明确说明，这方面信息目前文档未覆盖，我无法给您一个确切的答复。\n\n建议您提供一下具体想购买的吸尘器型号或订单号，我可以帮您进一步核实；同时也可以转接人工客服为您确认该商品的安装方式。\n\n您看需要我帮您做以下哪一项呢？\n1. **查询具体订单**：如果您已下单，告诉我订单号，我帮您查订单详情；\n2. **转人工核实**：为您转接人工客服确认该商品的安装服务安排。\n\n请问您更倾向哪种方式呢？",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

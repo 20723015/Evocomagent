@@ -1,0 +1,1 @@
+{"case_id": "complaint_5", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确完整，专业地说明了假货赔付规则和鉴定渠道，语气得体并主动请求订单号协助核实，直接解决了用户疑虑。"}, "faithfulness": {"score": 1.0, "reason": "回复中关于假货赔付、举报渠道等具体政策均能在工具返回的知识库中找到依据，未编造订单或商品等具体事实。"}, "process_soundness": {"score": 5.0, "reason": "用户质疑商品真伪，客服调用知识库查询相关信息以回应，工具选择精准且无多余调用。"}}}

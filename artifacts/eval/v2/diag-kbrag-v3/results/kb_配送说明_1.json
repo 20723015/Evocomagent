@@ -1,0 +1,69 @@
+{
+  "case_id": "kb_配送说明_1",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 14702,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 0.0,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.5
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "满多少钱包邮 包邮条件"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "包邮政策 运费说明"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "配送说明 运费 邮费"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 3,
+    "route": null,
+    "reply": "非常抱歉，关于「满多少金额包邮」的具体规则，我这边暂时没有检索到相关的政策文档，无法为您提供准确的门槛金额。\n\n这类运费政策通常与具体商品、店铺及活动有关，建议您这样处理：\n\n1. **下单页面确认**：在商品详情页或结算页面，系统会明确显示该商品是否包邮及包邮条件，以页面提示为准；\n2. **联系商家客服**：不同商家的包邮门槛可能不同，直接咨询对应店铺会更准确；\n3. **转接人工客服**：如需了解平台统一的运费政策，我可以帮您转接人工客服进一步核实。\n\n您也可以告诉我您感兴趣的商品，我帮您查询该商品的具体信息~ 😊",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

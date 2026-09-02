@@ -1,0 +1,59 @@
+{
+  "case_id": "rag_no_hit_03",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 9844,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": null,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "优惠券可以转让给别人吗"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "优惠券使用规则 转让"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 2,
+    "route": null,
+    "reply": "您好，抱歉让您久等了～我查询了平台的优惠券相关文档，目前**暂未检索到关于「优惠券转让」的明确规则说明**🤔\n\n为避免给您不准确的信息，建议您可以：\n\n1. **查看优惠券详情页**：每张优惠券通常会在券面或「我的-卡券包」中注明使用说明，是否可转让、适用范围等以券面实际标注为准；\n2. **联系人工客服**核实：如果您的情况比较特殊（如企业团购券、活动赠券等），可以转接人工客服做进一步确认。\n\n请问还有什么可以帮到您的吗？比如帮您查订单、看商品或者了解其他优惠活动，我都可以为您服务😊",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

@@ -1,0 +1,1 @@
+{"case_id": "rag_no_hit_14", "passed_rule": false, "dims": {"answer_quality": {"score": 3.0, "reason": "客服未能直接回答仓库门禁系统品牌，但态度得体并提供了其他协助途径，属于部分解决问题。"}, "faithfulness": {"score": null, "reason": "无工具观测（话术性回复），忠实度核对不适用"}, "process_soundness": {"score": 2.0, "reason": "正常业务问题询问产品品牌，该调用知识库或查询工具而未调用，属于缺失关键调用。"}}}

@@ -1,0 +1,77 @@
+{
+  "case_id": "edge_01",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 10947,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 1.0,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.5
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "定制商品刻字商品七天无理由退货政策"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "刻字个性化定制商品能否退货"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "七天无理由退货不适用商品范围"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "定制类商品退换货政策"
+        },
+        "outcome": {}
+      }
+    ],
+    "num_tool_calls": 4,
+    "route": null,
+    "reply": "您好，抱歉让您久等了。我帮您认真检索了《退换货政策》等相关帮助文档，不过目前知识库中**暂时没有检索到关于\"刻字/定制类商品是否适用七天无理由退货\"的明确条款**😥\n\n根据平台的规定，我不能凭空推断或编造政策，所以想向您说明：\n\n1. 刻字杯子属于**个性化定制商品**，能否七天无理由退货，需要以订单页面的实际售后规则和平台核实结果为准；\n2. 如果您已经收到了商品，可以在订单详情页查看\"申请售后\"处显示的退换资格说明；\n3. 为了给您准确答复，**建议转人工客服进一步核实**您这笔订单的具体情况。\n\n您方便提供一下订单号吗？我可以先帮您查询订单当前的状态和售后入口信息，同时为您转接人工做进一步确认～",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

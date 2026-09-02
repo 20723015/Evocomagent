@@ -1,0 +1,1 @@
+{"case_id": "return_pinned_1", "passed_rule": true, "dims": {"answer_quality": {"score": 3.0, "reason": "客服未直接处理退款，但解释了无权访问的原因并提供了核对和转人工的建议，部分解决问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中提到的无权访问订单与工具返回的 query_order 错误信息一致，未编造其他具体事实。"}, "process_soundness": {"score": 0.0, "reason": "过程评分解析失败: Extra data: line 1 column 50 (char 49)"}}}

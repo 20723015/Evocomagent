@@ -1,0 +1,1 @@
+{"case_id": "rag_no_hit_15", "passed_rule": false, "dims": {"answer_quality": {"score": 4.0, "reason": "回复准确专业、语气得体，但未直接回答能否实现，而是引导用户提供商品信息以进一步确认。"}, "faithfulness": {"score": 1.0, "reason": "客服回复仅概括知识库中定制范围，未涉及订单/价格等具体事实，且未凭空虚构，依据充分。"}, "process_soundness": {"score": 5.0, "reason": "工具选择精准（召回用户记忆与搜索知识库），顺序合理，无多余调用，能有效解决用户关于商品口味的咨询。"}}}

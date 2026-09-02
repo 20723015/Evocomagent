@@ -1,0 +1,1 @@
+{"case_id": "rag_no_hit_14", "passed_rule": false, "dims": {"answer_quality": {"score": 3.0, "reason": "客服礼貌说明无法查询并引导其他服务，但未直接回答用户关于门禁系统品牌的问题，部分满足需求。"}, "faithfulness": {"score": null, "reason": "无工具观测（话术性回复），忠实度核对不适用"}, "process_soundness": {"score": 2.0, "reason": "正常业务询问门禁系统品牌，未调用任何工具查询，缺失关键调用。"}}}

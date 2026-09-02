@@ -1,0 +1,69 @@
+{
+  "case_id": "kb_常见问题faq_6",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 10656,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 0.0,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "商品缺货了怎么办"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "缺货 无法发货 处理"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "无货 订单 取消 补偿"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 3,
+    "route": null,
+    "reply": "非常抱歉给您带来不便 💛 我已经帮您检索了相关处理政策，但目前知识库中没有查到关于「商品缺货」的具体处理说明。\n\n为了给您更准确的答复，想先跟您确认一下：\n\n1. 您提到的缺货，是指**下单后商家迟迟未发货**，还是**想购买的商品显示无货无法下单**？\n2. 如果是已下单的订单，能否提供一下**订单号**？我可以帮您查询订单当前的状态。\n\n由于「缺货/无货」的具体处理方案（如是否支持取消、补偿等）文档未覆盖，需要进一步核实，我会为您转接人工客服做详细确认，请您稍等～\n\n请问还有其他可以帮您的吗？😊",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

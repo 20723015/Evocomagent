@@ -1,0 +1,69 @@
+{
+  "case_id": "edge_02",
+  "passed": true,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 10522,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 1.0,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 1.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "预售商品什么时候发货"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "预售发货时间"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "预售规则 发货时效"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 3,
+    "route": null,
+    "reply": "您好，抱歉让您久等了😊。我查了一下平台的帮助文档，目前**没有检索到关于\"预售商品发货时间\"的具体政策说明**，这类信息我无法凭空给您一个确定的天数或日期，以免误导您。\n\n您提到的预售商品发货时间，可能和具体商品页面标注的\"预售发货时间\"有关（通常在商品详情页会有显示）。不过这部分我这边暂时无法核实，需要进一步确认：\n\n1. **建议您先看一下对应商品详情页**是否标注了预计发货时间；\n2. 如果您能提供**具体订单号**，我也可以帮您查询订单的发货安排；\n3. 若您需要更准确的预售发货政策，我可以为您**转接人工客服**进一步核实。\n\n请问您方便提供一下订单号吗？或者您更希望我帮您转人工处理呢？",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

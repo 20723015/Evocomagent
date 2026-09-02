@@ -1,0 +1,6 @@
+# 阶段二 2.6：K8s 部署物
+apiVersion: v2
+name: ecom-agent
+description: 电商客服 Agent（小夕）—— 多实例生产部署
+version: 0.2.0
+appVersion: "0.2.0"

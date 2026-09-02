@@ -1,0 +1,72 @@
+{
+  "case_id": "rag_no_hit_08",
+  "passed": true,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 14419,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": null,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 1.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "明星直播带货",
+          "top_k": 3
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "直播 商家合作 达人",
+          "top_k": 3
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "主播带货合作申请",
+          "top_k": 3
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 3,
+    "route": null,
+    "reply": "实在抱歉，我再次确认了一下，平台目前的政策文档中**确实没有覆盖「明星/主播直播带货合作」的相关内容**，这类商务资源对接需要由专职工作人员处理。\n\n您的问题我会为您**转接人工客服**进一步跟进，人工客服可以帮您：\n- 对接平台直播合作、达人/明星资源的具体流程\n- 了解合作门槛、档期安排等详细信息\n\n由于该问题超出了我这边文档覆盖的范围，还请您稍后在对话中接入人工服务，或者通过商家后台的商务合作入口提交意向，工作人员会尽快联系您～\n\n请问还有其他可以帮您的吗？",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

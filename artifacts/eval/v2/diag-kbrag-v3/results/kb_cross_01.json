@@ -1,0 +1,81 @@
+{
+  "case_id": "kb_cross_01",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 11601,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 0.0,
+    "requires_human_match": 1.0,
+    "citation_match": 0.0,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.3333333333333333
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "钻石会员退换货运费",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "会员退换货运费减免",
+          "top_k": 3
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "退换货运费谁承担",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "钻石会员权益",
+          "top_k": 5
+        },
+        "outcome": {}
+      }
+    ],
+    "num_tool_calls": 4,
+    "route": null,
+    "reply": "抱歉让您久等了，我查询了一下咱们平台的知识库，目前**没有检索到关于\"钻石会员退换货运费\"的具体政策条文**。为了不给您提供不准确的信息，这个细节我需要帮您进一步核实后才能答复。\n\n📌 给您两个建议：\n\n1. **我立即为您转接人工客服**，由专人核实钻石会员在退换货时运费的具体承担规则；\n2. 您也可以稍后留意**订单详情页的退换货说明区**，实际是否免运费通常以页面展示为准。\n\n请问您需要我帮您转接人工客服核实吗？或者您还有其他问题，比如查询具体订单的退换货情况，我也可以先帮您看看～",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

@@ -1,0 +1,1 @@
+{"case_id": "order_query_005_4", "passed_rule": false, "dims": {"answer_quality": {"score": 3.0, "reason": "客服未能查询到用户所指订单，虽然提供了另一笔订单并请用户确认，但未直接解决查询进度的问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的订单号、商品、金额、状态、下单时间均与工具返回一致，未出现编造或矛盾信息。"}, "process_soundness": {"score": 4.0, "reason": "工具选择基本对路，但先调用query_order已能查询指定订单，后续又调用list_user_orders略显冗余，可优化。"}}}

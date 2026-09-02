@@ -1,0 +1,1 @@
+{"case_id": "kb_会员权益_9", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确直接解答用户疑问，说明退款会扣减升级金额，并补充相关结算规则，信息完整且语气得体。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的退款扣减升级金额、自动结算等内容均与知识库《会员权益》中的问答一致，未出现无依据事实。"}, "process_soundness": {"score": 4.0, "reason": "工具选择正确，但两次search_knowledge可优化为一次综合检索，略有冗余。"}}}

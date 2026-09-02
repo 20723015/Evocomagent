@@ -1,0 +1,1 @@
+{"case_id": "product_phone_6", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确给出小米14 Ultra价格5999，信息完整专业，语气得体，直接解决用户问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的价格、颜色、配置、屏幕、卖点和库存均与工具返回数据一致，无编造或矛盾。"}, "process_soundness": {"score": 5.0, "reason": "用户询问手机价格，调用query_product工具精准且必要，顺序合理，无多余或缺失调用。"}}}

@@ -1,0 +1,81 @@
+{
+  "case_id": "rag_no_hit_02",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 17024,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": null,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "运费险怎么买 购买运费险 退货运费险",
+          "top_k": 3
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "运费险 退货运费险 保障",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "退货 运费 谁承担",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "运费险",
+          "top_k": 5
+        },
+        "outcome": {}
+      }
+    ],
+    "num_tool_calls": 4,
+    "route": null,
+    "reply": "您好，我是客服小夕～您问的「运费险怎么买」，我帮您检索了平台的帮助文档，但目前**没有检索到关于运费险购买方式的具体说明**，所以不敢贸然给您答复，以免误导您。\n\n建议您通过以下方式确认：\n1. **下单页查看**：在下单结算时留意页面是否有「运费险」勾选项（以实际页面显示为准）\n2. **订单详情页**：部分订单的退换货保障里可能会展示相关说明\n3. 如果您需要更准确的答复，我可以帮您**转接人工客服**进一步核实\n\n您也可以告诉我具体是哪笔订单，我帮您查查订单详情，看看有没有相关的保障信息～😊",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

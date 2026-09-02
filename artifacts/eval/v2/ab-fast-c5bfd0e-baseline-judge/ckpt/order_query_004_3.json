@@ -1,0 +1,1 @@
+{"case_id": "order_query_004_3", "passed_rule": false, "dims": {"answer_quality": {"score": 3.0, "reason": "客服未能直接查询用户指定的订单，而是提供了另一订单的物流信息，未完全解决用户问题。"}, "faithfulness": {"score": 1.0, "reason": "回复中的订单、商品、金额、物流轨迹均与工具返回数据一致，未出现编造或矛盾信息。"}, "process_soundness": {"score": 3.0, "reason": "能通过查询物流解决用户问题，但list_user_orders是多余调用，且先查询订单再列出所有订单顺序欠佳。"}}}

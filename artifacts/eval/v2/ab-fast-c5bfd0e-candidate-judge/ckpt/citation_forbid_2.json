@@ -1,0 +1,1 @@
+{"case_id": "citation_forbid_2", "passed_rule": false, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确完整地提供了积分使用规则，覆盖获取、使用、有效期，并区分游戏化积分，语气得体，直接解决问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的积分获取、使用、有效期及游戏化积分规则均与工具返回的《会员权益》和《砍价与游戏玩法规则》内容一致，无编造或矛盾。"}, "process_soundness": {"score": 5.0, "reason": "用户咨询积分使用规则，调用知识库搜索工具精准且必要，无多余或缺失调用。"}}}

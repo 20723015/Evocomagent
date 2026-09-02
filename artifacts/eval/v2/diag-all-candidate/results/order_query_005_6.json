@@ -1,0 +1,90 @@
+{
+  "case_id": "order_query_005_6",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 11879,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": 1.0,
+    "keyword_coverage": 0.0,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.6666666666666666
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "load_skill",
+      "query_order",
+      "list_user_orders"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "load_skill",
+        "arguments": {
+          "skill_name": "track-order"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "query_order",
+        "arguments": {
+          "order_id": "ORD-20240122-005"
+        },
+        "outcome": {
+          "success": false,
+          "code": "ORDER_ACCESS_DENIED"
+        }
+      },
+      {
+        "name": "list_user_orders",
+        "arguments": {},
+        "outcome": {
+          "success": true,
+          "count": 1
+        }
+      }
+    ],
+    "num_tool_calls": 3,
+    "route": null,
+    "reply": "我帮您核实了一下，情况是这样的：\n\n**关于订单 ORD-20240122-005**：系统提示该订单无法访问，可能不属于当前登录的账号，建议您确认一下是否用错账号登录，或者订单号是否有误。\n\n**您当前账号下的订单**只有这一笔：\n\n| 订单号 | 商品 | 金额 | 状态 |\n|--------|------|------|------|\n| ORD-20240115-001 | Nike Air Max 270 运动鞋 | ¥899.00 | 已发货 |\n\n请问您是要查询这笔 **ORD-20240115-001** 的订单和物流情况吗？还是需要我协助处理其他问题？😊",
+    "retrieved_sources": [],
+    "error": null,
+    "tool_outputs": [
+      {
+        "name": "load_skill",
+        "arguments": {
+          "skill_name": "track-order"
+        },
+        "result": "{\"success\": true, \"skill_name\": \"track-order\", \"instructions\": \"## 订单跟踪流程\\n\\n当用户想了解订单状态或物流进度时，按以下流程提供完整信息。\\n\\n### 第一步：确定目标订单\\n\\n- 如果用户提供了订单号，直接进入第二步\\n- 如果用户没提供订单号，调用 `list_user_orders` 列出订单列表，让用户确认要查哪个\\n\\n### 第二步：查询订单详情\\n\\n调用 `query_order` 获取订单信息，向用户报告：\\n- 订单内的商品和金额\\n- 当前订单状态\\n\\n根据状态给出不同的后续处理：\\n\\n- **pending（待发货）**：告知用户订单正在处理，尚未发货。如果用户着急，可以建议联系客服催发货\\n- **shipped（已发货）**：进入第三步查物流\\n- **delivered（已签收）**：告知签收时间和签收地点\\n- **refund_processing（退款中）**：告知退款进度\\n\\n### 第三步：查询物流轨迹（仅已发货/已签收订单）\\n\\n调用 `query_logistics` 获取物流信息，向用户报告：\\n- 承运快递公司和运单号\\n- 最新的物流状态\\n- 完整的物流轨迹（按时间顺序列出最近 3-5 条事件）\\n- 预计送达时间\\n\\n### 第四步：根据情况给出建议\\n\\n- **正常配送中**：告知预计到达时间，请用户耐心等待\\n- **物流停滞**（超过 3 天无更新）：建议用户可以申请\\\"物流催单\\\"，或联系客服跟进\\n- **已签收但用户说没收到**：建议检查代收点（菜鸟驿站/丰巢），或联系客服申请定位寻件\\n- **预计延迟**：如果是偏远地区，调用 `search_knowledge` 检索配送说明，告知该地区的配送时效\\n\\n### 注意事项\\n\\n- 一次性给出完整信息，不要让用户追问才给物流详情\\n- 如果订单包含多件商品，说明是否分包发货\\n- 如果用户对配送时效有疑问，调用 `search_knowledge` 检索配送说明\"}"
+      },
+      {
+        "name": "query_order",
+        "arguments": {
+          "order_id": "ORD-20240122-005"
+        },
+        "result": "{\"success\": false, \"error\": \"无权访问该订单（不属于当前用户）\", \"code\": \"ORDER_ACCESS_DENIED\"}"
+      },
+      {
+        "name": "list_user_orders",
+        "arguments": {},
+        "result": "{\"success\": true, \"count\": 1, \"orders\": [{\"order_id\": \"ORD-20240115-001\", \"status\": \"已发货\", \"items_summary\": \"Nike Air Max 270 运动鞋\", \"total\": 899.0, \"created_at\": \"2024-01-15 10:30:00\"}]}"
+      }
+    ]
+  }
+}

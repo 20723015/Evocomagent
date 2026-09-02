@@ -1,0 +1,61 @@
+{
+  "case_id": "citation_correct_7",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 10632,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 1.0,
+    "requires_human_match": 1.0,
+    "citation_match": 0.0,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.6666666666666666
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "会员生日福利 生日权益 优惠券",
+          "top_k": 3
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "生日特权",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 2,
+    "route": null,
+    "reply": "抱歉让您久等了～我检索了会员权益相关的帮助文档，目前**没有查到「会员生日福利」相关的政策内容**。\n\n为了不给您提供不准确的信息，这个情况我需要帮您进一步核实。建议您：\n\n1. **转接人工客服**：由工作人员为您查询您账户下的具体生日权益是否享有；\n2. **关注平台消息**：如果后续有生日专属优惠，通常会通过站内消息/短信通知，您也可以留意一下账户内的优惠券中心。\n\n很抱歉暂时没能直接帮您查到具体福利，请问还需要我帮您处理其他问题吗？比如查询订单或了解会员其他权益～",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

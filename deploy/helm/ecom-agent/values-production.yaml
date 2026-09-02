@@ -1,0 +1,103 @@
+# 4.1 生产覆盖（helm install -f values-production.yaml）
+# 全部生产默认：ES 检索 + hybrid + reranker、Redis 必需、鉴权/归属/退款确认/
+# OPS RBAC 全开、对象存储分片与原件、自进化关闭（人工审核）。
+
+replicaCount: 3
+
+image:
+  repository: registry.example.com/ecom-agent
+  tag: "0.2.0"
+  pullPolicy: IfNotPresent
+
+env:
+  # ---- 被测模型（真实评测走外部配置）----
+  MODEL_NAME: DeepSeek-V4-Flash-0731
+  MEMORY_ENABLED: "true"
+  # ---- 检索：ES hybrid + bge-reranker ----
+  RAG_BACKEND: es
+  RAG_HYBRID: "true"
+  RAG_HYBRID_RECALL_K: "60"
+  RAG_RERANK: bge-reranker-v2-m3
+  # Calibrated for this ES hybrid + bge-reranker configuration. Re-run retrieval
+  # calibration whenever the embedding/reranker/model stack changes.
+  RAG_MIN_RELEVANCE_SCORE: "0.04185213"
+  RERANK_ENDPOINT_URL: "http://reranker:8080/rerank"
+  ES_URL: "http://elasticsearch:9200"
+  # ---- shared writable state (Deployment + evolution CronJob) ----
+  # The image runs as appuser and its /app tree is root-owned/read-only at runtime.
+  # Keep every mutable or cross-pod path on the RWX PVC.
+  KB_DIR: /kb-shared/kb
+  SESSION_PATH: /kb-shared/sessions/session.json
+  SESSION_DIR: /kb-shared/sessions
+  MEMORY_DIR: /kb-shared/memory
+  KB_INDEX_PATH: /kb-shared/kb_index.json
+  CHROMA_PERSIST_DIR: /kb-shared/chroma
+  KB_GENERATION_PATH: /kb-shared/kb_generations.json
+  KB_UPLOAD_TMP_DIR: /kb-shared/uploads
+  KB_UPLOAD_ORIGINAL_DIR: /kb-shared/originals
+  KB_UPLOAD_STAGING_DIR: /kb-shared/kb/.staging
+  KB_UPLOADS_DIR: /kb-shared/kb/uploads
+  KB_UPLOAD_TRASH_DIR: /kb-shared/kb/.trash
+  EVOLVE_TURNS_DIR: /kb-shared/evolution/turns
+  EVOLVE_STATE_DIR: /kb-shared/evolution/state
+  EVOLVE_OUTPUT_DIR: /kb-shared/evolution/output
+  EVAL_OUTPUT_DIR: /kb-shared/evolution/eval
+  # ---- 状态外置 ----
+  SESSION_STORE_BACKEND: redis
+  REDIS_URL: "redis://redis-master:6379/0"
+  REDIS_REQUIRED: "true"
+  SESSION_LOCK_TTL_SECONDS: "300"
+  MEMORY_CONSOLIDATE_EVERY: "10"
+  MEMORY_CONSOLIDATE_IDLE_MINUTES: "30"
+  MEMORY_CONSOLIDATE_SCAN_MINUTES: "5"
+  # ---- 对象存储：分片/原件走 S3（MinIO/OSS 兼容）----
+  KB_UPLOAD_STORAGE: s3
+  TURNS_ARCHIVE_BACKEND: s3
+  S3_BUCKET: ecom
+  S3_ENDPOINT_URL: "http://minio:9000"
+  # ---- 安全（生产全开）----
+  AUTH_ENABLED: "true"
+  ENFORCE_ORDER_OWNERSHIP: "true"
+  REFUND_CONFIRMATION_REQUIRED: "true"
+  OPS_RBAC_REQUIRED: "true"
+  GUARDRAILS_ENABLED: "true"
+  # ---- 自进化：正式发布默认关闭（先人工审核）----
+  SELF_EVOLVE_ENABLED: "false"
+  EVOLVE_CAPTURE_ENABLED: "true"
+  # ---- 数据库 ----
+  DB_URL: "mysql+pymysql://ecom:ecom@mysql:3306/ecom?charset=utf8mb4"
+  APP_ENV: prod
+  KB_WRITE_LOCK_BACKEND: mysql
+
+envFromSecret: "ecom-agent-secrets"
+
+# 生产必填 existingSecret（外部提供）；Chart 不创建 REPLACE_ME
+secret:
+  create: false
+  data: {}
+
+kbSharedVolume:
+  enabled: true
+  storageClass: standard
+  size: 20Gi
+  mountPath: /kb-shared
+  accessModes: ["ReadWriteMany"]
+  srcPath: /app/app/agent/rag/knowledge
+
+evolutionJob:
+  enabled: true
+  schedule: "30 3 * * *"
+  dryRun: true   # 安全默认：预览；正式发布审核通过后显式 false + args
+
+migration:
+  enabled: true
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 2

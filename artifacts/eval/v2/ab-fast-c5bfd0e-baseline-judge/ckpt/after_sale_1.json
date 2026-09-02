@@ -1,0 +1,1 @@
+{"case_id": "after_sale_1", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确、完整、专业，语气得体，清晰说明了保修范围、维修流程和注意事项，并主动询问用户具体信息以进一步帮助，直接解决了问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的保修期限、范围、凭证、流程及配件保修等具体信息均可在工具返回的知识库资料中找到依据，无编造或矛盾内容。"}, "process_soundness": {"score": 5.0, "reason": "用户询问保修期内维修方法，调用知识库搜索精准匹配需求，顺序合理且无多余调用。"}}}

@@ -1,0 +1,1 @@
+{"case_id": "order_query_005_2", "passed_rule": false, "dims": {"answer_quality": {"score": 3.0, "reason": "客服未能直接提供订单状态，但解释了原因并给出合理建议，属于部分解决问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复称无法查看该订单且不属于当前账户，与query_order返回的\"无权访问该订单（不属于当前用户）\"一致，未编造具体事实。"}, "process_soundness": {"score": 3.0, "reason": "能通过query_order解决问题，但load_skill可能属于冗余调用，顺序略有优化空间。"}}}

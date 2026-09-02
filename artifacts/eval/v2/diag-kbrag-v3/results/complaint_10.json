@@ -1,0 +1,49 @@
+{
+  "case_id": "complaint_10",
+  "passed": true,
+  "process": {
+    "tool_accuracy": null,
+    "tool_efficiency": null,
+    "token_cost": 7700,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": null
+  },
+  "result": {
+    "intent_match": 1.0,
+    "keyword_coverage": null,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 1.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "recall_user_memory"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "recall_user_memory",
+        "arguments": {
+          "query": "投诉 订单问题"
+        },
+        "outcome": {
+          "success": false
+        }
+      }
+    ],
+    "num_tool_calls": 1,
+    "route": null,
+    "reply": "非常抱歉给您带来了这么不好的体验，小夕先跟您道个歉 🙏\n\n您先别生气，我特别理解您现在的心情——广告里说得再好，实际跟预期不符确实很让人恼火。\n\n为了能尽快帮您把问题解决，想请您告诉我一下具体情况：\n\n1. **具体是哪个环节让您不满意呀？** 比如发货慢、物流不动、商品与描述不符，还是售后没人管？\n2. 如果有 **订单号**，也请您发给我，我马上帮您查一下实际情况；\n\n您把情况说清楚后，我会根据实际情况给您提供对应的解决方案（比如核实物流、申请退款或换货等），一定尽力帮您把这件事处理好。期待您的回复～",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

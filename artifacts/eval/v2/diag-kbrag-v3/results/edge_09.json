@@ -1,0 +1,71 @@
+{
+  "case_id": "edge_09",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 14820,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": null,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "退款金额上限是多少"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "退款 额度 限制 到账金额",
+          "top_k": 3
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "退款金额上限",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 3,
+    "route": null,
+    "reply": "抱歉让您久等了 🙏\n\n我检索了平台当前的帮助文档，目前**没有查到关于「退款金额上限」的具体政策说明**，这类具体的退款额度规则文档暂时未覆盖，我也不能凭空为您估算或编造数字。\n\n为了给您准确的答复，这个问题**需要转接人工客服进一步核实**，以免误导您。您可以通过以下任一方式联系我们的人工客服：\n\n1. **App 内**：进入「我的」→「官方客服」→ 选择人工客服入口\n2. **订单详情页**：在对应订单页面点击「联系客服」转人工\n\n如果您有其他问题（比如具体某笔订单的退款办理），也可以直接告诉我订单号，我很乐意继续帮您处理～",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

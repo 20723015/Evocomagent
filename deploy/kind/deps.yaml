@@ -1,0 +1,208 @@
+# 4.2 kind 验收依赖服务 manifests（应用外部依赖内联部署，供 helm Deployment 使用）
+# 使用：kubectl apply -f deploy/kind/deps.yaml
+# 依赖列表：MySQL 8 / Redis 7 / Elasticsearch 8.11.4 / MinIO / TEI reranker /
+# fake-llm / fake-commerce。生产用托管服务替代（见 values-production.yaml）。
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql
+  labels: {app: ecom-deps}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: mysql}}
+  template:
+    metadata: {labels: {app: mysql}}
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.4
+          env:
+            - {name: MYSQL_ROOT_PASSWORD, value: root}
+            - {name: MYSQL_DATABASE, value: ecom}
+            - {name: MYSQL_USER, value: ecom}
+            - {name: MYSQL_PASSWORD, value: ecom}
+          ports: [{containerPort: 3306}]
+---
+apiVersion: v1
+kind: Service
+metadata: {name: mysql, labels: {app: ecom-deps}}
+spec:
+  selector: {app: mysql}
+  ports: [{port: 3306, targetPort: 3306}]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  labels: {app: ecom-deps}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: redis}}
+  template:
+    metadata: {labels: {app: redis}}
+    spec:
+      containers:
+        - name: redis
+          image: redis:7-alpine
+          args: ["redis-server", "--appendonly", "yes"]
+          ports: [{containerPort: 6379}]
+---
+apiVersion: v1
+kind: Service
+metadata: {name: redis-master, labels: {app: ecom-deps}}
+spec:
+  selector: {app: redis}
+  ports: [{port: 6379, targetPort: 6379}]
+---
+# ES：单节点 + trial license（RRF 需要白金特性）
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: elasticsearch
+  labels: {app: ecom-deps}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: elasticsearch}}
+  template:
+    metadata: {labels: {app: elasticsearch}}
+    spec:
+      containers:
+        - name: es
+          image: docker.elastic.co/elasticsearch/elasticsearch:8.11.4
+          env:
+            - {name: discovery.type, value: single-node}
+            - {name: xpack.security.enabled, value: "false"}
+            - {name: xpack.license.self_generated.type, value: trial}
+            - {name: ES_JAVA_OPTS, value: -Xms512m -Xmx512m}
+          ports: [{containerPort: 9200}]
+---
+apiVersion: v1
+kind: Service
+metadata: {name: elasticsearch, labels: {app: ecom-deps}}
+spec:
+  selector: {app: elasticsearch}
+  ports: [{port: 9200, targetPort: 9200}]
+---
+# MinIO
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: minio
+  labels: {app: ecom-deps}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: minio}}
+  template:
+    metadata: {labels: {app: minio}}
+    spec:
+      containers:
+        - name: minio
+          image: minio/minio:latest
+          args: ["server", "/data", "--console-address", ":9001"]
+          env:
+            - {name: MINIO_ROOT_USER, value: minioadmin}
+            - {name: MINIO_ROOT_PASSWORD, value: minioadmin}
+          ports: [{containerPort: 9000}, {containerPort: 9001}]
+---
+apiVersion: v1
+kind: Service
+metadata: {name: minio, labels: {app: ecom-deps}}
+spec:
+  selector: {app: minio}
+  ports:
+    - {name: api, port: 9000, targetPort: 9000}
+    - {name: console, port: 9001, targetPort: 9001}
+---
+# TEI reranker（bge-reranker-v2-m3；镜像内无模型 → 需挂载 local-path 模型目录
+# 或改用带模型的镜像；kind 验收时经 kind load 或 hostPath 提供）
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: reranker
+  labels: {app: ecom-deps}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: reranker}}
+  template:
+    metadata: {labels: {app: reranker}}
+    spec:
+      containers:
+        - name: tei
+          image: ghcr.io/huggingface/text-embeddings-inference:cpu-latest
+          args: ["--model-id", "/data"]
+          ports: [{containerPort: 80}]
+          volumeMounts:
+            - {name: model, mountPath: /data}
+      volumes:
+        - name: model
+          hostPath:
+            path: /models/bge-reranker-v2-m3   # kind 节点上预置模型目录
+            type: Directory
+---
+apiVersion: v1
+kind: Service
+metadata: {name: reranker, labels: {app: ecom-deps}}
+spec:
+  selector: {app: reranker}
+  ports: [{port: 80, targetPort: 80}]
+---
+# fake-llm（确定性 OpenAI 兼容）
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fake-llm
+  labels: {app: ecom-deps}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: fake-llm}}
+  template:
+    metadata: {labels: {app: fake-llm}}
+    spec:
+      containers:
+        - name: fake-llm
+          image: ecom-fake-services:kind
+          command: ["python", "-m", "fake_openai"]
+          ports: [{containerPort: 8000}]
+---
+apiVersion: v1
+kind: Service
+metadata: {name: fake-llm, labels: {app: ecom-deps}}
+spec:
+  selector: {app: fake-llm}
+  ports: [{port: 8000, targetPort: 8000}]
+---
+# fake-commerce（订单契约服务）
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: commerce
+  labels: {app: ecom-deps}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: commerce}}
+  template:
+    metadata: {labels: {app: commerce}}
+    spec:
+      containers:
+        - name: commerce
+          image: ecom-fake-services:kind
+          command: ["python", "-m", "fake_commerce"]
+          ports: [{containerPort: 8080}]
+---
+apiVersion: v1
+kind: Service
+metadata: {name: commerce, labels: {app: ecom-deps}}
+spec:
+  selector: {app: commerce}
+  ports: [{port: 8080, targetPort: 8080}]
+---
+# 临时调试 Pod（可选）：SQL/ES/MinIO 探活
+apiVersion: v1
+kind: Pod
+metadata: {name: ecom-smoke, labels: {app: ecom-deps}}
+spec:
+  containers:
+    - name: smoke
+      image: curlimages/curl:latest
+      command: ["sleep", "3600"]

@@ -1,0 +1,38 @@
+{
+  "case_id": "rag_no_hit_09",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 0.0,
+    "tool_efficiency": null,
+    "token_cost": 3918,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 0.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": null,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [],
+    "tool_outcomes": [],
+    "num_tool_calls": 0,
+    "route": null,
+    "reply": "您好呀，我是并夕夕的智能客服「小夕」，主要负责订单、商品、退换货、物流和优惠活动等购物相关的问题呢～😊\n\n关于**客服岗位的薪资待遇**，这不属于我的服务范围哦，我这边暂时无法查询到招聘薪酬方面的信息。如果您对客服岗位感兴趣，建议您：\n\n1. **前往官方招聘渠道**查看岗位详情与薪资说明（如并夕夕官网招聘页面、官方招聘公众号等）；\n2. 或拨打官方招聘热线咨询，以官方发布的信息为准。\n\n请问还有其他购物相关的问题需要我帮忙吗？比如查订单、查物流、咨询退换货政策，我都可以为您服务哦～",
+    "retrieved_sources": [],
+    "error": null,
+    "tool_outputs": []
+  }
+}

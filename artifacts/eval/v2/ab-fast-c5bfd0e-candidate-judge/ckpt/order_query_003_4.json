@@ -1,0 +1,1 @@
+{"case_id": "order_query_003_4", "passed_rule": false, "dims": {"answer_quality": {"score": 3.0, "reason": "客服未能查询到用户指定的订单，转而提供另一笔订单，未直接解决用户问题，但语气得体且提供了一定帮助。"}, "faithfulness": {"score": 0.0, "reason": "客服回复中“预计今天就能收到啦”无工具返回依据，工具仅显示物流状态为正在派送中，未提供预计送达时间。"}, "process_soundness": {"score": 3.0, "reason": "能解决问题但存在冗余调用，指定订单号后无需再调用list_user_orders，且query_logistics可能非必要。"}}}

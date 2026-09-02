@@ -1,0 +1,91 @@
+{
+  "case_id": "kb_退换货政策_12",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 19454,
+    "token_pass": false,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 1.0,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.5
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge",
+      "recall_user_memory"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "生鲜水果可以七天无理由退货吗",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "生鲜商品退换货规定",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "七天无理由退货适用范围",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "退换货政策",
+          "top_k": 5
+        },
+        "outcome": {}
+      },
+      {
+        "name": "recall_user_memory",
+        "arguments": {
+          "query": "生鲜退货"
+        },
+        "outcome": {
+          "success": false
+        }
+      }
+    ],
+    "num_tool_calls": 5,
+    "route": null,
+    "reply": "非常抱歉，让您久等啦~ 🙏\n\n关于您问的「生鲜水果能否七天无理由退货」这个问题，我这边**已经多次检索了平台的相关政策和帮助文档，但很遗憾没有找到关于生鲜水果退换货的具体规定**。\n\n由于生鲜类商品是特殊品类，其退换货规则通常与普通商品（如服饰、日用百货）不同，为了保证给您准确的信息，**我需要转接人工客服**为您进一步核实：\n\n📍 建议您在转人工时提供以下信息，方便客服快速处理：\n1. **订单号**（如果有的话）\n2. 订单中的具体水果品名\n3. 您遇到的情况（是质量问题、不想要了，还是其他原因）\n\n这样人工客服可以结合您的具体订单，给您一个准确的处理方案。\n\n您也可以提供一下订单号，我先帮您查询一下订单详情哦~ 😊",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

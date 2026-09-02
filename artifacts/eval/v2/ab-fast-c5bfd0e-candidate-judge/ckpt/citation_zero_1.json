@@ -1,0 +1,1 @@
+{"case_id": "citation_zero_1", "passed_rule": false, "dims": {"answer_quality": {"score": 3.0, "reason": "客服未直接回答政策是否支持，而是引导用户明确具体政策，虽语气得体但未完全解决问题。"}, "faithfulness": {"score": null, "reason": "无工具观测（话术性回复），忠实度核对不适用"}, "process_soundness": {"score": 5.0, "reason": "用户问题指代不明、信息不足，无法确定需要查询的具体政策，不调用工具而先澄清是合理行为。"}}}

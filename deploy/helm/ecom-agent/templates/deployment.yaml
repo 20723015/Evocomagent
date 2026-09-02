@@ -1,0 +1,112 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-ecom-agent
+  labels:
+    app: ecom-agent
+    app.kubernetes.io/version: {{ .Values.image.tag | quote }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: ecom-agent
+  template:
+    metadata:
+      labels:
+        app: ecom-agent
+        app.kubernetes.io/version: {{ .Values.image.tag | quote }}
+    spec:
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
+      # 安全基线：非 root（4.1；共享卷启用时 fsGroup 保证 appuser 可写）
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        {{- if .Values.kbSharedVolume.enabled }}
+        fsGroup: 10001
+        {{- end }}
+      # 4.1：RWX 卷初始化——知识库源复制到共享卷（多 Pod 同源；幂等）
+      {{- if .Values.kbSharedVolume.enabled }}
+      initContainers:
+        - name: kb-init
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["sh", "-c"]
+          args:
+            - |
+              set -e
+              # 知识库源放共享卷（多 Pod 同源；幂等：已存在则跳过）
+              SRC="{{ .Values.kbSharedVolume.srcPath }}"
+              DST="{{ .Values.kbSharedVolume.mountPath }}/kb"
+              mkdir -p "$DST"
+              if [ ! -e "$DST/退换货政策.md" ]; then
+                cp -r "$SRC/." "$DST/"
+              fi
+              chmod -R ugo+rw "$DST"
+          volumeMounts:
+            - name: kb-shared
+              mountPath: {{ .Values.kbSharedVolume.mountPath }}
+      {{- end }}
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app: ecom-agent
+                topologyKey: kubernetes.io/hostname
+      # SIGTERM → uvicorn 优雅退出：停接新请求 → drain 在途 → 持久化
+      # 本镜像以 PID 1 跑 uvicorn，信号可直达
+      containers:
+        - name: ecom-agent
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: 8000
+              name: http
+          env:
+            {{- range $k, $v := .Values.env }}
+            - name: {{ $k }}
+              value: {{ $v | quote }}
+            {{- end }}
+          envFrom:
+            - secretRef:
+                name: {{ .Values.envFromSecret }}
+          # 4.1：startupProbe（慢就绪：依赖连接/索引预热）→ 就绪 → 存活
+          startupProbe:
+            httpGet:
+              path: /readyz
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            failureThreshold: 30
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          {{- if .Values.kbSharedVolume.enabled }}
+          volumeMounts:
+            - name: kb-shared
+              mountPath: {{ .Values.kbSharedVolume.mountPath }}
+          {{- end }}
+      {{- if .Values.kbSharedVolume.enabled }}
+      volumes:
+        - name: kb-shared
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-kb-shared
+      {{- end }}

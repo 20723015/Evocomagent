@@ -1,0 +1,1 @@
+{"case_id": "product_elec_7", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确确认有货并给出价格和产品信息，语气得体，直接解决了用户问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的商品名称、价格、卖点、规格和库存均与工具返回的AirPods Pro 2数据一致"}, "process_soundness": {"score": 3.0, "reason": "查询产品合理，但load_skill和recall_user_memory冗余，且未调用下单相关工具，过程欠佳。"}}}

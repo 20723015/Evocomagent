@@ -1,0 +1,1 @@
+{"case_id": "return_confirm_2", "passed_rule": false, "dims": {"answer_quality": {"score": 4.0, "reason": "客服准确发现订单不匹配并礼貌确认，但未直接给出退货处理流程，略有冗余。"}, "faithfulness": {"score": 1.0, "reason": "回复中的订单号、商品、金额、下单时间、状态均与list_user_orders返回一致，未发现编造事实。"}, "process_soundness": {"score": 5.0, "reason": "工具选择精准，先加载技能、再查订单、最后查退货知识，顺序合理且无多余调用。"}}}

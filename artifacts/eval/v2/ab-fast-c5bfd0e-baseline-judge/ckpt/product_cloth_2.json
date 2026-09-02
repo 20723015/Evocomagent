@@ -1,0 +1,1 @@
+{"case_id": "product_cloth_2", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "客服准确查询并直接告知无货，同时提供后续方案，语气得体，完整解决了用户问题。"}, "faithfulness": {"score": 1.0, "reason": "回复中的价格、库存缺货、商品名称和规格均与工具返回数据一致，未编造具体事实。"}, "process_soundness": {"score": 5.0, "reason": "用户询问特定商品是否有货，调用query_product精准匹配需求，无冗余或缺失操作。"}}}

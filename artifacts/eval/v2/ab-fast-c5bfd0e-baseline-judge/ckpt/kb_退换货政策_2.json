@@ -1,0 +1,1 @@
+{"case_id": "kb_退换货政策_2", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确完整地列出了七天无理由退货的条件、不适用商品和运费说明，语气专业得体，并主动提供进一步帮助，直接解决了用户问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复内容完全来自search_knowledge返回的《退换货政策》知识库，未出现工具返回中没有或矛盾的具体事实。"}, "process_soundness": {"score": 5.0, "reason": "用户询问七天无理由退货条件，调用知识库检索是精准且必要的，顺序合理，无多余调用。"}}}

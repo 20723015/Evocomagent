@@ -1,0 +1,1 @@
+{"case_id": "kb_退换货政策_1", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确、完整、专业且语气得体，直接解决用户问题，并提供了详细适用条件、不适用商品和运费说明，无多余或错误信息。"}, "faithfulness": {"score": 1.0, "reason": "客服回复的退货条件、不适用商品和运费规则均来自工具返回的《退换货政策》，未编造或矛盾。"}, "process_soundness": {"score": 5.0, "reason": "工具选择精准，正常业务咨询调用知识库查询退货政策，无多余调用或缺失。"}}}

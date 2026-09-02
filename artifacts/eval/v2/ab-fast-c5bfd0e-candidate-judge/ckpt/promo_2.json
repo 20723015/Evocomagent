@@ -1,0 +1,1 @@
+{"case_id": "promo_2", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确完整地列出了新人可领的30元无门槛券，并补充使用规则和额外福利，语气得体且直接解决问题。"}, "faithfulness": {"score": 1.0, "reason": "回复中的新人30元无门槛券、7天有效、生日8.8折券上限50元、平台券可叠加店铺券等信息均能在工具返回的会员权益和优惠券规则中找到依据。"}, "process_soundness": {"score": 4.0, "reason": "search_knowledge 用于查询新人券信息是合理的，但 recall_user_memory 并非必要，属于略有冗余的调用。"}}}

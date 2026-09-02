@@ -1,0 +1,1 @@
+{"case_id": "edge_04", "passed_rule": true, "dims": {"answer_quality": {"score": 4.0, "reason": "客服准确说明了包邮规则和青海偏远地区情况，但未直接明确西宁是否包邮，需用户以结算页为准，略有冗余。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的包邮门槛、偏远地区加收20元起、钻石会员特权等均与工具返回的配送说明一致，未编造具体事实。"}, "process_soundness": {"score": 5.0, "reason": "用户咨询包邮政策，调用知识库检索是精准且必要的，无多余或缺失调用。"}}}

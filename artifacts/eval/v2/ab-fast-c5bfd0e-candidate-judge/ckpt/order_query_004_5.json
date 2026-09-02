@@ -1,0 +1,1 @@
+{"case_id": "order_query_004_5", "passed_rule": false, "dims": {"answer_quality": {"score": 3.0, "reason": "客服未直接查询用户指定的订单号，而是提供了另一笔订单并请求确认，部分解决问题但信息不完整。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的订单号、商品、金额、状态和下单时间均与list_user_orders返回的数据完全一致，未出现编造或矛盾信息。"}, "process_soundness": {"score": 3.0, "reason": "用户已提供具体订单号，调用query_order即可，后续list_user_orders属于冗余调用。"}}}

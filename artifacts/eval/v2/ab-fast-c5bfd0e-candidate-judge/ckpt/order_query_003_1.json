@@ -1,0 +1,1 @@
+{"case_id": "order_query_003_1", "passed_rule": false, "dims": {"answer_quality": {"score": 4.0, "reason": "客服准确说明无法访问的原因，并主动提供当前账户订单供确认，语气得体，但未能直接给出原订单状态。"}, "faithfulness": {"score": 1.0, "reason": "回复中的订单号无权访问、当前账户订单信息均与工具返回一致，无编造事实"}, "process_soundness": {"score": 3.0, "reason": "调用顺序基本合理，但list_user_orders属于多余调用，且前置load_skill略有冗余。"}}}

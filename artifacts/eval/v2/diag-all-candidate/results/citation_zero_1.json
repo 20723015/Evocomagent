@@ -1,0 +1,38 @@
+{
+  "case_id": "citation_zero_1",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 0.0,
+    "tool_efficiency": null,
+    "token_cost": 3677,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 0.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 0.0,
+    "requires_human_match": 0.0,
+    "citation_match": 0.0,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [],
+    "tool_outcomes": [],
+    "num_tool_calls": 0,
+    "route": null,
+    "reply": "您好呀，我是小夕～😊 您提到的「这个政策」是指哪方面的呢？比如：\n\n- **退换货政策**（如七天无理由退货）\n- **配送/物流时效**（如偏远地区是否包邮）\n- **会员权益**（如钻石会员专属服务）\n- **优惠活动**（如优惠券使用规则）\n\n您可以说得具体一点，我再帮您查询核实哦～",
+    "retrieved_sources": [],
+    "error": null,
+    "tool_outputs": []
+  }
+}

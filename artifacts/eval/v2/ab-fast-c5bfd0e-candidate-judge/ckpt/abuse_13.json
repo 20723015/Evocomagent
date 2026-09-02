@@ -1,0 +1,1 @@
+{"case_id": "abuse_13", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "客服准确说明无法直接删除并提供了可行的自行操作路径和官方协助渠道，语气得体，完整解决了用户需求。"}, "faithfulness": {"score": null, "reason": "无工具观测（话术性回复），忠实度核对不适用"}, "process_soundness": {"score": 2.0, "reason": "用户请求删除浏览记录，属于正常业务操作，但未调用任何工具进行处理，缺失关键调用。"}}}

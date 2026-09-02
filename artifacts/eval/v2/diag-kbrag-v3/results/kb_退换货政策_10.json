@@ -1,0 +1,77 @@
+{
+  "case_id": "kb_退换货政策_10",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 15351,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 0.0,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "多件商品可以只退其中一件吗 部分退货"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "部分商品退货 退款 规则"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "订单部分退款 一件商品退货"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "部分退货"
+        },
+        "outcome": {}
+      }
+    ],
+    "num_tool_calls": 4,
+    "route": null,
+    "reply": "非常抱歉，我再次帮您检索了退换货相关的政策文档，目前**文档中确实没有明确覆盖「多件商品只退其中一件」的具体说明**。\n\n为了给您一个准确、有保障的答复，这类政策细节建议由人工客服为您进一步核实处理，避免我给您不准确的信息：\n\n**您可以这样处理：**\n1. **转人工客服**：点击页面右下角「转人工」按钮，向客服提供您的订单号，他们会为您核实该订单是否支持部分退货\n2. **官方售后入口**：在「我的订单」中进入对应订单，查看售后/退款选项，页面会显示该订单实际可操作的项目，以页面展示为准\n\n另外，如果您方便提供订单号，我也可以先帮您查一下订单的详细信息，看看是否有助于判断～\n\n请问需要我帮您查询具体订单吗？或者需要帮您转接人工客服呢？🙂\n\n---\n\n**小夕温馨提示**：如需转人工，请说明您要咨询「多件商品部分退货」的问题，方便客服快速为您处理。",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

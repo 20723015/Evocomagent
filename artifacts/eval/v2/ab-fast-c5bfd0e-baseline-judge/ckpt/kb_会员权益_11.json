@@ -1,0 +1,1 @@
+{"case_id": "kb_会员权益_11", "passed_rule": true, "dims": {"answer_quality": {"score": 4.0, "reason": "回复准确解答黄金会员免邮问题，但补充钻石会员信息略显冗余，仍可优化。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中关于黄金会员免邮不含偏远地区、与店铺规则叠加，以及钻石会员全场包邮含偏远地区的内容，均可在工具返回的会员权益和配送说明中找到依据。"}, "process_soundness": {"score": 5.0, "reason": "工具选择精准，直接查询知识库即可解答会员免邮规则，无多余调用。"}}}

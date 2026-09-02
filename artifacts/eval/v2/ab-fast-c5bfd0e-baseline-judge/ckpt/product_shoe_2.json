@@ -1,0 +1,1 @@
+{"case_id": "product_shoe_2", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确确认有货，提供具体规格、价格和库存信息，并主动询问其他需求，完整专业且语气得体。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的商品名称、价格、库存状态及规格描述均与工具返回的SHOE-270-BK-42数据一致，无编造或矛盾。"}, "process_soundness": {"score": 5.0, "reason": "工具选择精准，查询产品库存正是解决用户问题的必要调用，顺序合理且无冗余。"}}}

@@ -1,0 +1,61 @@
+{
+  "case_id": "kb_配送说明_5",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 10567,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 0.0,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.5
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "一般发什么快递 快递公司 配送",
+          "top_k": 3
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "配送 快递 发货说明",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 2,
+    "route": null,
+    "reply": "抱歉，关于「一般发什么快递」这个问题，我检索了平台的配送相关文档，目前没有查到统一的快递公司说明。🙏\n\n不同商家、不同地区的发货快递可能会不一样，具体以您订单详情页显示的实际物流信息为准哦。如果您的订单已经发货，我也可以帮您查询具体的快递公司和运单号，您可以把订单号发给我，我帮您查一下～",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

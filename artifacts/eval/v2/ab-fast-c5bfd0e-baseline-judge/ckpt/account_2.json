@@ -1,0 +1,1 @@
+{"case_id": "account_2", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确完整，分情况清晰说明换绑和申诉流程，语气得体，直接解决了用户问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的换绑方式、申诉流程、审核时间及设备管理建议均能在工具返回的参考资料中找到对应依据。"}, "process_soundness": {"score": 5.0, "reason": "用户问题涉及换手机号后登录流程，调用知识库搜索是精准且必要的，无多余调用。"}}}

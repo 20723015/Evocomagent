@@ -1,0 +1,1 @@
+{"case_id": "product_multi_buy", "passed_rule": false, "dims": {"answer_quality": {"score": 4.0, "reason": "客服主动引导确认商品信息，但未先询问用户具体需求，略有武断，基本解决问题。"}, "faithfulness": {"score": 1.0, "reason": "回复中商品名称、价格1799元、库存充足均与工具返回数据一致，未编造事实。"}, "process_soundness": {"score": 4.0, "reason": "工具调用基本覆盖购买场景，但用户意图不明确时先查询商品、再加载技能、最后回忆用户记忆，顺序略有可优化空间。"}}}

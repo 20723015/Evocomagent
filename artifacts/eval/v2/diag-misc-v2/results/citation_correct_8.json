@@ -1,0 +1,61 @@
+{
+  "case_id": "citation_correct_8",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 11992,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 1.0,
+    "requires_human_match": 0.0,
+    "citation_match": 0.0,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.3333333333333333
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "忘记密码怎么找回",
+          "top_k": 3
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "密码找回 重置登录密码",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 2,
+    "route": null,
+    "reply": "抱歉让您久等了～关于「忘记密码找回」这块，我这边检索了平台的政策与帮助文档，暂时**没有覆盖到具体的密码找回流程**，为了避免给您不准确的信息，我不能凭空编造操作步骤。\n\n考虑到这涉及**账户安全**，为了保障您的账号信息安全，建议您通过以下官方安全渠道处理：\n\n1. **App 内**：打开并夕夕 App → 登录页点击「忘记密码/找回密码」入口，按提示通过手机号验证码等方式重置，这是最直接的官方路径；\n2. **官方客服热线**：转接人工客服协助处理账户安全问题。\n\n同时提醒您：**不要**将验证码、支付密码等敏感信息告知任何自称客服的人，一切以 App 官方页面操作为准。\n\n这个情况平台文档暂未覆盖，需要转人工进一步为您处理会更稳妥。请问还有其他购物相关的问题可以帮您吗？比如查订单、查物流，我都可以帮您~ 😊",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

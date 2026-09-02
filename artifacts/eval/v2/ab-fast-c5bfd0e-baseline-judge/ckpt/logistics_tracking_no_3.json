@@ -1,0 +1,1 @@
+{"case_id": "logistics_tracking_no_3", "passed_rule": false, "dims": {"answer_quality": {"score": 5.0, "reason": "客服准确识别运单号错误并主动提供正确订单的完整物流信息，直接解决了用户问题，专业且得体。"}, "faithfulness": {"score": 0.0, "reason": "客服声称运单号YT6655443322在系统中没有匹配到对应订单，但工具返回中没有关于该运单号的任何查询结果或否定信息，属于凭空编造。"}, "process_soundness": {"score": 3.0, "reason": "能解决问题但存在冗余调用，如load_skill和list_user_orders并非必要，应先直接查物流。"}}}

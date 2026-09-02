@@ -1,0 +1,49 @@
+{
+  "case_id": "edge_12",
+  "passed": true,
+  "process": {
+    "tool_accuracy": null,
+    "tool_efficiency": null,
+    "token_cost": 7346,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": null
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": null,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 1.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "客服服务时间 几点上班 几点下班 人工客服工作时间"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 1,
+    "route": null,
+    "reply": "您好，我是小夕～关于客服的服务时间，我刚刚检索了平台的政策和帮助文档，暂时没有查到明确标注的客服上下班时间信息哦，实在抱歉😅\n\n建议您可以：\n1. **在 App 内查看**：进入「我的 - 官方客服/联系客服」页面，页面上一般会显示当前在线状态和服务时间\n2. **直接点击在线客服**：若当前显示在线，可直接留言咨询，我们收到后会尽快回复\n\n具体服务时段以平台页面实际显示为准，如需进一步确认，我也可以帮您转接人工客服进一步核实，您看可以吗？",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

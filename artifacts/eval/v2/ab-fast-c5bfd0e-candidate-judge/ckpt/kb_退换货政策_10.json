@@ -1,0 +1,1 @@
+{"case_id": "kb_退换货政策_10", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "客服准确告知支持部分退款并询问订单信息，直接解决问题，语气得体且信息完整"}, "faithfulness": {"score": 1.0, "reason": "客服回复引用的部分退款规则与search_knowledge返回的退换货政策内容一致，且未编造订单、物流等具体事实。"}, "process_soundness": {"score": 5.0, "reason": "工具选择精准，先搜索知识再加载技能，顺序合理，无多余调用"}}}

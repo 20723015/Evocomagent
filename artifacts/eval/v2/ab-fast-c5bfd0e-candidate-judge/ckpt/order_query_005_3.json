@@ -1,0 +1,1 @@
+{"case_id": "order_query_005_3", "passed_rule": false, "dims": {"answer_quality": {"score": 2.0, "reason": "客服未直接查询用户指定订单，转而提供无关的另一订单信息，偏离问题且未解决需求。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的订单状态、商品金额、物流轨迹等均与工具返回数据一致，未出现虚构或矛盾信息。"}, "process_soundness": {"score": 3.0, "reason": "能解决问题，但list_user_orders和load_skill属于冗余调用，顺序可优化。"}}}

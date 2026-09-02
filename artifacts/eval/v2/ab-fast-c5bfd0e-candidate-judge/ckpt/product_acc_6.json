@@ -1,0 +1,1 @@
+{"case_id": "product_acc_6", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "客服直接且准确地告知了价格29.9元，并提供了相关商品信息，语气得体，完全解决了用户问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的价格、材质、特点、适配、库存等信息均与工具返回数据一致，未出现编造或矛盾。"}, "process_soundness": {"score": 5.0, "reason": "用户查询商品价格，调用query_product精准对路，无多余或缺失调用。"}}}

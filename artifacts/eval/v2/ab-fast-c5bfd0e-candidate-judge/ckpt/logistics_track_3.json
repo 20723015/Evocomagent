@@ -1,0 +1,1 @@
+{"case_id": "logistics_track_3", "passed_rule": false, "dims": {"answer_quality": {"score": 4.0, "reason": "客服无法查询原订单时，主动说明原因并提供当前账户订单信息，语气得体且引导用户确认，但未直接给出原订单物流进度。"}, "faithfulness": {"score": 1.0, "reason": "回复中关于订单无法访问和当前账户订单详情的描述均与工具返回数据一致。"}, "process_soundness": {"score": 4.0, "reason": "工具选择基本对路，query_order和query_logistics能解决问题，但list_user_orders属于多余调用，略有可优化空间。"}}}

@@ -1,0 +1,72 @@
+{
+  "case_id": "kb_cross_10",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 11392,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 1.0,
+    "requires_human_match": 0.0,
+    "citation_match": 0.0,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.3333333333333333
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "生日礼盒 生日券怎么用",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "生日权益 生日礼物 使用规则",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "生日券 优惠券 使用方法",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 3,
+    "route": null,
+    "reply": "抱歉，让您久等啦～\n\n关于**生日礼盒**和**生日券**的使用方法，我在平台的政策与帮助文档中多次检索，暂时**没有查到对应的说明文档**（包括会员权益相关页面也未见生日礼盒/生日券的细则）。\n\n按照平台规则，这类未在文档中明确覆盖的内容我不能凭空给您编造使用方法，以免误导您。\n\n建议您可以通过以下任一方式获取准确答复：\n1. **联系在线人工客服**，让客服帮您核实「生日礼盒/生日券」的具体领取与使用规则；\n2. 留意**App 内「我的-会员中心/优惠券」**页面，生日权益一般会以券或礼盒形式发放到账户，具体以页面实际显示为准。\n\n给您带来不便实在抱歉，我已记录您的问题，如果您愿意，也可以告诉我您的会员等级，我再帮您看看其他会员权益～\n\n请问还有什么可以帮您的吗？😊",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

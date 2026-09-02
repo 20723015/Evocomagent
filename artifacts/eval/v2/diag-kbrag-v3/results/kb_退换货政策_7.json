@@ -1,0 +1,69 @@
+{
+  "case_id": "kb_退换货政策_7",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 10963,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 0.0,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.5
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "退款多久到账"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "退款到账时间 时效"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "退货款多久退回"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 3,
+    "route": null,
+    "reply": "您好，非常抱歉，我这边连续检索了几次平台的政策文档，暂时都没有查到关于「退款到账时间」的明确说明，所以不方便给您一个估算的时间，以免误导您。\n\n给您两个建议：\n1. **以实际到账为准**：退款申请提交后，平台和银行的处理时间可能不同，具体到账情况您可以在「我的-退款/售后」页面实时查看进度；\n2. **转人工客服**：如果您急需了解具体到账时效，我可以为您转接人工客服进一步核实。\n\n您看需要我帮您转接人工核实，还是有其他可以帮到您的？😊",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

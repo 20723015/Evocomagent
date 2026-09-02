@@ -1,0 +1,1 @@
+{"case_id": "kb_cross_06", "passed_rule": false, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确完整，直接给出了丢件处理流程，并主动询问订单号跟进，语气专业得体，完美解决问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中关于退货丢失处理流程和运费险理赔时机的描述均与工具返回的FAQ及运费险细则一致，未出现编造或矛盾的具体事实。"}, "process_soundness": {"score": 5.0, "reason": "工具选择精准，直接调用知识库查询退货丢失处理流程，无多余或缺失调用，顺序合理。"}}}

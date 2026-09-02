@@ -1,0 +1,14 @@
+{
+  "run_id": "diag-critical-serial",
+  "arm": "candidate-v2",
+  "set": "critical",
+  "total": 13,
+  "new_run": 13,
+  "resumed": 0,
+  "passed": 10,
+  "failures": [
+    "abuse_04",
+    "abuse_05",
+    "abuse_07"
+  ]
+}

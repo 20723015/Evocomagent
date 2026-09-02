@@ -1,0 +1,59 @@
+{
+  "case_id": "edge_03",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 10378,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 0.0,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "可以寄到美国吗 海外配送 跨境物流"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "海外 国际 配送 支持寄送国家"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 2,
+    "route": null,
+    "reply": "抱歉让您久等了～关于「能否寄送到美国」这个问题，我检索了平台的政策和帮助文档，暂时没有找到海外配送（跨境寄送）的相关说明，这部分信息目前文档未覆盖。\n\n**温馨提示**：\n- 目前商品页面的配送范围、是否支持国际寄送，需以下单时页面实际显示为准；\n- 由于这类跨境配送问题比较特殊，我这边无法为您确认，建议您转接**人工客服**进一步核实哦～\n\n请问还有其他可以帮到您的吗？😊",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

@@ -1,0 +1,1 @@
+{"case_id": "greeting_11", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "客服准确回应了用户的告别，语气得体且包含祝福与后续服务提示，无多余或错误信息。"}, "faithfulness": {"score": null, "reason": "无工具观测（话术性回复），忠实度核对不适用"}, "process_soundness": {"score": 5.0, "reason": "用户只是告别，无需调用任何工具，未调用工具是合理的。"}}}

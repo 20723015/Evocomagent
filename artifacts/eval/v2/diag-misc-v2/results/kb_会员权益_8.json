@@ -1,0 +1,59 @@
+{
+  "case_id": "kb_会员权益_8",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 10275,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 0.0,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "会员收费吗 会员费用 开通会员"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "会员权益"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 2,
+    "route": null,
+    "reply": "非常抱歉，关于「会员是否收费」这个问题，我查询了平台的政策文档，目前没有检索到相关的详细说明，暂时没法给您一个确切的答复。😅\n\n为了避免给您不准确的信息，这个情况需要核实后再答复您。建议您：\n\n1. **联系人工客服**：把您具体想了解的会员类型（比如省钱会员、平台会员等）告知客服，由专人帮您确认收费标准；\n2. **查看会员开通页面**：在 App 内进入会员开通入口，页面通常会明确展示费用与权益说明，以实际展示为准。\n\n请问还有其他可以帮到您的吗？比如查订单、看物流，随时找我～",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

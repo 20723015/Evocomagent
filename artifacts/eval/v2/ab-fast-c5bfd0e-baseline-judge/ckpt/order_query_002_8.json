@@ -1,0 +1,1 @@
+{"case_id": "order_query_002_8", "passed_rule": false, "dims": {"answer_quality": {"score": 3.0, "reason": "客服未能直接提供用户所询订单信息，仅提示无权访问并猜测另一笔订单，部分解决问题但未完整覆盖需求。"}, "faithfulness": {"score": 1.0, "reason": "回复中关于无权访问和账户订单列表的详细信息均与工具返回数据一致，未发现编造或矛盾之处。"}, "process_soundness": {"score": 3.0, "reason": "存在冗余调用，load_skill和list_user_orders并非查询特定订单的必要步骤，虽有query_order但整体流程不够精简。"}}}

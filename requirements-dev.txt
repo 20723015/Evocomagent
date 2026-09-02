@@ -1,0 +1,4 @@
+-r requirements.txt
+pytest>=8[pytest]
+httpx>=0.27
+fakeredis[lua]>=2.20

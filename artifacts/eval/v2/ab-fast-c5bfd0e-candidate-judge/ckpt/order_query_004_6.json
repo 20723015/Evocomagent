@@ -1,0 +1,1 @@
+{"case_id": "order_query_004_6", "passed_rule": false, "dims": {"answer_quality": {"score": 3.0, "reason": "客服未能直接查询到用户所问订单，而是提供另一笔订单并询问是否查询，部分解决了问题但未完整回答用户需求。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的订单查询结果和账户订单信息均与工具返回数据一致，无编造或矛盾。"}, "process_soundness": {"score": 3.0, "reason": "能通过query_order解决用户查询，但load_skill和list_user_orders属于冗余调用，顺序欠佳。"}}}

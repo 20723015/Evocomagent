@@ -1,0 +1,1 @@
+{"case_id": "kb_cross_05", "passed_rule": false, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确完整地解答了偏远运费和会员特权，逻辑清晰、语气得体，直接解决了用户问题"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的运费规则和会员权益均可在工具返回的《配送说明》和《会员权益》文档中找到对应依据，未发现编造或矛盾内容。"}, "process_soundness": {"score": 5.0, "reason": "工具选择精准，两次知识检索覆盖偏远地区运费和会员特权两个问题点，顺序合理且无多余调用。"}}}

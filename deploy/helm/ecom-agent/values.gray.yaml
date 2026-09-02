@@ -1,0 +1,22 @@
+# 阶段五 5.4：灰度发布样例配置（5% 灰度）
+#
+# 用法：
+#   helm upgrade ecom-gray deploy/helm/ecom-agent -n production \
+#     -f deploy/helm/ecom-agent/values.yaml \
+#     -f deploy/helm/ecom-agent/values.gray.yaml \
+#     --set image.tag=0.3.0-rc1
+#
+# 说明：按用户百分比灰度以「按百分比路由」为推荐形态（Argo Rollouts /
+# Service Mesh weight），此处提供最简等价物：独立灰度 Deployment +
+# 按 header/尾插的入口切流，或直接以 replica 比例配合 HPA 观察。
+# 回滚：helm rollback ecom-gray 1（秒级，RollingUpdate maxUnavailable=0）。
+
+replicaCount: 1
+
+# 灰度版本可观测标签：看板按 version 过滤对比新旧
+env:
+  APP_VERSION_VIEW: gray-rc1
+
+# 与主集群隔离的灰度组：便于按用户百分比在入口（Ingress/Gateway）切流
+entrypoint:
+  annotation: ecom-gray

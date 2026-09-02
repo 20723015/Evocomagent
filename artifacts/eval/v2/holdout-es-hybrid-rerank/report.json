@@ -1,0 +1,49 @@
+{
+  "variant": "hybrid-rerank",
+  "dataset": "E:\\ea\\app\\evaluation\\holdout_cases.json",
+  "top_k": 5,
+  "thresholds": {
+    "min_score": 0.04185213,
+    "min_score_hard": null,
+    "min_positive_recall": 0.95,
+    "min_easy_recall": 0.98,
+    "min_hard_recall": 0.8,
+    "min_mrr": 0.9,
+    "min_ndcg": 0.9,
+    "min_negative_rejection": 0.9
+  },
+  "summary": {
+    "cases": 120,
+    "positive": {
+      "cases": 97,
+      "recall_at_k": 0.9278350515463918,
+      "mrr": 0.8367697594501718,
+      "ndcg_at_k": 0.8602085287555261
+    },
+    "easy": {
+      "cases": 80,
+      "recall_at_k": 0.95,
+      "mrr": 0.8666666666666666,
+      "ndcg_at_k": 0.8880929753571458
+    },
+    "hard": {
+      "cases": 17,
+      "recall_at_k": 0.8235294117647058,
+      "mrr": 0.6960784313725491,
+      "ndcg_at_k": 0.7289876035714338
+    },
+    "negative": {
+      "cases": 23,
+      "rejection_rate": 0.7391304347826086,
+      "false_accept_rate": 0.26086956521739135
+    }
+  },
+  "failures": [
+    "正例 recall@k  92.8% <  95.0%",
+    "基础正例 recall@k  95.0% <  98.0%",
+    "正例 MRR  83.7% <  90.0%",
+    "正例 nDCG@k  86.0% <  90.0%",
+    "负例拒绝率  73.9% <  90.0%"
+  ],
+  "passed": false
+}

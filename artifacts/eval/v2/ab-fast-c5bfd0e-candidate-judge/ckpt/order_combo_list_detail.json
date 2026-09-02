@@ -1,0 +1,1 @@
+{"case_id": "order_combo_list_detail", "passed_rule": false, "dims": {"answer_quality": {"score": 4.0, "reason": "客服准确告知无法查询并给出合理原因和建议，但未直接提供订单详情，且主动推荐其他订单略有冗余。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中关于无法访问ORD-20240110-003以及可查询订单ORD-20240115-001及其商品信息，均与工具返回数据一致，未出现编造或矛盾。"}, "process_soundness": {"score": 3.0, "reason": "存在冗余调用（重复query_order），但整体能获取订单详情。"}}}

@@ -1,0 +1,1 @@
+{"case_id": "edge_07", "passed_rule": false, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确完整，主动提供物流详情并给出催单建议，语气得体，直接解决用户问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的订单号、快递公司、运单号、物流轨迹及最新状态均与工具返回数据一致，未编造具体事实。"}, "process_soundness": {"score": 5.0, "reason": "工具选择精准，先加载技能再查询订单并获取物流信息，顺序合理，无多余调用。"}}}

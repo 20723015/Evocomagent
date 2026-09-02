@@ -1,0 +1,1 @@
+{"case_id": "order_query_004_5", "passed_rule": false, "dims": {"answer_quality": {"score": 3.0, "reason": "客服未直接解决用户查询的订单号，仅说明无法访问并列出另一订单，信息不够完整，部分解决问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中关于订单无法访问及账号下订单的信息均与工具返回数据一致，无编造事实。"}, "process_soundness": {"score": 4.0, "reason": "先加载技能再查询订单基本合理，但额外调用list_user_orders略显冗余，可优化为直接query_order。"}}}

@@ -1,0 +1,1 @@
+{"case_id": "logistics_not_shipped_1", "passed_rule": true, "dims": {"answer_quality": {"score": 4.0, "reason": "客服未直接查询物流，但识别出订单号有误并提供正确订单，主动询问是否需要查询，基本解决问题。"}, "faithfulness": {"score": 1.0, "reason": "回复中所有具体信息（无权访问、订单列表内容）均与工具返回一致，且未编造物流事实。"}, "process_soundness": {"score": 3.0, "reason": "能解决问题但有冗余调用（load_skill和list_user_orders多余），顺序基本合理。"}}}

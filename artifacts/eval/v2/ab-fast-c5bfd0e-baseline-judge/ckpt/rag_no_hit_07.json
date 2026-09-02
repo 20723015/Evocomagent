@@ -1,0 +1,1 @@
+{"case_id": "rag_no_hit_07", "passed_rule": false, "dims": {"answer_quality": {"score": 5.0, "reason": "客服明确回答不支持比特币，并完整列出支持的支付方式，信息准确、语气得体，直接解决了用户问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的支付方式列表、数字人民币筹备中、不支持货到付款和境外信用卡等信息均与工具返回的知识库内容一致，比特币未被列为支持方式，说暂不支持符合依据，未出现幻觉。"}, "process_soundness": {"score": 5.0, "reason": "用户询问支付方式，调用知识库检索工具精准且必要，无多余调用"}}}

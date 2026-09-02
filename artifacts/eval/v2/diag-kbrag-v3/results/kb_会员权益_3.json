@@ -1,0 +1,70 @@
+{
+  "case_id": "kb_会员权益_3",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 13906,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 0.0,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.5
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "钻石会员权益特权"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "会员等级 特权 权益有哪些"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "会员权益 会员制度 等级说明",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 3,
+    "route": null,
+    "reply": "抱歉让您久等了！我检索了平台的会员权益相关帮助文档，目前没有找到关于「钻石会员权益」的详细说明 😔\n\n这可能是该内容文档暂未覆盖，建议您通过以下方式确认：\n\n1. **在 App 内查看**：进入「我的」→「会员中心」，页面会展示您当前会员等级对应的具体权益，以页面显示为准；\n2. **咨询在线人工客服**：在客服页面选择「转人工」，让专员为您查询更准确的会员权益明细。\n\n关于钻石会员的具体特权内容，我这边文档暂未覆盖，需进一步核实后才能答复，非常抱歉暂时无法给您准确的权益清单～\n\n请问还有其他可以帮您的吗？比如查询订单或了解退换货政策？",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

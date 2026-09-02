@@ -1,0 +1,59 @@
+{
+  "case_id": "kb_会员权益_9",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 7313,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 0.0,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "退款会扣减升级金额吗"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "退款升级金额扣减规则"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 2,
+    "route": null,
+    "reply": "您好，小夕已经帮您检索了相关政策文档，但目前**未能查到关于「退款是否扣减升级金额」的明确规定**，文档暂未覆盖到这一细节，小夕也不敢给您随意推测，以免误导您～\n\n这个情况需要进一步核实，建议您**转接人工客服**为您确认升级金额的具体处理规则。\n\n同时，为了帮您更好地处理，请问：\n1. 您提到的「升级金额」具体是指什么场景呢（例如会员等级升级、套餐/权益升级时支付的差价）？\n2. 您方便提供相关**订单号**吗？小夕可以先帮您查一下订单情况～\n\n转人工后请提供以上信息，客服会更高效地为您核实处理。给您带来不便非常抱歉🙏",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

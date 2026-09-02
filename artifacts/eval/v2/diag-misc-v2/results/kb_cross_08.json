@@ -1,0 +1,77 @@
+{
+  "case_id": "kb_cross_08",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 10996,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 0.5,
+    "requires_human_match": 0.0,
+    "citation_match": 0.0,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.16666666666666666
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "会员等级 权益"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "新人优惠券"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "钻石会员有什么权益"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "优惠券 领取 使用规则"
+        },
+        "outcome": {}
+      }
+    ],
+    "num_tool_calls": 4,
+    "route": null,
+    "reply": "抱歉让您久等了！关于您想了解的**会员等级**和**新人优惠券**，我这边检索了平台的政策文档，暂时没有找到相关的具体说明（可能是该政策文档暂未收录或还在更新中），为了给您准确的信息，这部分需要转人工客服帮您进一步核实～\n\n🙋 **建议您这样做：**\n1. **转接人工客服**，直接询问会员等级对应的权益以及新人优惠券的领取方式\n2. 或者打开 App 内「我的」→「会员中心」页面查看您的当前等级和可用优惠券\n\n除此之外，如果您想查**具体订单、物流进度、退换货**等问题，我都可以马上帮您处理！请问还有什么可以帮您的吗？😊",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

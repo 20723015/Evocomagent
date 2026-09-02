@@ -1,0 +1,69 @@
+{
+  "case_id": "kb_常见问题faq_1",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 10665,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 0.0,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.5
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "下单后多久发货 发货时效"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "发货时间 发货时效规定"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "商家多久内发货"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 3,
+    "route": null,
+    "reply": "抱歉让您久等了🙏 我查阅了相关政策和帮助文档，暂时没有找到关于\"下单后多久发货\"的具体时效说明，这部分信息我无法凭空答复您，以免给出不准确的承诺。\n\n给您两个参考方式：\n\n1. **以订单页为准**：您下单后，订单详情页通常会有预计发货时间的提示，可先留意查看（具体以页面显示为准）。\n2. **联系商家确认**：如果您已经有了订单，也可以直接咨询对应商家，获取最准确的发货安排。\n\n另外我可以帮您查一下具体订单的信息～如果有订单号，随时告诉我，我帮您查询订单状态和物流进度😊\n\n由于发货时效文档暂未覆盖，这部分如果需要进一步确认，也建议转接人工客服为您核实。请问还有其他可以帮您的吗？",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

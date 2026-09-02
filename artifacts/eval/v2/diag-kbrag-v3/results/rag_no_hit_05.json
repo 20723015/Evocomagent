@@ -1,0 +1,59 @@
+{
+  "case_id": "rag_no_hit_05",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 10791,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": null,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "线下门店在哪里 实体店 地址"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "实体店 门店 线下购物"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 2,
+    "route": null,
+    "reply": "非常抱歉，我这边检索了平台的相关资料，暂时**没有找到关于线下门店的信息**呢😥\n\n线上平台主要以网上购物为主，目前我没有查询到线下实体门店的地址信息，这方面可能需要帮您核实一下。\n\n给您两个建议：\n1. **转接人工客服**：我可以帮您把这个问题转给人工客服详细核实是否有线下门店的相关安排；\n2. **关注官方渠道**：您也可以留意平台官方 App 内的公告或帮助中心，如有线下服务网点信息通常会在官方渠道公布。\n\n请问需要我为您转接人工客服进一步确认吗？",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

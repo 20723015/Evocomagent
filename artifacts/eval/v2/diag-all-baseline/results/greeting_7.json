@@ -1,0 +1,38 @@
+{
+  "case_id": "greeting_7",
+  "passed": true,
+  "process": {
+    "tool_accuracy": null,
+    "tool_efficiency": null,
+    "token_cost": 3677,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": null
+  },
+  "result": {
+    "intent_match": 1.0,
+    "keyword_coverage": null,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 1.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [],
+    "tool_outcomes": [],
+    "num_tool_calls": 0,
+    "route": null,
+    "reply": "你好呀！我是并夕夕的智能客服「小夕」😊 很高兴为你服务！\n\n第一次来也没关系，有什么需要帮忙的尽管告诉我～比如：\n\n- 🔍 **查订单/物流**：告诉我订单号就行\n- 📦 **商品咨询**：想买什么、有什么需求都可以问我\n- 🔄 **退换货**：有不合适的商品想退货换货\n- 🎁 **优惠活动**：想了解最新的促销和优惠券\n\n你想先了解哪方面呢？或者有其他问题也欢迎随时提问！",
+    "retrieved_sources": [],
+    "error": null,
+    "tool_outputs": []
+  }
+}

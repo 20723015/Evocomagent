@@ -1,0 +1,1 @@
+{"case_id": "rag_no_hit_11", "passed_rule": false, "dims": {"answer_quality": {"score": 3.0, "reason": "客服未能直接告知总部城市，但已说明无相关信息并建议通过官方渠道确认，部分解决了问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复称未找到总部城市信息，与工具返回的results为空一致，未编造具体事实。"}, "process_soundness": {"score": 5.0, "reason": "用户询问公司总部城市，调用知识库检索工具精准且必要，无多余或缺失调用。"}}}

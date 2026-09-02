@@ -1,0 +1,54 @@
+# 阶段六 6.2 / 4.1：evolution 定时沉淀（默认 dry-run 安全预览；正式发布
+# 必须显式设置 evolutionJob.dryRun=false 并在 args 里开启发布参数）。
+{{- if .Values.evolutionJob.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ .Release.Name }}-evolution
+  labels:
+    app: ecom-agent
+    app.kubernetes.io/version: {{ .Values.image.tag | quote }}
+spec:
+  schedule: {{ .Values.evolutionJob.schedule | quote }}
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      ttlSecondsAfterFinished: 604800
+      template:
+        spec:
+          restartPolicy: OnFailure
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10001
+            {{- if .Values.kbSharedVolume.enabled }}
+            fsGroup: 10001
+            {{- end }}
+          containers:
+            - name: evolution
+              image: "{{ .Values.evolutionJob.image | default (printf "%s:%s" .Values.image.repository .Values.image.tag) }}"
+              command: ["python", "-m", "app.scripts.run_evolution"]
+              {{- if .Values.evolutionJob.dryRun }}
+              args: ["--dry-run"]
+              {{- else }}
+              args: {{ .Values.evolutionJob.args | default (list "--with-eval") | toJson }}
+              {{- end }}
+              env:
+                {{- range $k, $v := .Values.env }}
+                - name: {{ $k }}
+                  value: {{ $v | quote }}
+                {{- end }}
+              envFrom:
+                - secretRef:
+                    name: {{ .Values.envFromSecret }}
+              {{- if .Values.kbSharedVolume.enabled }}
+              volumeMounts:
+                - name: kb-shared
+                  mountPath: {{ .Values.kbSharedVolume.mountPath }}
+              {{- end }}
+          {{- if .Values.kbSharedVolume.enabled }}
+          volumes:
+            - name: kb-shared
+              persistentVolumeClaim:
+                claimName: {{ .Release.Name }}-kb-shared
+          {{- end }}
+{{- end }}

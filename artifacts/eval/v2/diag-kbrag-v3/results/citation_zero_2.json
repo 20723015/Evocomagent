@@ -1,0 +1,98 @@
+{
+  "case_id": "citation_zero_2",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 19007,
+    "token_pass": false,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 0.0,
+    "requires_human_match": 0.0,
+    "citation_match": 0.0,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "load_skill",
+      "list_user_orders",
+      "query_order",
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "load_skill",
+        "arguments": {
+          "skill_name": "process-return"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "list_user_orders",
+        "arguments": {},
+        "outcome": {
+          "success": true,
+          "count": 1
+        }
+      },
+      {
+        "name": "query_order",
+        "arguments": {
+          "order_id": "ORD-20240115-001"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "全额退款 法律规定 退换货政策"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "退换货政策 七天无理由 质量问题 退款"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "已发货订单 拒收 退款"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 6,
+    "route": null,
+    "reply": "您好，我是客服小夕😊 先别着急，我来帮您处理。\n\n我已经查到您的订单信息：\n- **订单号**：ORD-20240115-001\n- **商品**：Nike Air Max 270 运动鞋（黑色，42码）\n- **金额**：899元\n- **状态**：已发货（1月16日顺丰发出，预计1月19日送达）\n\n关于您提到的「按法律规定应全额退款」，我需要先跟您确认一下具体的情况：\n\n您想申请退款是出于什么原因呢？比如：\n1. **商品质量问题**（收到后有瑕疵/破损等）\n2. **尺码不合适/不想要了**（七天无理由）\n3. **其他情况**（如未按期发货等）\n\n不同情况对应的退款政策和运费承担方式是不同的。由于您提到的法律条款和全额退款的具体政策细节，目前我需要进一步核实后才能给您准确的答复，以免给您不准确的信息。\n\n您可以先告诉我遇到的具体问题吗？我会尽快帮您核实并跟进处理🙏",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

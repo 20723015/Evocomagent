@@ -1,0 +1,1 @@
+{"case_id": "order_query_005_7", "passed_rule": false, "dims": {"answer_quality": {"score": 3.0, "reason": "客服未直接确认用户指定的订单，而是提供了另一笔不相关订单，信息不够完整，未完全解决用户问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的所有具体事实（订单号不属于当前账户、当前账户订单信息）均与工具返回一致，未编造或矛盾。"}, "process_soundness": {"score": 3.0, "reason": "能解决问题，但先调 load_skill 再 query_order 后还调 list_user_orders，增加了冗余调用，顺序也可优化。"}}}

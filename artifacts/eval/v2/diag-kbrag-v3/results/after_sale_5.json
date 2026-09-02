@@ -1,0 +1,87 @@
+{
+  "case_id": "after_sale_5",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 17409,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": null,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "load_skill",
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "load_skill",
+        "arguments": {
+          "skill_name": "process-return"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "换货需要多久 换货时效"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "换货流程 几天 时间"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "退换货政策 时效"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "七天无理由退换货"
+        },
+        "outcome": {}
+      }
+    ],
+    "num_tool_calls": 5,
+    "route": null,
+    "reply": "非常抱歉让您久等了～我这边反复检索了帮助文档，目前没有找到关于「换货具体需要多久」的明确时效说明，这部分信息需要帮您进一步核实。\n\n为了更快帮您解决问题，建议您：\n\n1. **转接人工客服**：由专业客服为您核实换货的具体时效和流程安排；\n2. **提供订单信息**：如果您手里有订单号，也可以告诉我，我先帮您查询订单状态，看看当前是否符合退换货条件，这样人工核实时会更快。\n\n请问您方便提供一下订单号吗？或者我也可以先帮您列出近期的订单，您确认是哪一单～",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

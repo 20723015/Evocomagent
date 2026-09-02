@@ -1,0 +1,1 @@
+{"case_id": "kb_配送说明_8", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确覆盖体积重计费规则，信息完整专业，语气得体，直接解决了用户问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的运费规则内容均可在工具返回的配送说明中找到依据，未出现编造或矛盾信息。"}, "process_soundness": {"score": 5.0, "reason": "用户询问大件家电运费规则，调用知识库搜索是精准且必要的，顺序合理无冗余。"}}}

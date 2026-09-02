@@ -1,0 +1,1 @@
+{"case_id": "order_query_004_3", "passed_rule": false, "dims": {"answer_quality": {"score": 3.0, "reason": "客服未能直接回答指定订单的发货状态，仅提示订单无效并提供了另一订单信息，部分解决问题但不够直接。"}, "faithfulness": {"score": 1.0, "reason": "回复中所有具体事实（订单号不可访问、另一订单的商品价格、快递公司、运单号、物流轨迹等）均与工具返回数据一致，无编造或矛盾。"}, "process_soundness": {"score": 3.0, "reason": "有具体订单号时仍调用list_user_orders存在冗余，但整体工具选择相关且能解决问题"}}}

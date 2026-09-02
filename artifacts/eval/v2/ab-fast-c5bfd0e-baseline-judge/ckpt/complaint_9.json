@@ -1,0 +1,1 @@
+{"case_id": "complaint_9", "passed_rule": true, "dims": {"answer_quality": {"score": 4.0, "reason": "客服共情并主动核实订单，引导用户说明具体问题，语气专业得体，但尚未直接解决用户诉求，需进一步信息。"}, "faithfulness": {"score": 1.0, "reason": "订单号、商品、金额、状态及物流节点均与工具返回数据一致，SKU中黑色42码与工具信息相符，无编造或矛盾。"}, "process_soundness": {"score": 2.0, "reason": "用户投诉客服敷衍并威胁曝光，正确应优先安抚或转人工，实际调用订单物流工具不相关，且缺少关键处理步骤。"}}}

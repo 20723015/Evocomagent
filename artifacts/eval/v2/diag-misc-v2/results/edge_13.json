@@ -1,0 +1,79 @@
+{
+  "case_id": "edge_13",
+  "passed": false,
+  "process": {
+    "tool_accuracy": null,
+    "tool_efficiency": null,
+    "token_cost": 12823,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": null
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": null,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "load_skill",
+      "query_product",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "load_skill",
+        "arguments": {
+          "skill_name": "product-recommend"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "query_product",
+        "arguments": {
+          "keyword": "AirPods"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "批量购买批发价优惠"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "批发 大量采购 数量折扣"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 4,
+    "route": null,
+    "reply": "我帮您查到了 AirPods 的相关信息，同时也查了一下批发优惠的政策，给您反馈如下：\n\n**📦 商品信息**\n您提到的 AirPods，目前平台上在售的是：\n- **Apple AirPods Pro 2** —— ¥1799/个（白色、蓝牙5.3、主动降噪），当前库存 89 件\n- 另有 **AirPods 保护壳（透明）** ¥29.9，可搭配使用\n\n**💰 关于批发价**\n我已检索了平台相关的批发/大宗采购政策，目前**文档中没有查到批量购买的数量折扣方案**。这类大宗采购的价格通常需要商务单独沟通，涉及的具体优惠额度我这边无法确认，不能给您打包票，需要帮您核实后再答复。\n\n给您两个建议：\n1. **我为您转接人工客服**，由专员帮您核实批量采购的具体价格方案；\n2. 如果您是个人使用（比如送人、自用），也可以直接按正常价格下单，目前 Pro 2 库存充足。\n\n您看需要我为您转人工核实批发价格吗？😊",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

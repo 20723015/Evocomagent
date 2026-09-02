@@ -1,0 +1,1 @@
+{"case_id": "edge_08", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确、完整、专业，直接解答了用户关于快递超时退回的疑问，并主动提供进一步帮助。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中关于驿站超48小时未取可能退回的说明，与工具返回的《物流异常与投诉处理》内容一致；其余为一般性提醒和询问，未编造具体订单或物流事实。"}, "process_soundness": {"score": 5.0, "reason": "工具选择精准，直接调用知识库查询退件规则，顺序合理且无多余调用。"}}}

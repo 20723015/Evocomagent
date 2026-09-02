@@ -1,0 +1,69 @@
+{
+  "case_id": "kb_会员权益_5",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 10647,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 0.0,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "会员积分可以抵现金吗"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "会员积分使用规则 抵现"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "会员权益 积分"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 3,
+    "route": null,
+    "reply": "抱歉让您久等了！我这边检索了会员权益相关的帮助文档，目前没有找到「会员积分抵现金」的具体规则说明 😥\n\n为了给您准确的答复，这个问题需要请人工客服进一步核实。您也可以通过以下方式继续跟进：\n- **在线转人工**：在对话窗口点击「转人工」按钮，人工客服会帮您确认积分的具体使用规则\n- **查看个人中心**：您可以到「我的-积分明细」里看看当前积分情况和可用的兑换/抵扣入口，具体以页面展示为准\n\n给您带来的不便非常抱歉，请问还有其他可以帮您的吗？比如查询订单、商品信息等，小夕随时为您服务～",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

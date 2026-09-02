@@ -1,0 +1,1 @@
+{"case_id": "rag_no_hit_10", "passed_rule": false, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确完整，专业且贴心，直接确认可购买并主动追问细节，语气得体，完全解决了用户问题。"}, "faithfulness": {"score": 1.0, "reason": "回复中的商品价格、库存、售后政策及企业采购信息均可在工具返回数据中找到依据，未出现编造或矛盾内容。"}, "process_soundness": {"score": 3.0, "reason": "调用序列包含较多冗余步骤，如load_skill与search_knowledge功能重叠，但整体仍能解决问题。"}}}

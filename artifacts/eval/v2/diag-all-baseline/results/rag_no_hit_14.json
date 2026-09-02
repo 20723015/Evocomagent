@@ -1,0 +1,38 @@
+{
+  "case_id": "rag_no_hit_14",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 0.0,
+    "tool_efficiency": null,
+    "token_cost": 4047,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 0.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": null,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [],
+    "tool_outcomes": [],
+    "num_tool_calls": 0,
+    "route": null,
+    "reply": "您好呀，我是「并夕夕」电商平台的智能客服小夕～😊\n\n您问的仓库门禁系统品牌，这属于仓储内部的安防设施信息，超出了我能服务的能力范围，我也无法查询到这类数据，很抱歉没法为您解答。\n\n如果您需要的是我们电商平台相关的服务，比如：\n- 📦 **订单/物流查询**\n- 🔄 **退换货咨询**\n- 🛒 **商品咨询与推荐**\n- 🎁 **优惠活动**\n\n我都可以随时帮您处理！请问还有其他可以帮到您的吗？",
+    "retrieved_sources": [],
+    "error": null,
+    "tool_outputs": []
+  }
+}

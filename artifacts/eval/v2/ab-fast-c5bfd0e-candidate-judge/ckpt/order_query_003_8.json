@@ -1,0 +1,1 @@
+{"case_id": "order_query_003_8", "passed_rule": false, "dims": {"answer_quality": {"score": 3.0, "reason": "客服未查到原订单但未覆盖参考要点中的小米5999信息，推荐无关订单，未完全解决用户问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的订单状态、商品、金额均与list_user_orders返回一致，ORD-20240110-003查询失败也与query_order返回一致。"}, "process_soundness": {"score": 3.0, "reason": "能查询订单但存在多余调用list_user_orders，用户已明确指定订单号，无需再列出用户订单。"}}}

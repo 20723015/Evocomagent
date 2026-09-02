@@ -1,0 +1,1 @@
+{"case_id": "order_query_003_2", "passed_rule": false, "dims": {"answer_quality": {"score": 2.0, "reason": "客服未直接查询用户指定订单的状态，而是以无法访问为由提供另一笔无关订单，偏离了用户问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中无法访问的订单号、当前账户订单列表及订单信息均与工具返回数据一致，未编造具体事实。"}, "process_soundness": {"score": 3.0, "reason": "已有具体订单号，调用query_order即可，多余调用list_user_orders，存在冗余。"}}}

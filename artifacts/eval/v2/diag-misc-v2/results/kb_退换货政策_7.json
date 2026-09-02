@@ -1,0 +1,61 @@
+{
+  "case_id": "kb_退换货政策_7",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 10467,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 0.0,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.5
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "退款多久到账",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "退款到账时间 退换货",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 2,
+    "route": null,
+    "reply": "抱歉让您久等了😊 关于「退款多久到账」这个时效问题，我查询了当前的知识文档，暂时没有找到明确的相关说明，答复您之前需要进一步核实。\n\n为了帮您确认，也想多了解一点情况：\n\n1. **您是想了解一般退款流程的整体到账时效吗？** 如果是，这项政策细节文档未覆盖，我可以帮您转人工客服核实具体规定；\n2. **您是有一笔具体的退款在申请中吗？** 如果是，麻烦您提供一下**订单号**，我可以帮您查询这笔订单的退款状态和进度，这样更准确～\n\n您看更符合哪种情况呢？如果方便的话，也可以直接告诉我订单号，我先帮您查查订单状态😊",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

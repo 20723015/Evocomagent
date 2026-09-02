@@ -1,0 +1,1 @@
+{"case_id": "edge_09", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确完整地说明了退款金额上限，逻辑清晰，语气得体，直接解决了用户问题。"}, "faithfulness": {"score": 1.0, "reason": "回复中的极速退款上限200元、超上限走普通流程、高风险订单按普通流程审核，以及运费险理赔上限25元，均可从工具返回的知识库资料中找到依据。"}, "process_soundness": {"score": 5.0, "reason": "工具选择精准，直接调用知识库查询退款上限，顺序合理且无多余调用。"}}}

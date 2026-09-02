@@ -1,0 +1,1 @@
+{"case_id": "kb_常见问题faq_1", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确、完整地解答了发货时效问题，涵盖普通和预售商品，语气专业得体，并主动提供进一步帮助。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的发货时效和配送时效说明均可在知识库工具返回中找到依据，未出现编造事实。"}, "process_soundness": {"score": 5.0, "reason": "调用知识库查询发货时效，工具选择精准且无多余调用。"}}}

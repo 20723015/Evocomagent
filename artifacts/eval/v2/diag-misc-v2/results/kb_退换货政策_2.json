@@ -1,0 +1,61 @@
+{
+  "case_id": "kb_退换货政策_2",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 10552,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 0.0,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "七天无理由退货的条件是什么",
+          "top_k": 3
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "退换货政策 七天无理由 适用范围 规则",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 2,
+    "route": null,
+    "reply": "抱歉，让您久等了！我这边检索了平台的退换货政策文档，目前**暂时没有找到关于「七天无理由退货条件」的具体规则内容**（文档未覆盖该条目）。\n\n按照我们的服务规范，我不能凭经验为您编造政策细节，以免误导您。所以这一项我需要为您**转接人工客服进一步核实**确认，请稍候～\n\n另外，为了后续更快地帮到您，可以告诉我：\n1. 您是**购买多久后发现需要退货**？\n2. 涉及的是**具体哪个订单**（方便的话提供订单号）？\n\n我可以同时帮您查看一下订单情况，人工客服接入后就能直接对接处理啦！",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

@@ -1,0 +1,81 @@
+{
+  "case_id": "kb_cross_08",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 11211,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 0.5,
+    "requires_human_match": 1.0,
+    "citation_match": 0.0,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.5
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "会员等级权益说明",
+          "top_k": 3
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "新人优惠券领取和使用规则",
+          "top_k": 3
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "会员权益",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "优惠券",
+          "top_k": 5
+        },
+        "outcome": {}
+      }
+    ],
+    "num_tool_calls": 4,
+    "route": null,
+    "reply": "您好，非常抱歉，关于「会员等级」和「新人优惠券」这两项内容，我在平台的帮助文档中暂时没有检索到相关的政策说明，暂时无法为您提供准确的信息。\n\n为了避免给您不实的信息，建议您：\n\n1. **打开并夕夕 App**，进入「我的」页面查看会员等级说明及新人优惠券领取入口，领取和使用规则以页面实际展示为准；\n2. 或者我这边为您**转接人工客服**，由专员为您进一步核实这两项权益的详细规则。\n\n请问还需要我帮您处理其他问题吗？比如查询订单、了解退换货政策等，小夕都可以为您服务~ 😊",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

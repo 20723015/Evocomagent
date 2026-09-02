@@ -1,0 +1,75 @@
+{
+  "case_id": "rag_no_hit_12",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 10165,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": null,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "物流车使用的燃料类型"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "快递 配送 车辆 运输 方式"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 2,
+    "route": null,
+    "reply": "抱歉让您久等了！我检索了平台的政策与帮助文档，目前**没有找到关于物流车辆燃料类型的相关说明**，这部分信息不属于我们客服可以查询的范围，我无法给您确切的答复。\n\n如果您想了解的是**订单的配送方式或物流情况**，可以告诉我您的订单号，我帮您查询具体的物流信息～😊\n\n另外，如果这个问题是需要平台对外公布的企业信息，建议您通过「并夕夕官方客服热线」或「App 内的官方渠道」进一步咨询核实哦。请问还有其他可以帮您的吗？",
+    "retrieved_sources": [],
+    "error": null,
+    "tool_outputs": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "物流车使用的燃料类型"
+        },
+        "result": "{\"success\": true, \"backend\": \"es\", \"query\": \"物流车使用的燃料类型\", \"results\": []}"
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "快递 配送 车辆 运输 方式"
+        },
+        "result": "{\"success\": true, \"backend\": \"es\", \"query\": \"快递 配送 车辆 运输 方式\", \"results\": []}"
+      }
+    ]
+  }
+}

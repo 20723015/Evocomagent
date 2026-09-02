@@ -1,0 +1,69 @@
+{
+  "case_id": "kb_退换货政策_12",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 11909,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 1.0,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.5
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "生鲜水果可以七天无理由退货吗"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "生鲜 退换货政策"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "七天无理由退货 适用范围"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 3,
+    "route": null,
+    "reply": "抱歉让您久等了！我检索了平台的退换货政策文档，目前文档中**没有明确覆盖「生鲜水果七天无理由退货」的具体规定**，属于文档未覆盖的情况，我不能凭经验给您下结论，以免误导您。\n\n为了给您准确的答复，建议您通过以下方式进一步核实：\n\n1. **转接人工客服**：我可以帮您记录，由人工坐席结合您的具体订单为您核实处理；\n2. **查看具体订单页面**：如果您有对应的生鲜订单，可以在订单详情页查看该商品的退换货说明，通常会标注是否支持七天无理由；\n3. **确认订单信息**：如果您愿意，把订单号告诉我，我可以帮您查询订单状态，结合实际情况给您建议。\n\n请问需要我帮您转人工客服，还是先查一下您的相关订单呢？😊",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

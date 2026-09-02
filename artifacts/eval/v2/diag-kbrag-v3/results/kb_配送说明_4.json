@@ -1,0 +1,59 @@
+{
+  "case_id": "kb_配送说明_4",
+  "passed": true,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 10276,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 1.0,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 1.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "港澳台是否能直接发货配送"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "配送范围 港澳台地区 发货"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 2,
+    "route": null,
+    "reply": "很抱歉，关于「港澳台是否能直接发货」这个问题，我检索了平台的配送政策文档后暂时没有找到相关的明确规定，无法给您一个确切的答复，还请您谅解。\n\n建议您通过以下方式进一步确认：\n1. 在下单页面选择收货地址时，查看是否支持填写港澳台地区地址\n2. 联系人工客服，由专人帮您核实该区域的配送政策\n\n如果您还有其他能帮到您的问题，欢迎随时告诉我～",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

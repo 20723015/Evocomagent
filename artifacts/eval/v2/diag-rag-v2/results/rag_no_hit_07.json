@@ -1,0 +1,49 @@
+{
+  "case_id": "rag_no_hit_07",
+  "passed": true,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 6891,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": null,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 1.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "支持哪些支付方式 比特币"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 1,
+    "route": null,
+    "reply": "非常抱歉，关于「比特币支付」这一支付方式，我查阅了目前平台的支付相关文档，暂未查到相关说明，该情况文档未覆盖。\n\n为了给您准确的答复，建议您转接人工客服进一步确认，或者您也可以通过官方客服渠道咨询最新的支付政策。\n\n请问还有其他可以帮您的吗？比如查询订单、了解退换货政策等，我都可以帮您处理～😊",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

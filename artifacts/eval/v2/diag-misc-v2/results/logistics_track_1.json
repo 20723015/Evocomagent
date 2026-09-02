@@ -1,0 +1,69 @@
+{
+  "case_id": "logistics_track_1",
+  "passed": true,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 12217,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": 1.0,
+    "keyword_coverage": 1.0,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 1.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "load_skill",
+      "query_order",
+      "query_logistics"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "load_skill",
+        "arguments": {
+          "skill_name": "track-order"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "query_order",
+        "arguments": {
+          "order_id": "ORD-20240115-001"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "query_logistics",
+        "arguments": {
+          "order_id": "ORD-20240115-001"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 3,
+    "route": null,
+    "reply": "您的订单物流信息已经查到啦～给您汇报一下：\n\n**📦 订单 ORD-20240115-001**\n- **商品**：Nike Air Max 270 运动鞋（黑色 42码）× 1，共 **¥899**\n- **状态**：已发货（1月16日发出）\n- **快递**：顺丰速运，运单号 SF1234567890\n- **预计送达**：1月19日\n\n**🚚 最新物流轨迹：**\n1. 1月16日 14:20 深圳南山区 · 快件已揽收\n2. 1月17日 06:00 广州转运中心 · 已到达\n3. 1月17日 22:00 上海转运中心 · 已到达\n4. 1月18日 08:30 上海浦东区 · **正在派送中**\n\n您的快件目前正在**上海浦东区派送中**，预计很快就能送到啦！按照正常进度明天（1月19日）就能到达，请您保持电话畅通，留意收件～ 😊\n\n如果快件送达后没有及时收到，可以检查一下菜鸟驿站或丰巢等代收点哦。还有什么需要我帮忙的吗？",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

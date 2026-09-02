@@ -1,0 +1,1 @@
+{"case_id": "product_home_1", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "准确回答价格4299，信息完整且语气得体，直接解决了用户问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的价格、库存、颜色、续航、吸力及商品亮点均与工具返回数据一致。"}, "process_soundness": {"score": 5.0, "reason": "用户询问商品价格，调用商品查询工具精准对路，无多余或缺失调用。"}}}

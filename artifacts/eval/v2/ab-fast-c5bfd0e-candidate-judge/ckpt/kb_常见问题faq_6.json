@@ -1,0 +1,1 @@
+{"case_id": "kb_常见问题faq_6", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确完整地提供了缺货时的到货提醒方案，并补充了已下单缺货的后续处理方式，语气专业得体，直接解决问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中关于商品页缺货处理、到货提醒方式、补货时间不固定及每日最多1次提醒等内容均能在工具返回的知识库中找到依据，未编造具体事实。"}, "process_soundness": {"score": 3.0, "reason": "调用search_knowledge方向正确，但连续两次相同调用属于冗余，一次即可解决问题。"}}}

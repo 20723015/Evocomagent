@@ -1,0 +1,1 @@
+{"case_id": "kb_cross_02", "passed_rule": false, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确完整地解答了黄金会员偏远地区不包邮的问题，信息清晰，语气得体，直接解决问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中黄金会员不含偏远地区、钻石会员含偏远地区及运费加收20元起，均能在工具返回的会员权益和配送说明中找到依据。"}, "process_soundness": {"score": 5.0, "reason": "工具选择精准，两次检索知识库合理，无多余或缺失调用。"}}}

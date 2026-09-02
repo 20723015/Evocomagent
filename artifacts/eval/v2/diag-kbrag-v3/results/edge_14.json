@@ -1,0 +1,78 @@
+{
+  "case_id": "edge_14",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 14789,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": null,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "吸尘器上门安装"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "家电上门安装"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "商品安装服务说明"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "安装",
+          "top_k": 5
+        },
+        "outcome": {}
+      }
+    ],
+    "num_tool_calls": 4,
+    "route": null,
+    "reply": "非常抱歉，让您久等了 🙏\n\n关于「吸尘器是否需要上门安装」这个问题，我检索了并夕夕现有的政策与帮助文档，目前**没有检索到吸尘器/家电安装相关的说明文档**，因此无法准确告知您是否需要上门安装。\n\n这种情况文档暂未覆盖，**需要转人工客服为您进一步确认**。建议您也可以直接查看商品详情页的「服务说明」栏目，或联系商家确认该款吸尘器是否包含安装服务。\n\n请问还有其他我可以帮您的吗？例如需要我帮您查询某个具体订单或商品的信息～",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

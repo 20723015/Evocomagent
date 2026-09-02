@@ -1,0 +1,1 @@
+{"case_id": "kb_cross_09", "passed_rule": false, "dims": {"answer_quality": {"score": 5.0, "reason": "回复完整覆盖发货时效和物流异常催件，信息准确专业，语气得体，直接解决用户问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的发货时效、物流催件、错派、丢件、未收到货等信息均可在工具返回的知识库文档中找到对应依据，未出现编造或矛盾。"}, "process_soundness": {"score": 4.0, "reason": "工具选择对路，两次知识库搜索分别覆盖催件和发货时间，顺序合理，但略有可优化空间（可合并或精简）。"}}}

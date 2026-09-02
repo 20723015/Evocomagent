@@ -1,0 +1,1 @@
+{"case_id": "rag_no_hit_13", "passed_rule": true, "dims": {"answer_quality": {"score": 3.0, "reason": "回复未直接解决用户问题，仅说明文档未覆盖并建议转人工，信息不够完整。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的发票类型描述与工具返回一致，且关于国外公司的说明是基于工具返回未覆盖该情况，没有编造具体事实。"}, "process_soundness": {"score": 5.0, "reason": "用户询问开票给国外公司的业务规则，调用知识库检索是精准且必要的，无多余调用。"}}}

@@ -1,0 +1,77 @@
+{
+  "case_id": "kb_cross_05",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 12755,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 1.0,
+    "requires_human_match": 0.0,
+    "citation_match": 0.0,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.3333333333333333
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "偏远地区运费怎么算"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "会员特权有哪些"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "配送说明 包邮 偏远地区"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "会员权益 会员等级"
+        },
+        "outcome": {}
+      }
+    ],
+    "num_tool_calls": 4,
+    "route": null,
+    "reply": "非常抱歉让您久等了 🙏 我刚刚检索了平台的政策帮助文档，目前**关于「偏远地区运费」和「会员特权」的详细规则文档中没有查到明确覆盖的内容**，为了避免给您不准确的信息，我不能凭空推断这些政策细节。\n\n针对您这两个问题，建议这样处理：\n\n1. **偏远地区运费**：具体运费是否收取、收取多少，通常以结算页面和订单页面实际显示的金额为准，您可以下单时留意结算页的运费明细。\n2. **会员特权**：会员权益的具体项目，建议您查看「我的-会员中心」页面展示的权益清单，以页面公示为准。\n\n由于文档暂未覆盖这两块的完整说明，涉及的具体政策细节需要为您核实后答复，我已将您的问题标记为需要转人工进一步确认，**建议转接人工客服**为您做准确的解答，您看可以吗？\n\n如果还有其他商品、订单方面的问题，我也很乐意继续帮您～",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

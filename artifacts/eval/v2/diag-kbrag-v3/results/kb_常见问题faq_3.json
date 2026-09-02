@@ -1,0 +1,77 @@
+{
+  "case_id": "kb_常见问题faq_3",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 10852,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 0.0,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "支付成功但订单未识别怎么办"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "付款成功订单未生成 处理方式"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "支付问题 订单状态 未到账"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "支付遇到问题常见问题"
+        },
+        "outcome": {}
+      }
+    ],
+    "num_tool_calls": 4,
+    "route": null,
+    "reply": "抱歉让您久等了 🙏 我这边已经帮您检索了平台的帮助文档，目前**没有找到关于「支付成功但订单未识别」这类问题的具体处理说明**，需要为您转接人工客服进一步核实处理。\n\n同时，为了能更快帮到您，建议您稍后转人工时提供以下信息：\n- 支付方式及支付时间\n- 支付成功的凭证截图（如银行/支付平台的扣款记录）\n- 如有订单号也可一并提供\n\n人工客服会协助您核实款项去向并处理到账问题。请问还需要我帮您查询其他订单或商品信息吗？",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

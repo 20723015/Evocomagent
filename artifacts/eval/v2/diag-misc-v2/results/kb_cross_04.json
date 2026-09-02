@@ -1,0 +1,86 @@
+{
+  "case_id": "kb_cross_04",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 18880,
+    "token_pass": false,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 1.0,
+    "requires_human_match": 0.0,
+    "citation_match": 0.0,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.3333333333333333
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "保修期内坏了寄回运费谁出"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "保修期 质量问题 退货运费"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "售后维修 运费 承担"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "退换货运费由谁承担",
+          "top_k": 5
+        },
+        "outcome": {}
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "保修期内寄回运费"
+        },
+        "outcome": {}
+      }
+    ],
+    "num_tool_calls": 5,
+    "route": null,
+    "reply": "很抱歉，我刚才又尝试了几次检索，平台的政策与帮助文档中**确实没有覆盖「保修期内寄回运费由谁承担」这一细节**。\n\n根据我们的服务准则，对于文档未覆盖、无法确认的情况，我不会凭空给您承诺运费归属（比如「平台承担」或「您承担」），以免给您错误信息。\n\n**建议您转接人工客服进一步处理**，人工客服可以结合您的具体订单、商品保修条款和实际情况，为您确认：\n- 运费承担方；\n- 寄回的完整流程与注意事项。\n\n您也可以在转人工前提供**订单号**或商品名称，方便客服更快帮您核对。请问还有其他我可以帮您解答的问题吗？😊",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

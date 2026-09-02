@@ -1,0 +1,1 @@
+{"case_id": "kb_退换货政策_9", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确完整地说明了拒收退款流程，确认订单信息并主动询问拒收原因，直接解决了用户问题，语气得体。"}, "faithfulness": {"score": 1.0, "reason": "回复中的订单信息（订单号、商品、金额、状态）及拒收退款政策均来自工具返回，未编造或矛盾。"}, "process_soundness": {"score": 5.0, "reason": "工具选择精准：先加载技能再查订单最后搜索知识，顺序合理，无多余调用。"}}}

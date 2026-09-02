@@ -1,0 +1,1 @@
+{"case_id": "edge_11", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "客服准确确认拒收可退款，说明流程和注意事项，信息完整且语气得体。"}, "faithfulness": {"score": 1.0, "reason": "订单号、商品、金额、状态均与工具返回一致，拒收退款政策和运费险说明均可在知识库检索结果中找到依据，未编造具体事实。"}, "process_soundness": {"score": 5.0, "reason": "工具选择精准，先加载技能，再搜索退货知识，最后查询用户订单，顺序合理且无多余调用。"}}}

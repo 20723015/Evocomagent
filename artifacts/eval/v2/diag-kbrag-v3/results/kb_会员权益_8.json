@@ -1,0 +1,71 @@
+{
+  "case_id": "kb_会员权益_8",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 13988,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 0.0,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "会员收费吗 会员怎么开通 费用"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "会员权益 会员费用",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "会员开通 会费 收费规则",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 3,
+    "route": null,
+    "reply": "抱歉让您久等了～ 关于「会员是否收费」的问题，我检索了平台的政策与帮助文档，暂时没有查到会员收费规则的相关说明 ☹️\n\n由于这项信息我这边暂时无法为您确认，建议您：\n\n1. **转接人工客服**：咨询具体的会员开通及收费规则，客服会给您准确的答复；\n2. **以平台页面显示为准**：您也可以在 App 内「我的-会员中心」查看开通页面的实际收费说明。\n\n请问还有其他可以帮到您的吗？比如查询订单、商品信息等，我都可以为您服务～ 😊",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

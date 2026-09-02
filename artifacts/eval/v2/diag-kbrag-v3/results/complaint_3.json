@@ -1,0 +1,59 @@
+{
+  "case_id": "complaint_3",
+  "passed": true,
+  "process": {
+    "tool_accuracy": null,
+    "tool_efficiency": null,
+    "token_cost": 11308,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": null
+  },
+  "result": {
+    "intent_match": 1.0,
+    "keyword_coverage": null,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 1.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "recall_user_memory",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "recall_user_memory",
+        "arguments": {
+          "query": "投诉 客服态度 不满"
+        },
+        "outcome": {
+          "success": false
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "客服态度差 投诉 转人工 经理 处理流程"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 2,
+    "route": null,
+    "reply": "非常抱歉让您有这样的感受，真的很对不起🙏\n\n关于您提到的客服态度问题，我这边已经帮您记录下来了。不过我目前可以为您处理订单、商品、售后等具体问题，**针对客服服务态度的投诉和申诉，需要转接人工专员为您核实处理**。\n\n在为您转接之前，我想再确认一下：\n\n1. 您方便告诉我**具体是哪位客服、哪个环节**让您不满意的吗？我好尽量详细地记录下来，方便专员跟进。\n2. 您目前是否有**订单或售后方面的问题**需要我这边先帮您处理？如果能帮上忙，我一定尽力为您解决。\n\n您看这样可以吗？我马上为您安排转接，同时也愿意先为您处理实际的问题。请别着急，我会一直陪着您把问题处理好🌷",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

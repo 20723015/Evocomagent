@@ -1,0 +1,78 @@
+{
+  "case_id": "after_sale_6",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 14185,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": null,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "load_skill",
+      "search_knowledge",
+      "search_knowledge",
+      "list_user_orders"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "load_skill",
+        "arguments": {
+          "skill_name": "process-return"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "只换不退 换货 政策"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "换货 支持换货 流程"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "list_user_orders",
+        "arguments": {},
+        "outcome": {
+          "success": true,
+          "count": 1
+        }
+      }
+    ],
+    "num_tool_calls": 4,
+    "route": null,
+    "reply": "您好，小夕已经帮您查询了相关信息，情况和您说明一下：\n\n**关于「只换不退」**\n我检索了平台的退换货政策文档，目前**暂未检索到「只换不退」相关政策/换货流程的明确说明**（文档未覆盖）。为避免给您错误的指引，这个情况需要为您转人工客服进一步确认是否可以仅换货、如何操作。\n\n**您的订单情况**\n我看到您当前有一个订单：\n- 订单号：ORD-20240115-001\n- 商品：Nike Air Max 270 运动鞋\n- 金额：899 元\n- 状态：已发货\n\n需要说明的是，您的订单目前处于**已发货**状态，即使要处理退换，也通常需要先等签收后才能进行。\n\n**小夕给您的建议：**\n1. 您可以先确认一下是否想针对这个订单申请**换货**（同款换尺码/换颜色），我可以帮您转人工确认换货资格与流程；\n2. 如果只是想退货退款，订单已发货状态下也可以选择**签收后退货**或**拒收**（拒收后按平台流程处理退款），这部分政策我可以再帮您核实。\n\n请问您更倾向哪种处理方式呢？或者您方便告诉我具体是想换什么（尺码/颜色）吗？我帮您对接核实～",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

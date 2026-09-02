@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>并夕夕 · 智能客服「小夕」</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛍️</text></svg>">
+<link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+<div class="app">
+  <div class="sidebar-mask" id="sidebarMask" hidden aria-hidden="true"></div>
+  <aside class="sidebar" id="sidebar" aria-label="会话侧栏">
+    <div class="brand">
+      <div class="logo" aria-hidden="true">🛍️</div>
+      <div class="brand-name">小夕客服</div>
+      <button id="closeSidebar" class="btn btn-outline icon-btn" style="margin-left:auto" aria-label="收起侧栏">✕</button>
+    </div>
+    <div class="brand-sub">ReAct · 工具调用 · RAG · Memory</div>
+    <button id="btnNew" class="btn btn-primary">＋ 新会话</button>
+    <nav class="session-list" id="sessionList" aria-label="历史会话"></nav>
+    <div class="side-footer">
+      <label class="uid-row">用户<input id="userIdInput" maxlength="64" spellcheck="false" aria-label="用户标识"></label>
+      <div class="foot-row">
+        <span id="healthDot" class="dot" role="img" aria-label="服务状态未知"></span><span id="healthText">检查中…</span>
+        <span class="spacer"></span>
+        <a class="ops-link" href="/ops.html">🛠 运营工作台</a>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="chat-header">
+      <button id="openSidebar" class="btn btn-outline icon-btn" aria-label="打开侧栏" aria-expanded="false" aria-controls="sidebar">☰</button>
+      <div class="chat-title" id="chatTitle">新会话</div>
+      <button id="btnReset" class="btn btn-outline">清空上下文</button>
+    </header>
+
+    <div class="chat" id="chat" role="log" aria-label="对话消息">
+      <div class="inner" id="inner"></div>
+    </div>
+
+    <footer class="composer">
+      <div class="input-bar">
+        <textarea id="input" rows="1" placeholder="输入问题，Enter 发送（Shift+Enter 换行）" aria-label="输入问题"></textarea>
+        <button id="send" class="btn btn-primary">发送</button>
+      </div>
+      <div class="disclaimer">回复由 AI 生成，仅供参考 · 转人工时将生成坐席工单</div>
+    </footer>
+  </main>
+</div>
+
+<div id="srStatus" class="sr-only" role="status" aria-live="polite"></div>
+
+<script src="/js/common.js"></script>
+<script src="/js/chat.js"></script>
+</body>
+</html>

@@ -1,0 +1,79 @@
+{
+  "case_id": "edge_08",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 11565,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 0.0,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.5
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "快递在驿站存放多长时间未取会被退回"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "驿站包裹超时未取退回规则"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "驿站 快递 超时 存放 退回 多久",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "包裹未取 退回 卖家 常见问题",
+          "top_k": 5
+        },
+        "outcome": {}
+      }
+    ],
+    "num_tool_calls": 4,
+    "route": null,
+    "reply": "您好，抱歉让您久等了～我帮您检索了一下平台的帮助文档，目前**没有查到关于\"驿站存放多久未取会被退回\"的明确规定**，这部分信息文档未覆盖，我不能凭空给您一个时间承诺，还请您谅解🙏\n\n给您两个建议参考：\n\n1. **直接联系驿站/快递员确认**：驿站对包裹的保管时限通常以快递公司或驿站的实际规定为准，建议您通过短信或 App 里的联系方式问问驿站工作人员，最准确。\n2. **帮您查订单物流**：如果您方便提供订单号，我可以帮您查看当前物流轨迹，看看包裹现在的状态，也好判断是否还在正常派送中。\n\n您看需要我帮您查一下具体订单的物流情况吗？如果有订单号可以直接发给我；没有的话，我也可以帮您把近期的订单列出来确认～",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

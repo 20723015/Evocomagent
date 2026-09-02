@@ -1,0 +1,1 @@
+{"case_id": "product_shoe_5", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "客服准确回答了价格，信息完整且语气得体，直接解决了用户问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的价格、材质、特点、库存等信息均与工具返回的Nike Air Max 270商品数据一致，没有编造或矛盾。"}, "process_soundness": {"score": 5.0, "reason": "用户询问Nike Air Max 270价格，调用query_product工具精准且必要，无冗余或缺失。"}}}

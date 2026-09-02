@@ -1,0 +1,59 @@
+{
+  "case_id": "rag_no_hit_01",
+  "passed": true,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 11193,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": null,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 1.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "价格保护险 价格保护 保价"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "价格保护 降价退差价"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 2,
+    "route": null,
+    "reply": "您好，很抱歉，我刚刚检索了平台的政策与帮助文档，暂时没有找到关于「价格保护险」的相关说明 😥\n\n您提到的这项服务，平台目前公开的政策文档里暂未覆盖，我需要帮您进一步核实确认。建议您转接人工客服，由专员为您详细解答。\n\n请问还有什么其他可以帮到您的吗？比如查订单、退换货、商品咨询等，我都可以帮您处理~",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

@@ -1,0 +1,69 @@
+{
+  "case_id": "kb_配送说明_8",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 11054,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 0.0,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "大件家电运费怎么算"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "大件商品 配送 运费 收费标准"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "家电 配送费 运费"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 3,
+    "route": null,
+    "reply": "您好，小夕帮您检索了平台的配送相关政策，目前文档中暂时没有查询到关于「大件家电运费」的具体收费标准呢😥\n\n为了给您准确的答复，这类具体费用规则我需要帮您进一步核实。建议您：\n\n1. **在商品详情页查看**：大件家电（如冰箱、洗衣机、电视等）的运费通常会在下单前于商品页面明确展示，您可以先在下单页面确认实际运费；\n2. **提供具体商品/订单**：如果您看中了某款或已下单，把商品名称或订单号发给我，我可以帮您查看具体信息；\n3. **转人工核实**：您也可以稍后转接人工客服，获取更详细的运费说明。\n\n这个情况文档未覆盖，需要帮您转人工进一步确认，请问您还需要我协助其他方面吗？比如查订单、看商品，我都可以帮您办理哦～",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

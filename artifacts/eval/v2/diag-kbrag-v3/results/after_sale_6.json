@@ -1,0 +1,99 @@
+{
+  "case_id": "after_sale_6",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 17227,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": null,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "load_skill",
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "load_skill",
+        "arguments": {
+          "skill_name": "process-return"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "只换货不退款可以吗 换货政策"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "换货 尺码不合适 申请换货",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "退换货政策 七天无理由",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "退货 退款 支持换货",
+          "top_k": 5
+        },
+        "outcome": {}
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "七天无理由退货规则",
+          "top_k": 5
+        },
+        "outcome": {}
+      }
+    ],
+    "num_tool_calls": 6,
+    "route": null,
+    "reply": "抱歉让您久等了！关于「只换不退」的问题，我这边检索了平台的退换货帮助文档，暂时没有查到明确支持\"仅换货、不退款\"这一操作方式的政策说明。\n\n由于这类换货处理涉及具体的订单状态和商品情况，为避免给您不准确的信息，我建议：\n\n1. **转接人工客服**：由专人为您核实是否可以办理仅换货，以及具体的换货流程和时效；\n2. **您可以先提供订单号**（格式如 ORD-2024xxxxx-xxx），我帮您查询订单状态，看看当前订单处于哪个阶段，方便人工客服更快为您处理。\n\n请问您方便提供一下订单号吗？或者需要我现在为您转接人工客服呢？😊",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

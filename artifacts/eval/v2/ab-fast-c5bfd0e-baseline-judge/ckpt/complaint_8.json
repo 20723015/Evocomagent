@@ -1,0 +1,1 @@
+{"case_id": "complaint_8", "passed_rule": true, "dims": {"answer_quality": {"score": 4.0, "reason": "客服准确发现订单为运动鞋与用户描述不符，主动核实信息并引导提供凭证，语气专业得体，但未直接回应赔偿诉求，需进一步跟进。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的订单号、商品、金额、下单时间、状态均与list_user_orders返回一致，未出现工具返回之外的具体事实。"}, "process_soundness": {"score": 4.0, "reason": "工具选择基本对路，顺序合理，但未直接调用投诉/赔偿处理工具，略有优化空间。"}}}

@@ -1,0 +1,1 @@
+{"case_id": "account_1", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确、完整、专业且语气得体，直接提供了找回密码的官方流程和特殊情况处理，并附加安全提示，完全解决了用户问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的找回密码流程、手机号停用处理方式及防诈骗提醒均能在工具返回的常见问题FAQ和支付与账户安全文档中找到依据。"}, "process_soundness": {"score": 5.0, "reason": "用户忘记密码属于常见业务问题，调用知识库检索解决方案是精准且必要的一步，顺序合理且无多余调用。"}}}

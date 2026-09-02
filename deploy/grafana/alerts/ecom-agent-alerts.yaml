@@ -1,0 +1,94 @@
+# 阶段四 4.6 告警规则（Prometheus rules / Alertmanager 集成）
+groups:
+  - name: ecom-agent
+    rules:
+      - alert: ChatErrorRateHigh
+        expr: |
+          sum(rate(http_requests_total{status=~"5.."}[5m]))
+            / sum(rate(http_requests_total[5m])) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "线上错误率 > 5%（5 分钟窗口）"
+
+      - alert: ChatLatencyP99High
+        expr: histogram_quantile(0.99, sum by (le) (rate(chat_latency_seconds_bucket[5m]))) > 15
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "单轮完成 P99 延迟 > 15s"
+
+      - alert: LlmCostSpike
+        expr: sum(rate(llm_cost_estimated[10m])) > 3 * avg_over_time(sum(rate(llm_cost_estimated[10m]))[24h:10m])
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "LLM 成本突增 3 倍（15 分钟窗口环比近 24h）"
+
+      - alert: ToolFailureRateHigh
+        expr: sum(rate(tool_calls_total{result="error"}[5m])) / sum(rate(tool_calls_total[5m])) > 0.15
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "工具失败率 > 15%"
+
+      - alert: SessionConflictElevated
+        expr: rate(session_conflict_total[5m]) > 1
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "会话锁冲突持续发生（可能有写入器失控或锁泄漏）"
+
+      # ---------- 5.x 生产化告警 ----------
+      - alert: AliasPointerMismatch
+        expr: alias_pointer_mismatch == 1
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "ES alias 与 generation 指针不一致（发布事务可能中断，需检查 journal 恢复）"
+
+      - alert: KbWriteBlocked
+        expr: evolution_kb_write_blocked == 1
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "KB 写入全局阻塞（alias 指向未知代，需人工 reconcile）"
+
+      - alert: MigrationBehind
+        expr: dependency_readiness{component="mysql_schema"} == 0
+        for: 15m
+        labels:
+          severity: critical
+        annotations:
+          summary: "数据库 schema 落后：需执行 migrate_db（Helm pre-install/pre-upgrade Job）"
+
+      - alert: OutboxBacklogHigh
+        expr: outbox_backlog > 500
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Outbox 积压 > 500 条（ES 同步滞后）"
+
+      - alert: RerankerSustainedFallback
+        expr: rate(reranker_fallback_total[15m]) > 1
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "精排器持续失败退回原序（检查 reranker 服务/端点）"
+
+      - alert: ObjectStoreFailureHigh
+        expr: rate(object_store_failures_total[5m]) > 0.5
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "对象存储操作失败持续发生（上传/原件/turns 受影响）"

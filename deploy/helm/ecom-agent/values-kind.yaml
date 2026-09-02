@@ -1,0 +1,94 @@
+# 4.1/4.3 kind 验收覆盖（helm install -f values-kind.yaml）
+# 本地 kind 单节点：确定性 fake 服务（无外部密钥），验证跨 Pod 行为。
+
+replicaCount: 2
+
+image:
+  repository: ecom-agent
+  tag: kind
+  pullPolicy: IfNotPresent
+
+env:
+  MODEL_NAME: deepseek-v4-flash-fake   # fake OpenAI 服务（确定性脚本回复）
+  MEMORY_ENABLED: "true"
+  # 检索用 ES（kind 内联部署的 ES 单实例）
+  RAG_BACKEND: es
+  RAG_HYBRID: "false"
+  RAG_RERANK: none
+  ES_URL: "http://elasticsearch:9200"
+  # ---- 状态外置 ----
+  SESSION_STORE_BACKEND: redis
+  REDIS_URL: "redis://redis-master:6379/0"
+  REDIS_REQUIRED: "true"
+  SESSION_LOCK_TTL_SECONDS: "300"
+  MEMORY_CONSOLIDATE_EVERY: "10"
+  MEMORY_CONSOLIDATE_IDLE_MINUTES: "30"
+  MEMORY_CONSOLIDATE_SCAN_MINUTES: "5"
+  # ---- writable 路径统一走共享卷（镜像内 app/sessions 只读）----
+  SESSION_DIR: /kb-shared/sessions
+  MEMORY_DIR: /kb-shared/memory
+  KB_GENERATION_PATH: /kb-shared/kb_generations.json
+  KB_INDEX_PATH: /kb-shared/kb_index.json
+  KB_UPLOAD_TMP_DIR: /kb-shared/uploads
+  KB_UPLOAD_ORIGINAL_DIR: /kb-shared/originals
+  EVOLVE_TURNS_DIR: /kb-shared/evolution/turns
+  EVOLVE_STATE_DIR: /kb-shared/evolution/state
+  EVOLVE_OUTPUT_DIR: /kb-shared/evolution/output
+  KB_UPLOAD_STAGING_DIR: /kb-shared/kb/.staging
+  KB_UPLOADS_DIR: /kb-shared/kb/uploads
+  KB_UPLOAD_TRASH_DIR: /kb-shared/kb/.trash
+  KB_DIR: /kb-shared/kb   # 知识库根走共享卷（上传写权限）
+  # ---- 对象存储（MinIO）----
+  KB_UPLOAD_STORAGE: s3
+  TURNS_ARCHIVE_BACKEND: s3
+  S3_BUCKET: ecom
+  S3_ENDPOINT_URL: "http://minio:9000"
+  # ---- 安全（验收：全开）----
+  AUTH_ENABLED: "false"   # kind 无外部鉴权；归属经 JWT 开发者密钥（测试签发）
+  ENFORCE_ORDER_OWNERSHIP: "true"
+  REFUND_CONFIRMATION_REQUIRED: "true"
+  OPS_RBAC_REQUIRED: "true"
+  GUARDRAILS_ENABLED: "true"
+  # ---- 数据库（kind 内联 MySQL）----
+  DB_URL: "mysql+pymysql://ecom:ecom@mysql:3306/ecom?charset=utf8mb4"
+  APP_ENV: prod
+  KB_WRITE_LOCK_BACKEND: mysql
+  # ---- 商家网关（fake commerce 服务契约测试）----
+  COMMERCE_BACKEND: http
+  COMMERCE_BASE_URL: "http://commerce:8080"
+
+# kind：由 Chart 创建含确定性假密钥的 Secret（无真实外部凭证）
+secret:
+  create: true
+  data:
+    OPENAI_API_KEY: "kind-fake-key"
+    OPENAI_BASE_URL: "http://fake-llm:8000/v1"
+    JWT_SECRET: "kind-kind-kind-kind-kind-kind-kind-kind-secret-32b"
+    MCP_AUTH_TOKEN: "kind-mcp-token"
+    MCP_ACTOR_SECRET: "kind-actor-kind-actor-kind-actor-32b"
+    COMMERCE_API_KEY: "kind-commerce-key"
+    S3_ACCESS_KEY: "minioadmin"
+    S3_SECRET_KEY: "minioadmin"
+    MINIO_ACCESS_KEY: "minioadmin"
+    MINIO_SECRET_KEY: "minioadmin"
+    MYSQL_PASSWORD: "ecom"
+
+kbSharedVolume:
+  enabled: true
+  storageClass: standard
+  size: 5Gi
+  mountPath: /kb-shared
+  accessModes: ["ReadWriteOnce"]   # local-path 仅 RWO；单节点双副本同节点可挂载
+  srcPath: /app/app/agent/rag/knowledge
+
+evolutionJob:
+  enabled: false   # kind 验收不开自动发布（SELF_EVOLVE_ENABLED=false 语义）
+
+migration:
+  enabled: true
+
+autoscaling:
+  enabled: false   # 双副本固定，便于验收
+
+podDisruptionBudget:
+  enabled: false

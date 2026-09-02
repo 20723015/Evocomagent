@@ -1,0 +1,69 @@
+{
+  "case_id": "kb_常见问题faq_4",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 10385,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 1.0,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.5
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "订单收货地址可以修改吗"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "修改收货地址"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "配送地址 变更"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 3,
+    "route": null,
+    "reply": "您好，很抱歉让您久等了～\n\n关于「修改订单收货地址」这件事，我帮您检索了平台相关的政策和帮助文档，但目前**没有检索到关于地址修改的具体说明**，也就是说平台文档暂未覆盖这一块内容，我这边无法确认是否可以修改、以及具体的操作流程。\n\n建议您**转接人工客服**进一步核实处理哦，人工同事可以帮您确认订单当前状态是否支持修改地址以及具体操作方式。\n\n请问还有其他可以帮到您的吗？😊",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

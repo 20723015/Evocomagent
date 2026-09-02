@@ -1,0 +1,1 @@
+{"case_id": "citation_correct_9", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确完整覆盖运费规则、运费险及叠加权益，语气专业得体，并主动提供进一步帮助，直接解决了用户问题。"}, "faithfulness": {"score": 1.0, "reason": "回复中关于运费12元起、运费险最高25元、理赔时效1-3个工作日及优先免费取件等均能在工具返回的《退换货政策》和《运费险细则》中找到依据。"}, "process_soundness": {"score": 5.0, "reason": "工具选择精准，直接检索相关知识即可解答退货运费问题，顺序合理且无冗余调用。"}}}

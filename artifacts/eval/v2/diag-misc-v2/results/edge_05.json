@@ -1,0 +1,78 @@
+{
+  "case_id": "edge_05",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 17695,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": null,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge",
+      "recall_user_memory"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "可以开发票吗 发票开具 电子发票"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "发票 开具流程 申请"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "发票",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "recall_user_memory",
+        "arguments": {},
+        "outcome": {
+          "success": false
+        }
+      }
+    ],
+    "num_tool_calls": 4,
+    "route": null,
+    "reply": "关于您咨询的**开发票**问题，我这边做了多次检索，但帮助文档中暂未覆盖「发票开具」的相关政策说明，我无法凭空为您编造开票的流程和规则。\n\n**建议您：**\n- 转接**人工客服**进一步核实开票的具体方式（如电子发票/纸质发票、开具入口、抬头信息等）；\n- 如需开票，通常也可在「我的订单 → 订单详情」页面查看是否有开票入口，具体以页面实际展示为准。\n\n给您带来不便深表歉意，如果还有其他订单、退换货方面的问题，我随时为您服务～",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

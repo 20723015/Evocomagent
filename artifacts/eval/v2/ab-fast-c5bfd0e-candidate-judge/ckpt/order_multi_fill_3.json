@@ -1,0 +1,1 @@
+{"case_id": "order_multi_fill_3", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "客服准确提供订单详情与物流进度，直接解决问题，且语气友好得体。"}, "faithfulness": {"score": 0.0, "reason": "客服称“今天就能送到”，但工具返回的预计送达时间是2024-01-19，且物流动态仅为01-18正在派送中，无当日送达依据。"}, "process_soundness": {"score": 3.0, "reason": "用户已提供具体订单号，直接调用query_order即可，list_user_orders属于冗余调用，但整体能解决问题。"}}}

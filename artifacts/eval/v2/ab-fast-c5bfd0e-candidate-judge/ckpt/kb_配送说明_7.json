@@ -1,0 +1,1 @@
+{"case_id": "kb_配送说明_7", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确完整，提供了分区域时效、发货时间和跨境时效，专业清晰且主动询问用户信息以进一步帮助，直接解决了问题。"}, "faithfulness": {"score": 1.0, "reason": "回复中的配送时效、48小时发货、跨境时效均与工具返回的知识库内容一致，无编造或矛盾。"}, "process_soundness": {"score": 5.0, "reason": "工具选择精准，搜索知识库直接对应物流时效问题，顺序合理且无多余调用。"}}}

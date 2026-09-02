@@ -1,0 +1,69 @@
+{
+  "case_id": "after_sale_3",
+  "passed": true,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 13330,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": null,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 1.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "家电安装谁来安装"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "家电安装服务"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "安装 上门"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 3,
+    "route": null,
+    "reply": "非常抱歉，关于「家电安装由谁来装」这个问题，我检索了平台的政策文档，目前暂时没有查询到相关的明确规定 😔\n\n为了给您最准确的答复，我建议您提供以下信息，方便进一步核实：\n\n1. **订单号或商品名称**——我可以帮您查询具体的商品信息和订单状态\n2. 也可以直接联系**人工客服**，他们会结合您购买的具体家电品类和商家，告知确切的安装安排\n\n请问您是已经购买了家电，还是正在选购呢？如果是已有订单，把订单号发给我，我帮您查一下具体情况～",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

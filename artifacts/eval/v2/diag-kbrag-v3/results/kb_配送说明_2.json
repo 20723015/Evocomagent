@@ -1,0 +1,69 @@
+{
+  "case_id": "kb_配送说明_2",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 14122,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 1.0,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.5
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "recall_user_memory"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "偏远地区包邮政策"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "配送 运费 包邮 地区说明"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "recall_user_memory",
+        "arguments": {
+          "query": "偏远地区包邮"
+        },
+        "outcome": {
+          "success": false
+        }
+      }
+    ],
+    "num_tool_calls": 3,
+    "route": null,
+    "reply": "根据我刚才的两次检索结果，平台帮助文档中暂时没有找到关于「偏远地区包邮」的具体政策说明，因此我无法给出确定的答复，需要为您核实或转人工处理。您也可以查看具体商品详情页的运费说明，不同商品的运费政策以页面为准。\n\n给您带来的不便十分抱歉，如果还有其他问题，我很乐意继续为您解答～",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

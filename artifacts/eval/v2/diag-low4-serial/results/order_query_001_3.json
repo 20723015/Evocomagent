@@ -1,0 +1,69 @@
+{
+  "case_id": "order_query_001_3",
+  "passed": true,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 11551,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": 1.0,
+    "keyword_coverage": 1.0,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 1.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "load_skill",
+      "query_order",
+      "query_logistics"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "load_skill",
+        "arguments": {
+          "skill_name": "track-order"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "query_order",
+        "arguments": {
+          "order_id": "ORD-20240115-001"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "query_logistics",
+        "arguments": {
+          "order_id": "ORD-20240115-001"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 3,
+    "route": null,
+    "reply": "您好，您的订单 **ORD-20240115-001** 已经发货啦，正在派送途中，马上就能送到您手上～😊\n\n**订单信息**\n- 商品：Nike Air Max 270 运动鞋 × 1（899元）\n- 承运：顺丰速运\n- 运单号：SF1234567890\n- 预计送达：2024-01-19\n\n**最新物流动态**\n1. 01-16 14:20 深圳南山区：快件已揽收\n2. 01-17 06:00 广州转运中心：已到达\n3. 01-17 22:00 上海转运中心：已到达\n4. 01-18 08:30 上海浦东区：**正在派送中** 📦\n\n您的快递已经在派送中啦，预计明天（1月19日）就能送达，请您留意快递员的电话或短信通知。如果派送期间有任何问题，随时找我哦！",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

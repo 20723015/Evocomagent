@@ -1,0 +1,98 @@
+{
+  "case_id": "order_combo_logistics",
+  "passed": true,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 28711,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": 1.0,
+    "keyword_coverage": 1.0,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 1.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "load_skill",
+      "list_user_orders",
+      "query_order",
+      "query_logistics",
+      "load_skill",
+      "query_logistics"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "load_skill",
+        "arguments": {
+          "skill_name": "track-order"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "list_user_orders",
+        "arguments": {},
+        "outcome": {
+          "success": true,
+          "count": 1
+        }
+      },
+      {
+        "name": "query_order",
+        "arguments": {
+          "order_id": "ORD-20240115-001"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "query_logistics",
+        "arguments": {
+          "order_id": "ORD-20240115-001"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "load_skill",
+        "arguments": {
+          "skill_name": "track-order"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "query_logistics",
+        "arguments": {
+          "order_id": "ORD-20240115-001"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 6,
+    "route": null,
+    "reply": "查到啦！您的订单 **ORD-20240115-001**（Nike Air Max 270 黑色 42码）目前物流进展如下：🚚\n\n**📦 快递信息**\n- 承运快递：**顺丰速运**\n- 运单号：SF1234567890\n- 当前状态：**派送中**\n\n**📍 完整物流轨迹**\n1. 01-16 14:20 · 深圳南山区 · 快件已揽收\n2. 01-17 06:00 · 广州转运中心 · 已到达\n3. 01-17 22:00 · 上海转运中心 · 已到达\n4. 01-18 08:30 · 上海浦东区 · **正在派送中**\n\n快件已经在您所在地区派送啦，正常情况下预计 **1月19日** 送达，请您留意快递电话，保持手机畅通即可～😊\n\n还有别的需要帮忙的吗？比如想申请售后或查看其他订单，随时告诉我哦！",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

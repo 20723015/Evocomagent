@@ -1,0 +1,1 @@
+{"case_id": "edge_06", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确、完整、专业，直接解决了用户收到破损商品的售后问题，且语气得体。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的订单信息、状态（已发货）、退货政策条款均可在工具返回数据中找到依据，未发现编造或矛盾的具体事实。"}, "process_soundness": {"score": 3.0, "reason": "能解决售后问题，但list_user_orders与query_order重复，且search_knowledge顺序略靠后，存在冗余调用。"}}}

@@ -1,0 +1,34 @@
+{
+  "title": "客服 Agent · 成本",
+  "uid": "ecom-cost",
+  "editable": true,
+  "schemaVersion": 39,
+  "panels": [
+    {
+      "title": "LLM 调用量按用途（llm_tokens_total 比率）",
+      "type": "timeseries",
+      "datasource": {"type": "prometheus"},
+      "targets": [
+        {"expr": "sum by (purpose) (rate(llm_tokens_total[5m]))"}
+      ]
+    },
+    {
+      "title": "估算成本（分/小时）",
+      "type": "timeseries",
+      "datasource": {"type": "prometheus"},
+      "targets": [{"expr": "sum by (model) (rate(llm_cost_estimated[5m]) * 60)"}]
+    },
+    {
+      "title": "每用户日 token（配额监控，rate_limit_daily_tokens）",
+      "type": "timeseries",
+      "datasource": {"type": "prometheus"},
+      "targets": [{"expr": "topk(10, sum by (user) (increase(llm_tokens_total[24h])))"}]
+    },
+    {
+      "title": "重试与降级（llm_retries_total）",
+      "type": "timeseries",
+      "datasource": {"type": "prometheus"},
+      "targets": [{"expr": "sum by (kind) (rate(llm_retries_total[5m]))"}]
+    }
+  ]
+}

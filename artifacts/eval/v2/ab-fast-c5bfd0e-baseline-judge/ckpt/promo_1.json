@@ -1,0 +1,1 @@
+{"case_id": "promo_1", "passed_rule": true, "dims": {"answer_quality": {"score": 3.0, "reason": "回复详细说明了优惠券类型和大促规则，但未直接告知当前具体优惠活动，信息不够完整，部分解决问题。"}, "faithfulness": {"score": 1.0, "reason": "回复中的优惠券类型、叠加顺序、跨店满减门槛等均可在工具返回的知识库文档中找到依据，未发现编造或矛盾内容。"}, "process_soundness": {"score": 5.0, "reason": "用户询问优惠活动，调用search_knowledge精准对路，顺序合理且无多余调用。"}}}

@@ -1,0 +1,59 @@
+{
+  "case_id": "kb_常见问题faq_10",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 10482,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 1.0,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.5
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "账户被盗了怎么办 账号安全 找回账号"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "账号异常登录 修改密码 账户安全"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 2,
+    "route": null,
+    "reply": "非常理解您此刻的焦急心情，账户安全确实很重要。不过很抱歉，关于「账户被盗」的处理流程，目前系统的帮助文档尚未覆盖到这部分内容，我无法为您提供确切的操作指引，也不敢随意给您编造步骤。\n\n针对您的情况，建议您：\n\n1. **尽快联系人工客服处理**：账户安全问题涉及账号安全验证，需要专属客服协助核实和冻结/找回，我这边可以为您转接人工。\n2. **先做好应急防范（通用安全建议）**：在这期间，请勿向任何人透露您的密码、验证码，也不要点击任何不明链接；如果账户内有支付功能，建议尽快通过官方渠道尝试冻结相关支付方式。\n\n为了更快帮您推进处理，请问方便告诉我您具体遇到了什么情况吗？比如是否收到异常登录提醒、能否正常登录等。我会同步为您转接人工客服做进一步处理。\n\n请问还有其他我能帮到您的吗？🙏",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

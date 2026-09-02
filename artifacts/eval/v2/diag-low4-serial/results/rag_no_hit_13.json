@@ -1,0 +1,59 @@
+{
+  "case_id": "rag_no_hit_13",
+  "passed": true,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 10774,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": null,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 1.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "发票 开具 国外公司 境外企业 发票抬头"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "发票开具规则 企业发票"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 2,
+    "route": null,
+    "reply": "抱歉，我这边查询了平台的帮助文档，目前**文档中没有覆盖「向国外公司开具发票」的相关政策说明**，无法给您一个确切的答复。\n\n这个情况建议您：\n1. **联系人工客服**进一步确认能否开具境外抬头的发票，以及需要提供哪些资料；\n2. 也可以在订单完成后，前往**订单详情页的「开具发票」入口**查看实际可选的开票类型和抬头填写范围，以页面显示为准。\n\n请问还有其他可以帮您的吗？😊",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

@@ -1,0 +1,1 @@
+{"case_id": "after_sale_6", "passed_rule": true, "dims": {"answer_quality": {"score": 3.0, "reason": "客服未直接回答“只换不退”是否可行，仅说明政策未覆盖并请求更多信息，属于部分解决问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中对政策文档的概述（七天无理由、仅退款、拒收退款、部分退款）均可在search_knowledge返回中找到依据，且未编造具体订单或物流信息。"}, "process_soundness": {"score": 5.0, "reason": "工具选择精准，先检索知识再加载技能，顺序合理，无多余调用"}}}

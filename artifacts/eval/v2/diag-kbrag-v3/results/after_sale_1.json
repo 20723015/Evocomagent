@@ -1,0 +1,61 @@
+{
+  "case_id": "after_sale_1",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 10989,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": null,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "保修期内商品坏了怎么维修",
+          "top_k": 3
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "商品维修 售后服务 保修",
+          "top_k": 3
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 2,
+    "route": null,
+    "reply": "您好，抱歉让您久等了！关于「保修期内商品维修」的具体细则，我这边检索了售后服务相关文档，暂时**没有查到覆盖该场景的明确说明** 😥\n\n为了不给您提供不准确的信息，这种情况需要转接**人工客服**进一步为您核实处理。您可以通过以下任一方式联系：\n\n1. **订单详情页** → 点击「联系客服」→ 选择「人工客服」（通常可实时转接）\n2. **拨打官方客服热线**，按语音提示转售后专线\n\n温馨提示：联系人工时，建议您**准备好订单号和商品故障描述**（如出现问题的具体部位、现象），可以帮您更快地处理维修/售后事宜～\n\n请问还有其他可以帮您的吗？比如先帮您查一下订单信息？😊",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

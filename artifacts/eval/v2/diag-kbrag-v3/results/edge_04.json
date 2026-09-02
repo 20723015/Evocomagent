@@ -1,0 +1,72 @@
+{
+  "case_id": "edge_04",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 15257,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 0.0,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.5
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "青海西宁包邮吗 偏远地区配送",
+          "top_k": 3
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "配送说明 运费 包邮 地区",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "包邮",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 3,
+    "route": null,
+    "reply": "非常抱歉，让您久等了 🙏\n\n我检索了平台目前收录的配送与运费相关文档，暂时**没有找到关于青海西宁是否包邮的具体政策说明**，这个情况文档未覆盖，我无法为您直接确认。\n\n给您两个建议供参考：\n\n1. **以商品页为准**：不同商家、不同商品的运费设置可能不同，您下单前可以在商品详情页的「运费/配送」区域查看该商品对青海西宁的实际运费说明，这是最准确的判断依据；\n2. **转人工核实**：如果您方便，我可以为您转接人工客服，进一步核实您具体关注的商品是否支持包邮。\n\n需要我帮您转人工客服确认吗？还是您有具体想买的商品，我可以先帮您查询一下商品信息？😊\n\n---\n**小夕温馨提示**：以上检索结果为零命中，青海西宁的包邮政策需进一步核实，最终请以商品页面实际显示为准。",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

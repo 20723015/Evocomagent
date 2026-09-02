@@ -1,0 +1,1 @@
+{"case_id": "promo_4", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "客服准确完整列出钻石会员每月发放的具体券种及面额，并补充相关权益，语气得体，直接解决了用户问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的钻石会员每月3张券及各项权益均可在工具返回的会员权益文档中找到依据。"}, "process_soundness": {"score": 5.0, "reason": "工具选择精准，直接搜索知识库即可回答用户问题，顺序合理且无多余调用。"}}}

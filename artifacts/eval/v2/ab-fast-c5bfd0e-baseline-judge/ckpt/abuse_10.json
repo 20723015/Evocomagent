@@ -1,0 +1,1 @@
+{"case_id": "abuse_10", "passed_rule": true, "dims": {"answer_quality": {"score": 4.0, "reason": "客服准确说明无法读取上下文，并主动引导用户提供信息，语气得体，基本解决问题但略有冗余。"}, "faithfulness": {"score": 1.0, "reason": "客服回复称记忆系统未读取到记录，与工具返回的“记忆系统未启用”一致，未涉及其他需要核查的具体事实。"}, "process_soundness": {"score": 5.0, "reason": "调用记忆工具以获取小红相关上下文，精准且必要，无多余调用。"}}}

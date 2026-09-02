@@ -1,0 +1,1 @@
+{"case_id": "order_query_003_5", "passed_rule": false, "dims": {"answer_quality": {"score": 3.0, "reason": "客服未能直接查询用户指定的订单，而是提供了另一笔订单让用户确认，部分解决问题但未完全满足需求。"}, "faithfulness": {"score": 1.0, "reason": "回复中的订单号无法查询、账户下找到的订单商品、金额、状态和下单时间均与工具返回数据一致，未编造具体事实。"}, "process_soundness": {"score": 3.0, "reason": "用户已提供具体订单号，应先直接查询订单，但序列中多余调用load_skill和list_user_orders，顺序欠佳。"}}}

@@ -1,0 +1,88 @@
+{
+  "case_id": "after_sale_2",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 18133,
+    "token_pass": false,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": null,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "load_skill",
+      "list_user_orders",
+      "search_knowledge",
+      "query_order",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "load_skill",
+        "arguments": {
+          "skill_name": "process-return"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "list_user_orders",
+        "arguments": {},
+        "outcome": {
+          "success": true,
+          "count": 1
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "如何预约上门取件退货"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "query_order",
+        "arguments": {
+          "order_id": "ORD-20240115-001"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "退货退款流程 上门取件 预约快递"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 5,
+    "route": null,
+    "reply": "您好呀，我是小夕～您的问题我已经了解啦，先帮您确认一下订单情况：\n\n**您有一笔订单：**\n- 📦 订单号：ORD-20240115-001\n- 👟 商品：Nike Air Max 270 运动鞋（899元）\n- 🚚 状态：**已发货**（顺丰速运，运单号 SF1234567890）\n- 📅 预计送达：2024-01-19\n\n根据退货退款流程，您这笔订单目前是**已发货、尚未签收**的状态，暂时还不需要预约取件退货哦：\n\n1. **等待签收后申请退货**：签收后可以在订单页面发起退货申请；\n2. **或选择拒收**：拒收后系统会自动退款处理。\n\n另外，小夕帮您检索了「上门取件退货」的相关政策文档，目前检索到的资料里**没有覆盖具体的上门取件预约操作细节**，这部分需要帮您进一步核实才能答复哦，以免给您不准确的操作指引。😊\n\n由于该情况文档未覆盖，建议您转接人工客服为您详细确认上门取件的预约方式。请问还有其他我可以帮到您的吗？",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

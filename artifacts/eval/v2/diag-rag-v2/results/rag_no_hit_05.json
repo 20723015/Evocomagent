@@ -1,0 +1,59 @@
+{
+  "case_id": "rag_no_hit_05",
+  "passed": true,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 10251,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": null,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 1.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "线下门店 实体店 地址"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "门店"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 2,
+    "route": null,
+    "reply": "您好，抱歉让您久等了~\n\n我检索了平台的相关帮助文档，目前**没有查询到关于线下门店的具体信息**，这一点我无法给您准确答复，还请您谅解。\n\n建议您可以通过以下方式进一步确认：\n1. **联系人工客服**咨询门店分布情况，我这边可以为您转接人工服务\n2. 关注平台官方渠道发布的门店信息，以官方公告为准\n\n请问还有什么其他我可以帮您的吗？比如订单、商品或售后方面的问题，我都可以为您处理😊",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "case_id": "kb_会员权益_9",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 11442,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 0.0,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "退款会扣减升级金额吗",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "退款 金额 计算 规则",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "退款 会员升级 影响",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 3,
+    "route": null,
+    "reply": "抱歉让您久等了～我这边帮您检索了多个关键词，但目前平台政策文档中**没有关于「退款是否会扣减升级金额」的明确说明**，这个细节我无法凭空推断，需要帮您进一步核实。\n\n为了不耽误您，建议您：\n1. **联系人工客服**，把您的具体情况（订单号、涉及的升级活动/金额）提供给专员核实，给您最准确的答复；\n2. 您也可以先提供**订单号**，我帮您查一下订单本身的退款金额和状态作为参考。\n\n请问需要我先帮您查一下具体订单吗？😊",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

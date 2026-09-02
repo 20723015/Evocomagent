@@ -1,0 +1,61 @@
+{
+  "case_id": "after_sale_1",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 7738,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": null,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "保修期内商品坏了如何维修",
+          "top_k": 3
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "保修 维修 售后 流程 寄修",
+          "top_k": 3
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 2,
+    "route": null,
+    "reply": "您好，我是小夕～很抱歉，我这边检索了「保修期内维修」相关的帮助文档，目前**没有查到该政策的具体覆盖内容**（比如维修流程、时效、是否支持寄修等），基于事实纪律我不能随意编造，需要帮您核实后再答复。\n\n为了更快帮到您，想先跟您确认几点信息？\n\n1. 您是在并夕夕平台哪一笔订单购买的商品呢？（如有订单号可以发我）\n2. 商品具体是什么问题，还在保修期内吗？\n\n另外，由于保修维修政策文档暂未覆盖，**该情况需要转接人工客服进一步核实**。您也可以在订单详情页申请售后，售后专员会按实际情况为您处理哦。\n\n请问还需要我帮您查询订单信息或做其他安排吗？😊",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

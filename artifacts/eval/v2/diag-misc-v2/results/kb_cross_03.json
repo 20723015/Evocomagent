@@ -1,0 +1,77 @@
+{
+  "case_id": "kb_cross_03",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 10940,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 0.5,
+    "requires_human_match": 0.0,
+    "citation_match": 0.0,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.16666666666666666
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "发货后多久能送到 配送时效"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "发货慢了 配送延迟 可以退差价吗 价保"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "配送时间"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "退差价"
+        },
+        "outcome": {}
+      }
+    ],
+    "num_tool_calls": 4,
+    "route": null,
+    "reply": "您好，抱歉让您久等了～我查询了一下平台的帮助文档，目前没有检索到关于「发货后具体配送时效」和「配送延迟退差价」的政策说明，这部分内容文档暂未覆盖。\n\n根据我们平台的规定，为了不误导您，我不能凭空给您估算时效或承诺差价赔付。建议您通过以下方式处理：\n\n1. **配送时效**：您下单后，页面通常会有预计送达时间的展示，具体以订单页和物流实际进度为准，我可以帮您查询具体订单的物流轨迹～\n2. **延迟赔付/退差价**：这类涉及赔付的政策需要进一步核实，**建议转接人工客服**为您确认是否有相关保障方案。\n\n如果您方便提供订单号，我可以马上帮您查一下物流进度哦～请问需要吗？",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

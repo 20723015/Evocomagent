@@ -1,0 +1,1 @@
+{"case_id": "account_4", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确完整地提供了注销流程和注意事项，语气得体，直接解决了用户问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的注销流程、30天保留期、超期永久删除、购物车收藏夹清除及注销前处理订单优惠券积分等事实，均可在工具返回的知识库资料中找到依据，未虚构或矛盾。"}, "process_soundness": {"score": 2.0, "reason": "仅调用知识库搜索无法完成注销，缺少账号操作类工具，调用不相关或缺失关键步骤。"}}}

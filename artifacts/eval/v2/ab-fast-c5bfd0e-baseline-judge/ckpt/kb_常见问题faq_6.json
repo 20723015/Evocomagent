@@ -1,0 +1,1 @@
+{"case_id": "kb_常见问题faq_6", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确完整，直接提供缺货处理方案（到货提醒），并主动区分问题场景，语气专业得体。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的到货提醒、补货时间不固定以及下单超72小时未发货可催单或退款等内容，均可在工具返回的FAQ中找到依据，未编造具体事实。"}, "process_soundness": {"score": 5.0, "reason": "用户询问商品缺货处理办法，调用知识库查询相关政策精准且必要，无多余调用。"}}}

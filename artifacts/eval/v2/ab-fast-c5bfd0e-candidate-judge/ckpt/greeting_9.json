@@ -1,0 +1,1 @@
+{"case_id": "greeting_9", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "回复礼貌得体，准确回应了用户的感谢，并提供了后续帮助指引，直接解决问题。"}, "faithfulness": {"score": null, "reason": "无工具观测（话术性回复），忠实度核对不适用"}, "process_soundness": {"score": 5.0, "reason": "用户仅表达感谢，无业务需求，无需调用任何工具，过程合理。"}}}

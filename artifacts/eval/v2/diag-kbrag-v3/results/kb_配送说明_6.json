@@ -1,0 +1,86 @@
+{
+  "case_id": "kb_配送说明_6",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 22865,
+    "token_pass": false,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 0.0,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "一线城市多久能送到 配送时效"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "配送时效 发货时间 送达"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "一线城市配送 多久到"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "快递配送时间 城市 包邮 到货"
+        },
+        "outcome": {}
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "配送时效",
+          "top_k": 5
+        },
+        "outcome": {}
+      }
+    ],
+    "num_tool_calls": 5,
+    "route": null,
+    "reply": "非常抱歉，关于「一线城市配送时效」的问题，我多次检索了平台的政策与帮助文档，目前均未找到相关的时效说明，这部分内容确实超出了我能确认的范围。\n\n我已经为您做了以下核实：\n- 检索「配送时效」「发货时间」等相关政策文档 → 均无命中\n\n由于没有可依据的官方时效信息，我不能凭经验给您估算，以免误导您。建议您：\n\n1. **转接人工客服**，由专员核实一线城市的配送时效；\n2. 如果已经有下单的具体商品，可以给我**订单号**，我帮您查这个订单的物流进度和预计到达情况；\n3. 也可以参考**商品详情页/下单页**展示的预计送达时间，通常以页面标注为准。\n\n感谢您的理解，请问还有其他可以帮到您的吗？😊",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

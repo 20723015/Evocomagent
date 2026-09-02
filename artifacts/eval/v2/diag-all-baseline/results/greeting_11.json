@@ -1,0 +1,38 @@
+{
+  "case_id": "greeting_11",
+  "passed": true,
+  "process": {
+    "tool_accuracy": null,
+    "tool_efficiency": null,
+    "token_cost": 3440,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": null
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": null,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 1.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [],
+    "tool_outcomes": [],
+    "num_tool_calls": 0,
+    "route": null,
+    "reply": "再见啦，亲爱的顾客~ 感谢你使用并夕夕，我是小夕，随时欢迎你回来找我聊天、咨询订单或商品问题哦！祝你生活愉快，购物开心！🌸",
+    "retrieved_sources": [],
+    "error": null,
+    "tool_outputs": []
+  }
+}

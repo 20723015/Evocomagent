@@ -1,0 +1,1 @@
+{"case_id": "edge_15", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "客服准确识别订单状态，详细解答了超7天但未签收的特殊情况，并给出具体处理建议，专业且完整地解决了用户疑问。"}, "faithfulness": {"score": 1.0, "reason": "订单信息与物流状态均与工具返回数据一致，政策说明也来自知识库，无编造或矛盾。"}, "process_soundness": {"score": 4.0, "reason": "工具选择基本对路，顺序合理，但search_knowledge与load_skill存在冗余，且list_user_orders和query_order可优化合并"}}}

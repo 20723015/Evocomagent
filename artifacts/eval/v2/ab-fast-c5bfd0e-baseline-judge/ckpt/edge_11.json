@@ -1,0 +1,1 @@
+{"case_id": "edge_11", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "客服准确确认订单并明确告知可拒收及退款流程，信息完整、专业且语气得体，直接解决了用户问题。"}, "faithfulness": {"score": 1.0, "reason": "订单号、商品、金额、状态均与工具返回一致，拒收退款时效5-7个工作日也匹配政策资料。"}, "process_soundness": {"score": 4.0, "reason": "工具选择覆盖了退款政策和订单查询，基本合理，但先查知识再查订单的顺序略有可优化空间"}}}

@@ -1,0 +1,49 @@
+{
+  "case_id": "rag_no_hit_12",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 7760,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": null,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "物流车用什么燃料"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 1,
+    "route": null,
+    "reply": "您好，我是并夕夕智能客服小夕～😊\n\n关于「物流车用什么燃料」这个问题，属于物流运输行业的具体情况，不在我能够查询到的平台业务范围内哦，很抱歉没办法给您准确答复。\n\n建议您可以：\n1. **联系具体快递公司官方客服**，咨询其运输车辆的燃料类型；\n2. 或者转接**并夕夕人工客服**，看是否能协助您进一步核实。\n\n如果还有其他关于订单、商品、退换货的问题，随时找我，我很乐意为您服务！💛",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

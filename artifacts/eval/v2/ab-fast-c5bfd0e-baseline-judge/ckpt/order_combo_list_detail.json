@@ -1,0 +1,1 @@
+{"case_id": "order_combo_list_detail", "passed_rule": false, "dims": {"answer_quality": {"score": 3.0, "reason": "客服未能直接提供订单详情，但准确说明无权访问原因并给出确认建议，部分解决问题。"}, "faithfulness": {"score": 1.0, "reason": "回复中关于订单无权访问的陈述与工具返回的ORDER_ACCESS_DENIED一致，未编造其他具体事实。"}, "process_soundness": {"score": 5.0, "reason": "工具选择精准，先列出订单再查询详情，顺序合理，无多余调用。"}}}

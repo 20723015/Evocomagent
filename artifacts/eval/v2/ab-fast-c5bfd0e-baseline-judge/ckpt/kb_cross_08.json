@@ -1,0 +1,1 @@
+{"case_id": "kb_cross_08", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "客服回复全面准确地介绍了会员等级和新人优惠券，信息完整、专业，语气亲切，直接解决了用户问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的会员等级、权益和新人优惠券信息均能在工具返回的知识库中找到对应依据，未出现编造或矛盾的具体事实。"}, "process_soundness": {"score": 5.0, "reason": "两次search_knowledge分别查询会员等级和新人优惠券，工具选择精准、顺序合理、无多余调用。"}}}

@@ -1,0 +1,72 @@
+{
+  "case_id": "kb_cross_07",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 10841,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 0.0,
+    "requires_human_match": 1.0,
+    "citation_match": 0.0,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.3333333333333333
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "会员退换货权益",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "退换货政策 七天无理由 退货规则",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "会员权益 专属服务",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 3,
+    "route": null,
+    "reply": "非常抱歉，我这边检索了官方政策文档，暂时没有查到关于**会员退换货权益**的明确说明，为了不误导您，我不能凭空给您编造信息🙏\n\n建议您可以通过以下方式确认：\n1. **在App「我的-会员中心」页面**查看会员权益详情，页面展示最准确；\n2. 提供您的**会员等级信息**（如黄金/钻石会员等），我帮您再针对性地确认一下；\n3. 这个问题目前文档未覆盖，需要转接**人工客服**为您进一步核实。\n\n请问需要我帮您转到人工客服处理吗？或者您可以告诉我具体的会员等级，我再帮您查查看～",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

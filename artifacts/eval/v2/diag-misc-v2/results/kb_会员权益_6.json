@@ -1,0 +1,60 @@
+{
+  "case_id": "kb_会员权益_6",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 9951,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 0.0,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "积分有效期 过期时间 规则"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "积分过期",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 2,
+    "route": null,
+    "reply": "您好，我是客服小夕～关于「积分多久过期」这个问题，我帮您检索了相关的帮助文档，暂时没有查到明确的积分有效期说明。\n\n为了给您准确的信息，我需要帮您进一步核实，建议转接人工客服为您确认具体规则，您看可以吗？人工客服会为您查询详细的积分说明哦💛\n\n如果还有其他订单、物流或商品方面的问题，也随时可以问我～",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

@@ -1,0 +1,96 @@
+{
+  "case_id": "after_sale_4",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 20970,
+    "token_pass": false,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": null,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "list_user_orders",
+      "search_knowledge",
+      "query_order",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "商品寄回维修 售后维修流程"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "list_user_orders",
+        "arguments": {},
+        "outcome": {
+          "success": true,
+          "count": 1
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "售后服务 保修 质量问题 维修"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "query_order",
+        "arguments": {
+          "order_id": "ORD-20240115-001"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "维修"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "退换货政策 质量问题 换货"
+        },
+        "outcome": {}
+      }
+    ],
+    "num_tool_calls": 6,
+    "route": null,
+    "reply": "很抱歉，关于「寄回维修」这个需求，我帮您查过了——目前我能检索到的帮助文档里，暂时没有覆盖商品寄回维修的具体政策（如维修时效、费用承担、寄回方式等）。\n\n我这边能确认到您有一笔订单：\n- **订单号**：ORD-20240115-001\n- **商品**：Nike Air Max 270 运动鞋\n- **状态**：已发货（顺丰速运，预计 1 月 19 日送达）\n\n由于维修政策属于文档未覆盖的范围，这部分需要转接人工客服为您进一步核实处理，以免给您不准确的信息。您看是否需要我帮您转人工呢？\n\n另外，如果您的诉求是商品存在质量问题，也可以考虑先走退换货流程，具体是否符合条件需以实际核实为准。\n\n请问您更想处理哪一种情况呢？",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

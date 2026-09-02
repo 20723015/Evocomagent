@@ -1,0 +1,61 @@
+{
+  "case_id": "edge_03",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 10831,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 0.0,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.5
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "可以寄到美国吗 海外配送 国际邮寄",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "海外配送 国际订单 跨境寄送",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 2,
+    "route": null,
+    "reply": "非常抱歉，关于能否寄送到美国的情况，我检索了平台的相关政策文档，但目前没有查到明确覆盖\"海外配送/国际邮寄\"的内容呢 😔\n\n根据平台的文档范围，这个属于**文档未覆盖的特殊情况**，我这边无法给您一个确切的答复，担心说错了反而耽误您。\n\n建议您这样处理：\n1. **转接人工客服**：由专员为您核实具体的海外配送支持范围、运费和时效信息；\n2. **下单前留意页面提示**：如果商品支持海外配送，下单页通常会展示配送范围说明，可以以此为准。\n\n需要我帮您转接人工客服进一步确认吗？还是您还有其他可以帮到您的地方～",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

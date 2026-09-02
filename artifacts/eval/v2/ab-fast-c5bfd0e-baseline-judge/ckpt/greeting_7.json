@@ -1,0 +1,1 @@
+{"case_id": "greeting_7", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "客服回复热情得体，提供了清晰的服务引导，完整覆盖了初次用户的可能需求，直接解决问题。"}, "faithfulness": {"score": null, "reason": "无工具观测（话术性回复），忠实度核对不适用"}, "process_soundness": {"score": 5.0, "reason": "用户只是打招呼，无具体业务请求，未调用工具是合理的。"}}}

@@ -1,0 +1,1 @@
+{"case_id": "edge_12", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确完整地说明了在线客服和电话客服的工作时间，语气得体，直接解决了用户问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的在线客服时间、排队时长和电话客服时间均与工具返回数据一致，未出现编造或矛盾信息。"}, "process_soundness": {"score": 5.0, "reason": "工具选择精准，调用知识库查询客服工作时间，顺序合理且无多余调用。"}}}

@@ -1,0 +1,1 @@
+{"case_id": "return_after_delivered", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确完整，核实订单并说明退货政策，语气得体，直接确认并推动退货流程，有效解决用户问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的订单信息、物流轨迹、退货政策及运费规则均与工具返回数据一致，无编造或矛盾。"}, "process_soundness": {"score": 4.0, "reason": "工具调用基本合理，但load_skill略显冗余，整体顺序符合退货处理流程。"}}}

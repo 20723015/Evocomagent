@@ -1,0 +1,1 @@
+{"case_id": "return_confirm_3", "passed_rule": false, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确完整、专业得体，直接告知符合退换货政策并引导确认信息，有效解决用户问题。"}, "faithfulness": {"score": 1.0, "reason": "回复中的订单号、商品、金额、下单时间和状态均与list_user_orders返回一致，政策内容与search_knowledge返回相符。"}, "process_soundness": {"score": 5.0, "reason": "工具选择精准，先加载技能、查知识库，再查订单确认交易，顺序合理且无多余调用。"}}}

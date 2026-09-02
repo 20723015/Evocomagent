@@ -1,0 +1,1 @@
+{"case_id": "rag_no_hit_05", "passed_rule": false, "dims": {"answer_quality": {"score": 4.0, "reason": "回复准确、语气得体，虽未能直接提供门店地址，但给出了可行的查询途径，基本解决问题，略有冗余。"}, "faithfulness": {"score": 1.0, "reason": "客服回复称未查询到具体门店地址，与工具返回结果无此类信息相符；提及礼品卡实体卡涉及线下渠道也与检索到的文档内容一致，未编造具体事实。"}, "process_soundness": {"score": 3.0, "reason": "调用search_knowledge查询门店信息方向正确，但两次重复调用同一工具，存在冗余，可优化为一次精准查询。"}}}

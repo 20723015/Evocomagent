@@ -1,0 +1,1 @@
+{"case_id": "order_query_002_2", "passed_rule": false, "dims": {"answer_quality": {"score": 3.0, "reason": "客服未直接查询所问订单状态，而是告知无法访问并列出另一订单，部分解决问题但信息不完整，需用户确认后才能进一步处理。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的订单状态、商品、价格、下单时间及无法访问的订单号均与工具返回数据一致，未出现编造事实。"}, "process_soundness": {"score": 4.0, "reason": "工具选择基本对路，但query_order后无需再调list_user_orders，存在冗余调用"}}}

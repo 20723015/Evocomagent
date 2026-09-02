@@ -1,0 +1,1 @@
+{"case_id": "after_sale_2", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确完整，专业亲切，直接解答了用户关于预约上门取件退货的疑问，并主动提供进一步帮助。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的退货运费12元起、由用户承担等政策描述均来自工具返回的退换货政策，质量问题的运费承担也来自流程说明，未编造具体事实。"}, "process_soundness": {"score": 5.0, "reason": "工具选择精准，先加载技能再检索知识，顺序合理，无多余调用。"}}}

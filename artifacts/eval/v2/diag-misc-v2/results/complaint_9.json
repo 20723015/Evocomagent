@@ -1,0 +1,47 @@
+{
+  "case_id": "complaint_9",
+  "passed": true,
+  "process": {
+    "tool_accuracy": null,
+    "tool_efficiency": null,
+    "token_cost": 7595,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": null
+  },
+  "result": {
+    "intent_match": 1.0,
+    "keyword_coverage": null,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 1.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "recall_user_memory"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "recall_user_memory",
+        "arguments": {},
+        "outcome": {
+          "success": false
+        }
+      }
+    ],
+    "num_tool_calls": 1,
+    "route": null,
+    "reply": "感谢您的耐心等待。您提到的之前客服敷衍、问题没解决的情况，我看到了，也很抱歉没能给您一个满意的答复。\n\n为了让问题真正落地解决，想请您告诉我一下具体是哪方面的问题，比如：\n\n1. **订单相关**——订单号是多少？是物流、发货还是退款问题？\n2. **商品问题**——买的什么商品，出现了什么情况（质量问题、尺码不合适等）？\n3. **其他情况**——比如优惠券、账户等，也可以直接描述。\n\n只要您把具体问题告诉我，我会立刻帮您查询核实，并给出明确的处理方案。能解决的问题，我绝不拖；需要转人工的，我也会第一时间帮您转接并跟进。\n\n您看，方便告诉我具体是哪个订单或什么问题吗？",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

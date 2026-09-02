@@ -1,0 +1,1 @@
+{"case_id": "edge_03", "passed_rule": false, "dims": {"answer_quality": {"score": 4.0, "reason": "回复准确专业，说明了跨境寄美国的政策，但需以商品详情页为准，稍显冗余且未直接确认具体商品可否寄送。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的跨境政策、物流时效、实名认证、限额和运费信息均能在工具返回的知识库资料中找到依据，未出现编造或矛盾的事实。"}, "process_soundness": {"score": 5.0, "reason": "用户询问能否寄到美国，属于配送政策咨询，调用知识库搜索精准合理，无多余或缺失调用。"}}}

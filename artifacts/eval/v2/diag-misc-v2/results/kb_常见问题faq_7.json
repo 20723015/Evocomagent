@@ -1,0 +1,100 @@
+{
+  "case_id": "kb_常见问题faq_7",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 18363,
+    "token_pass": false,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 1.0,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.5
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "load_skill",
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "load_skill",
+        "arguments": {
+          "skill_name": "process-return"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "怀疑买到假货怎么处理 假货退款 维权",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "正品保障 假一赔十 假货 维权",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "商品质量问题 举证 赔偿",
+          "top_k": 3
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "假冒 伪劣 投诉 举报 商家",
+          "top_k": 5
+        },
+        "outcome": {}
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "退换货政策 质量问题 退货流程",
+          "top_k": 3
+        },
+        "outcome": {}
+      }
+    ],
+    "num_tool_calls": 6,
+    "route": null,
+    "reply": "非常理解您的心情，买到商品后如果怀疑是假货，确实会让人不放心。我先跟您说明一下目前的情况：\n\n很抱歉，我刚刚多次检索了平台的相关政策文档，但**关于\"假货\"专项处理（如正品保障、假一赔几、假货维权流程）的文档暂时未能检索到**，我无法按照既有政策给您一个确切的处理口径，也不能凭空给您承诺。这种情况需要由人工客服进一步核实处理。\n\n在转接人工前，建议您先做好这几件事，方便后续核实：\n1. **保留凭证**：订单信息、快递单、商品外包装及商品照片/视频等\n2. **确认订单号**：便于客服快速定位订单\n\n为了帮您尽快处理，请问您方便提供一下**订单号**吗？我可以先帮您查询订单状态和详情，把信息一起整理好，转交给人工客服跟进。您看可以吗？",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

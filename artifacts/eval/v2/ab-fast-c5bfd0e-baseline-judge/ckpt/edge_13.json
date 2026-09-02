@@ -1,0 +1,1 @@
+{"case_id": "edge_13", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确完整，专业得体，清晰说明无法提供批发价的原因并给出替代方案，直接解决了用户问题。"}, "faithfulness": {"score": 1.0, "reason": "回复中的商品名称、价格、库存、卖点及团购/企业采购政策均与工具返回数据一致，未发现编造事实。"}, "process_soundness": {"score": 4.0, "reason": "工具选择与用户问题相关，顺序基本合理，但recall_user_memory和load_skill存在可优化空间，略有冗余。"}}}

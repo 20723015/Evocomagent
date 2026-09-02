@@ -1,0 +1,69 @@
+{
+  "case_id": "citation_forbid_2",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 13700,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 1.0,
+    "requires_human_match": 0.0,
+    "citation_match": 0.0,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.3333333333333333
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "recall_user_memory"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "积分使用规则"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "积分怎么用 兑换 抵现"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "recall_user_memory",
+        "arguments": {
+          "query": "积分"
+        },
+        "outcome": {
+          "success": false
+        }
+      }
+    ],
+    "num_tool_calls": 3,
+    "route": null,
+    "reply": "您好，抱歉让您久等了～关于**积分使用规则**，我已经在平台政策文档库中进行了两次检索，但目前**没有检索到相关说明**（包括积分的获取方式、兑换抵现比例、有效期、使用范围等）。\n\n按照平台规定，这类未收录的政策细节我不能凭空推测或编造，以免给您错误指引。建议您：\n\n1. **转接人工客服**，由专员为您核实积分的具体使用规则；\n2. 也可以先查看 App 内「我的 - 积分」页面，**以页面实际显示为准**。\n\n我这就为您转接人工客服继续处理，请您稍候～ 💛",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

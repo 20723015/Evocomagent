@@ -1,0 +1,72 @@
+{
+  "case_id": "kb_会员权益_13",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 10746,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 0.0,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "会员等级怎么结算",
+          "top_k": 3
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "会员权益 等级 规则",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "会员等级计算",
+          "top_k": 3
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 3,
+    "route": null,
+    "reply": "非常抱歉，我这边检索了会员等级结算相关的政策文档，暂时没有查到相关的详细说明呢 😥\n\n您遇到的会员等级结算问题，涉及具体的账户等级计算规则，属于需要进一步核实的业务。我无法为您编造不准确的信息，建议您通过以下方式获取准确答复：\n\n1. **转接人工客服**：我将为您转接专属人工客服，由专业工作人员为您核实会员等级结算的具体规则\n2. **App内查询**：您可以打开并夕夕 App →「我的」→「会员中心」，查看您当前的会员等级及对应的权益说明\n\n请问您还需要我帮您处理其他事情吗？比如查询订单、了解退换货政策等，我都可以为您服务～",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

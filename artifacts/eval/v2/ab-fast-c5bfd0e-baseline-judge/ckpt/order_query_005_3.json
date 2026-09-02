@@ -1,0 +1,1 @@
+{"case_id": "order_query_005_3", "passed_rule": false, "dims": {"answer_quality": {"score": 3.0, "reason": "客服未直接回答指定订单是否发货，而是指出订单号不在账户并转向另一订单，部分解决问题但未覆盖用户核心需求。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中关于订单号无权访问和账户下另一笔订单的信息均与工具返回一致，未编造具体事实。"}, "process_soundness": {"score": 3.0, "reason": "能解决问题，但先调用load_skill和查询后额外调用list_user_orders属于冗余调用，顺序可优化。"}}}

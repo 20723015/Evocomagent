@@ -1,0 +1,80 @@
+{
+  "case_id": "edge_13",
+  "passed": true,
+  "process": {
+    "tool_accuracy": null,
+    "tool_efficiency": null,
+    "token_cost": 13972,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": null
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": null,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 1.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "load_skill",
+      "query_product",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "load_skill",
+        "arguments": {
+          "skill_name": "product-recommend"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "query_product",
+        "arguments": {
+          "keyword": "AirPods"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "批发价 批量购买 大宗采购 优惠"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "批量采购 批发价 大客户价格",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 4,
+    "route": null,
+    "reply": "您好呀，我是小夕😊 您要批量采购 10 个 AirPods 的需求我已经收到了，先跟您同步查询结果：\n\n**查询到的商品信息：**\n- **Apple AirPods Pro 2**：¥1799/个，库存 89 件（满足 10 个的量），白色款，蓝牙 5.3，主动降噪 + 空间音频\n\n**关于批发价：**\n很抱歉，我检索了平台的批量采购/批发优惠相关政策文档，目前**没有查到批发价的专项政策**。按照平台规定，我不能对未确认的价格政策做任何推断，这类大宗采购的报价通常需要专人跟进。\n\n建议这样处理：\n1. **转人工客服**：由专员为您对接批量采购报价，一般大宗订单可能有专属议价空间，具体以专员答复为准；\n2. **直接在页面下单**：按 ¥1799/个 购买 10 个，订单总额 ¥17,990，商品库存是充足的；\n3. 如果您只是需要多副耳机自用/送礼，也可以考虑分单购买，页面如有优惠券可叠加使用。\n\n请问需要我帮您转接人工客服对接批发报价吗？还是有其他可以帮到您的？🙂\n\n---\n**小夕提醒**：以上批发价信息因平台文档未覆盖，需由人工专员核实确认，还请您耐心等待后续跟进哦。",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

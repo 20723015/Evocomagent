@@ -1,0 +1,61 @@
+{
+  "case_id": "kb_常见问题faq_6",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 13104,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 0.0,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.5
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "商品缺货怎么办 缺货处理政策",
+          "top_k": 3
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "缺货 退款 订单取消",
+          "top_k": 3
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 2,
+    "route": null,
+    "reply": "您好，抱歉让您久等了～ 关于「商品缺货」的处理政策，我这边查询了平台的帮助文档，暂时没有检索到相关的明确说明 😥\n\n不过您可以这样处理：\n\n1. **如果您指的是某个订单里的商品缺货**：可以把订单号发给我，我帮您查一下订单的最新状态～ 顺便看看具体是什么情况（比如是否已发货、是否可申请退款等）。\n2. **如果您是问「下单后商家缺货」的情况**：这个处理细则目前文档里没有明确覆盖，我没办法凭经验给您答复，可能需要帮您进一步核实，或转接人工客服为您跟进哦。\n\n请问您方便提供一下订单号吗？如果涉及具体订单，我可以先帮您查查详情，咱们一步步看怎么解决～ 😊",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

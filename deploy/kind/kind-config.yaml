@@ -1,0 +1,17 @@
+# 4.2 kind 单节点验收环境（本地 kind cluster 配置）
+# 使用：kind create cluster --config deploy/kind/kind-config.yaml
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: ecom-accept
+nodes:
+  - role: control-plane
+    # 供 kind 内测试服务（ES/MySQL/Redis/MinIO/fake-llm）与 RBAC 工具使用
+    kubeadmConfigPatches:
+      - |
+        kind: InitConfiguration
+        nodeRegistration:
+          kubeletExtraArgs:
+            node-labels: "ingress-ready=true"
+  - role: worker
+# 本地单节点：默认 storageClass 由 kind 的 local-path 提供（hostPath 卷）
+# 或显式安装 rancher local-path-provisioner 后 deploy/helm 的 PVC 即可绑定。

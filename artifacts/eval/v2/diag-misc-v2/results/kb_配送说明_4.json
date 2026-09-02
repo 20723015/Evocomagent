@@ -1,0 +1,61 @@
+{
+  "case_id": "kb_配送说明_4",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 11620,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 1.0,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.5
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "港澳台地区是否支持发货配送政策",
+          "top_k": 3
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "偏远地区配送范围 香港 澳门 台湾 包邮",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 2,
+    "route": null,
+    "reply": "抱歉让您久等了～关于**港澳台地区是否支持直接发货**，我检索了咱们平台的配送政策文档，目前没有找到针对港澳台地区配送范围的明确说明，这部分我没办法给您一个确切的答复，不能凭空猜测哦 😥\n\n为了给您准确的信息，建议转人工客服进一步核实确认。您也可以补充说明一下想咨询具体是哪个商品、送往哪个地区，方便人工更快为您处理。\n\n请问还有其他我可以帮到您的吗？",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

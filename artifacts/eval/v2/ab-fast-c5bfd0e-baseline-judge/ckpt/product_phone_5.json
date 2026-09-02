@@ -1,0 +1,1 @@
+{"case_id": "product_phone_5", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "准确直接回答了用户询问的价格，信息完整且语气友好，额外补充配置不影响问题解决。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的价格、库存、颜色、存储、屏幕和配置信息均可在工具返回数据中找到对应依据。"}, "process_soundness": {"score": 5.0, "reason": "用户询问价格，调用query_product工具精准对路，且无多余或缺失调用，顺序合理。"}}}

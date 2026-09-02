@@ -1,0 +1,75 @@
+{
+  "case_id": "product_phone_2",
+  "passed": true,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 7083,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": 1.0,
+    "keyword_coverage": 1.0,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 1.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "query_product",
+      "recall_user_memory"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "query_product",
+        "arguments": {
+          "keyword": "小米14 Ultra"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "recall_user_memory",
+        "arguments": {
+          "query": "手机偏好"
+        },
+        "outcome": {
+          "success": false
+        }
+      }
+    ],
+    "num_tool_calls": 2,
+    "route": null,
+    "reply": "您好呀～我帮您查了一下，**小米14 Ultra 手机有货**，目前还有现货库存哦📱\n\n给您看下这款商品的详情：\n\n- **商品名称**：小米14 Ultra 手机\n- **颜色**：黑色\n- **存储**：16GB + 512GB\n- **屏幕**：6.73英寸 2K AMOLED\n- **核心配置**：骁龙8 Gen3，徕卡光学四摄，2K 护眼屏，5000mAh 大电池\n- **价格**：¥5999\n\n需要我帮您进一步了解这款手机的优惠活动，或者有其他想看的配置/颜色吗？随时告诉我～😊",
+    "retrieved_sources": [],
+    "error": null,
+    "tool_outputs": [
+      {
+        "name": "query_product",
+        "arguments": {
+          "keyword": "小米14 Ultra"
+        },
+        "result": "{\"success\": true, \"products\": [{\"product_id\": \"PHONE-MI14U-BK\", \"name\": \"小米14 Ultra 手机\", \"category\": \"手机\", \"price\": 5999.0, \"stock\": 42, \"description\": \"骁龙8 Gen3，徕卡光学四摄，2K 护眼屏，5000mAh 大电池\", \"specs\": {\"颜色\": \"黑色\", \"存储\": \"16GB+512GB\", \"屏幕\": \"6.73英寸 2K AMOLED\"}}]}"
+      },
+      {
+        "name": "recall_user_memory",
+        "arguments": {
+          "query": "手机偏好"
+        },
+        "result": "{\"success\": false, \"error\": \"记忆系统未启用\"}"
+      }
+    ]
+  }
+}

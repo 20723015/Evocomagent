@@ -1,0 +1,1 @@
+{"case_id": "greeting_12", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确表明自己是智能客服而非真人，语气亲切得体，并直接解答了用户疑问，内容完整无冗余。"}, "faithfulness": {"score": null, "reason": "无工具观测（话术性回复），忠实度核对不适用"}, "process_soundness": {"score": 5.0, "reason": "用户询问身份，属于无需调用工具即可直接回答的问题，未调用工具合理。"}}}

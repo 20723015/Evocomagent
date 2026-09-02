@@ -1,0 +1,81 @@
+{
+  "case_id": "kb_会员权益_12",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 13729,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 0.0,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "钻石会员退货运费免费吗",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "退货运费险 运费谁承担 会员权益",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "退货 运费 承担",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "钻石会员 权益",
+          "top_k": 5
+        },
+        "outcome": {}
+      }
+    ],
+    "num_tool_calls": 4,
+    "route": null,
+    "reply": "您好，我是小夕～ 关于「钻石会员退货运费是否免费」这个问题，我刚刚检索了平台的相关政策文档，但暂时没有查到针对钻石会员退货运费的明确细则，实在不好意思 😣\n\n为了给您准确答复，我需要帮您转接人工客服进一步核实，避免给您传达不确定的信息。\n\n您也可以在「我的—会员中心—会员权益说明」页面查看您的专属权益明细，以页面实际显示为准哦。\n\n请问还有其他我能帮到您的吗？😊",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

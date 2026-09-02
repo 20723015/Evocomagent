@@ -1,0 +1,69 @@
+{
+  "case_id": "citation_forbid_5",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 10404,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 1.0,
+    "requires_human_match": 0.0,
+    "citation_match": 0.0,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.3333333333333333
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "修改收货地址规则"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "订单地址修改"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "收货地址能改吗"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 3,
+    "route": null,
+    "reply": "非常抱歉，我检索了平台的政策文档，目前关于**修改收货地址的具体规则**（如可修改的时间节点、操作流程等）在文档中没有查到相应的说明。\n\n按照平台的规定，这类信息我无法为您推断或编造，建议您：\n\n1. **转接人工客服**进一步核实改地址的具体规则；\n2. 或者**在订单详情页查看**是否有「修改地址」入口，具体以页面实际显示为准。\n\n请问您是需要修改某个具体订单的收货地址吗？如果是，可以告诉我订单号，我先帮您查一下订单的当前状态～",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

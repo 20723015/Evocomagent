@@ -1,0 +1,1 @@
+{"case_id": "product_phone_8", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "客服准确回答了库存数量，且信息完整、专业，语气得体，直接解决了用户问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的价格、库存、配置、颜色和存储等具体信息均与工具返回数据一致，未发现编造或矛盾。"}, "process_soundness": {"score": 5.0, "reason": "工具选择精准，直接调用query_product查询库存，顺序合理且无多余调用。"}}}

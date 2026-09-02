@@ -1,0 +1,69 @@
+{
+  "case_id": "rag_no_hit_02",
+  "passed": true,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 13868,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": null,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 1.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "运费险怎么购买"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "运费险购买 退货运费 保险"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "运费险"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 3,
+    "route": null,
+    "reply": "抱歉让您久等了～我这边检索了平台的相关政策和帮助文档，目前**没有查询到关于「运费险」的详细说明**。\n\n由于运费险的具体购买入口、适用范围和理赔规则暂时没有文档覆盖，我无法给您准确的答复，以免误导您。建议您通过以下方式进一步核实：\n\n1. **转接人工客服**，由专员帮您确认运费险的购买方式和细则；\n2. 在**下单结算页面**留意是否有「运费险」选项（以页面实际展示为准）。\n\n您看需要我帮您转接人工客服进一步处理吗？😊",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

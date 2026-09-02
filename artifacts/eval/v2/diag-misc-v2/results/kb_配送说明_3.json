@@ -1,0 +1,61 @@
+{
+  "case_id": "kb_配送说明_3",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 10547,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 1.0,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.5
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "新疆西藏偏远地区配送是否加运费",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "偏远地区运费 邮费 政策",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 2,
+    "route": null,
+    "reply": "抱歉让您久等啦～关于「新疆、西藏配送是否加运费」这一政策，我检索了并夕夕的帮助文档，目前没有查询到相关说明，属于文档未覆盖的内容，无法为您确认是否加收运费。\n\n建议您：\n\n1. **在具体商品页面查看**：下单页通常会在运费栏显示该商品发往新疆、西藏的邮费情况，以页面实际显示为准；\n2. **转接人工客服**：由人工客服为您核实具体商品的偏远地区运费政策。\n\n这个问题我这边暂时无法直接确认，需要转人工为您进一步核实哦～请问还有其他可以帮您的吗？🙂",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

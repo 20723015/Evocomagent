@@ -1,0 +1,79 @@
+{
+  "case_id": "kb_会员权益_13",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 13567,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 0.0,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "recall_user_memory",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "会员等级怎么结算"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "会员等级 权益 结算规则"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "recall_user_memory",
+        "arguments": {
+          "query": "会员等级"
+        },
+        "outcome": {
+          "success": false
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "会员 成长值 升级"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 4,
+    "route": null,
+    "reply": "抱歉让您久等了～我这边检索了会员相关的政策文档，目前**没有查到「会员等级结算」的具体规则**，比如等级如何划分、成长值怎么累积、结算周期是多久等内容，属于文档暂未覆盖的范围。\n\n为了给您准确的答复，这类问题需要**转接人工客服**帮您进一步核实，您看可以吗？同时如果您方便的话，也可以告诉我您具体想了解哪方面（比如「如何升级」「等级权益」「结算时间」），我帮您反馈给人工客服时一并说明～",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

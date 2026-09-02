@@ -1,0 +1,1 @@
+{"case_id": "edge_08", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确完整，直接解答了超时未取可能退回的问题，并给出建议和后续协助，语气得体。"}, "faithfulness": {"score": 1.0, "reason": "回复中关于代收点48小时取件、超时可能按弃件或退回商家等政策内容，均可在工具返回的《配送说明》和《物流异常与投诉处理》中找到依据，未编造具体事实。"}, "process_soundness": {"score": 3.0, "reason": "工具选择对路，但连续两次调用同一知识搜索存在冗余，一次或已足够。"}}}

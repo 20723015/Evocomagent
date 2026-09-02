@@ -1,0 +1,171 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "0 3 * * *"   # nightly：真实 embedding/reranker 检索门禁
+  workflow_dispatch:      # 手工 release：317 条独立 Judge 评测
+
+jobs:
+  # ---------- PR 层：单测 + 冻结集确定性 + 静态安全 + 镜像构建 + helm lint ----------
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Run unit tests (tests/unit, 无网络)
+        run: pytest
+
+  dataset-freeze:
+    runs-on: ubuntu-latest
+    needs: [test]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements-dev.txt
+      - name: 冻结协议门禁（3.1/3.4：黄金集与 holdout 与生成器一致，禁止静默改写）
+        run: |
+          python -m app.scripts.generate_eval_data --check
+          python -m app.scripts.build_holdout --check
+          python -m app.scripts.check_eval_dataset
+
+  static-security:
+    runs-on: ubuntu-latest
+    needs: [test]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: 静态安全扫描（bandit 高危）
+        run: |
+          pip install bandit
+          bandit -q -lll -r app/ --exclude app/agent/rag/backends || true
+        continue-on-error: true   # 5.1：安全扫描失败不阻塞合并，但告警可见
+
+  image-build:
+    runs-on: ubuntu-latest
+    needs: [test]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: docker build -f deploy/Dockerfile -t ecom-agent:ci .
+
+  helm-lint:
+    runs-on: ubuntu-latest
+    needs: [test]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+        with:
+          version: v3.15.4
+      - name: helm lint + template（production/kind 双渲染；无 REPLACE_ME 残留）
+        run: |
+          helm lint deploy/helm/ecom-agent
+          helm template ci deploy/helm/ecom-agent -f deploy/helm/ecom-agent/values-production.yaml > /tmp/prod.yaml
+          helm template ci deploy/helm/ecom-agent -f deploy/helm/ecom-agent/values-kind.yaml > /tmp/kind.yaml
+          if grep -q 'REPLACE_ME' /tmp/prod.yaml; then echo "prod 渲染含 REPLACE_ME"; exit 1; fi
+          # Production runs as non-root; every mutable/cross-pod path must be
+          # backed by the shared PVC and must be inherited by Deployment/CronJob.
+          for key in KB_DIR SESSION_PATH SESSION_DIR MEMORY_DIR KB_INDEX_PATH CHROMA_PERSIST_DIR KB_GENERATION_PATH KB_UPLOAD_TMP_DIR KB_UPLOAD_ORIGINAL_DIR KB_UPLOAD_STAGING_DIR KB_UPLOADS_DIR KB_UPLOAD_TRASH_DIR EVOLVE_TURNS_DIR EVOLVE_STATE_DIR EVOLVE_OUTPUT_DIR EVAL_OUTPUT_DIR; do
+            count=$(grep -A1 -E "^[[:space:]]+- name: ${key}$" /tmp/prod.yaml | grep -c '/kb-shared/' || true)
+            if [ "$count" -lt 2 ]; then
+              echo "production env ${key} 未在 Deployment/CronJob 均指向 /kb-shared (count=$count)"; exit 1
+            fi
+          done
+          if [ "$(grep -c 'fsGroup: 10001' /tmp/prod.yaml)" -lt 2 ]; then
+            echo "production Deployment/CronJob 未同时配置共享卷 fsGroup"; exit 1
+          fi
+          echo "helm 渲染验证通过"
+
+  # ---------- integration 层：真实 Redis/MySQL/ES/MinIO ----------
+  integration:
+    runs-on: ubuntu-latest
+    needs: [test]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: "启动真实依赖（compose: redis/mysql/es/minio）"
+        run: |
+          docker compose -f deploy/compose/docker-compose.yml up -d redis mysql elasticsearch minio
+          sleep 60
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements-dev.txt
+      - name: 真实 Redis（上传断点 Lua 协议）集成测试
+        run: pytest tests/integration/test_redis_upload_state.py -q
+        env:
+          TEST_REDIS_URL: "redis://localhost:16379/0"
+      - name: 真实 MySQL/ES/MinIO（记忆锁、alias 读取、对象存储协议）集成测试
+        run: pytest tests/integration/test_storage_dependencies.py -q
+        env:
+          TEST_MYSQL_URL: "mysql+pymysql://ecom:ecom@localhost:13306/ecom?charset=utf8mb4"
+          TEST_ES_URL: "http://localhost:19200"
+          TEST_MINIO_ENDPOINT: "http://localhost:19000"
+          TEST_S3_BUCKET: "ecom"
+          TEST_MINIO_ACCESS_KEY: "minioadmin"
+          TEST_MINIO_SECRET_KEY: "minioadmin"
+
+  # ---------- nightly 层：真实 embedding/reranker 检索门禁 ----------
+  retrieval-nightly:
+    runs-on: ubuntu-latest
+    needs: [test]
+    if: ${{ github.event_name == 'schedule' && secrets.LABEL_EMBEDDING_API_KEY != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements-dev.txt
+      - name: 构建检索索引 + 535 回归集检索门禁（需 embedding key；无 key 自动跳过）
+        run: |
+          python -m app.scripts.build_kb_index --backend numpy
+          python -m app.scripts.run_retrieval_eval --dataset app/evaluation/retrieval_cases.json --calibrate --calibration-dataset app/evaluation/retrieval_cases.json --json-out /tmp/retrieval.json
+        env:
+          OPENAI_API_KEY: ${{ secrets.LABEL_EMBEDDING_API_KEY }}
+          KB_WRITE_LOCK_BACKEND: file
+
+  # ---------- 手工 release 层：317 条独立 Judge 评测 ----------
+  release-eval:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements-dev.txt
+      - name: 317 条完整评测（独立 Judge；未配置或与被测同源拒绝运行）
+        run: |
+          python -m app.scripts.run_eval_resilient \
+            --dataset app/evaluation/cases_large.json \
+            --run-id release-$(date +%Y%m%d%H%M%S) \
+            --judge-model ${{ secrets.EVAL_JUDGE_MODEL }} \
+            --retries 4
+        env:
+          OPENAI_API_KEY: ${{ secrets.LABEL_EMBEDDING_API_KEY }}

@@ -1,0 +1,78 @@
+{
+  "case_id": "citation_correct_9",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 13912,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 1.0,
+    "requires_human_match": 0.0,
+    "citation_match": 0.0,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.3333333333333333
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "上门取件退货 运费怎么算"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "退货运费 谁承担 上门取件费用"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "七天无理由退货运费"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "退换货政策 运费",
+          "top_k": 5
+        },
+        "outcome": {}
+      }
+    ],
+    "num_tool_calls": 4,
+    "route": null,
+    "reply": "抱歉让您久等了！我这边检索了平台政策文档，「上门取件退货运费如何计算」这一规则目前文档中没有覆盖到具体内容，为了避免给您不准确的信息，我无法擅自答复～\n\n为了帮您确认清楚，这边建议如下：\n\n1. **转接人工客服**进一步核实运费承担规则；\n2. 您也可以直接查看**订单详情的「退款/售后」页面**，页面一般会明确展示本次退货的运费说明，以实际页面显示为准。\n\n请问需要我帮您做点别的吗？比如查询某个订单的售后状态，我会尽力协助您～",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "case_id": "rag_no_hit_11",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 6664,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": null,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "公司总部在哪个城市"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 1,
+    "route": null,
+    "reply": "抱歉呀，我检索了帮助文档，暂时没有找到关于公司总部城市的信息呢😥。这类公司主体信息不在我的服务范围内，建议您联系官方渠道（如官网「关于我们」页面或官方客服热线）进行确认哦。\n\n请问还有其他购物相关的问题可以帮助您吗？比如查订单、查物流、退换货咨询都可以随时找我～",
+    "retrieved_sources": [],
+    "error": null,
+    "tool_outputs": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "公司总部在哪个城市"
+        },
+        "result": "{\"success\": true, \"backend\": \"es\", \"query\": \"公司总部在哪个城市\", \"results\": []}"
+      }
+    ]
+  }
+}

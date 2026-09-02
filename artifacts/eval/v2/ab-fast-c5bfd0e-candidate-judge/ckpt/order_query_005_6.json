@@ -1,0 +1,1 @@
+{"case_id": "order_query_005_6", "passed_rule": false, "dims": {"answer_quality": {"score": 2.0, "reason": "客服未直接查询用户指定的订单，反而提供另一笔无关订单，且缺失关键商品信息（戴森、4299），偏离问题未解决用户需求。"}, "faithfulness": {"score": 1.0, "reason": "回复中关于订单无法访问和账号下唯一订单的信息均与工具返回一致，无编造事实。"}, "process_soundness": {"score": 3.0, "reason": "已用query_order查询具体订单，但额外调用了list_user_orders属冗余调用，存在优化空间。"}}}

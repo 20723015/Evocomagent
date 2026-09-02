@@ -1,0 +1,1 @@
+{"case_id": "product_acc_5", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "客服准确给出了价格29.9，并补充了库存、特点等信息，语气得体，直接解决了用户问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的价格、库存状态、产品特点和适配型号均与工具返回数据一致，未出现编造或矛盾。"}, "process_soundness": {"score": 5.0, "reason": "用户询问产品价格，调用query_product工具精准匹配，无多余或缺失调用。"}}}

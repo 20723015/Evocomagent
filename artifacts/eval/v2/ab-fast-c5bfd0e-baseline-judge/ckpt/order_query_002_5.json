@@ -1,0 +1,1 @@
+{"case_id": "order_query_002_5", "passed_rule": false, "dims": {"answer_quality": {"score": 4.0, "reason": "客服准确告知订单查询失败并给出原因，同时主动提供账户下其他订单作为替代方案，语气得体，但未能直接解决用户查看原订单的需求。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的订单查询失败信息、订单列表及商品金额状态均与工具返回数据一致，未编造或矛盾。"}, "process_soundness": {"score": 2.0, "reason": "调用了不相关的load_skill和多余且不匹配的list_user_orders，应直接使用query_order查询指定订单"}}}

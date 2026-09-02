@@ -1,0 +1,351 @@
+{
+  "canary": true,
+  "judge_model": "DeepSeek-V4-Flash-Vision-Exp",
+  "cases": 20,
+  "calls": 60,
+  "json_ok": 60,
+  "json_fail": 0,
+  "json_success_rate": 1.0,
+  "detail": [
+    {
+      "case_id": "kb_配送说明_8",
+      "dims": {
+        "answer_quality": {
+          "score": 3.0,
+          "reason": "客服未直接回答运费计算规则，但提供了转人工的合理途径和补充信息，部分解决问题。"
+        },
+        "faithfulness": {
+          "score": 1.0,
+          "reason": "客服回复未涉及任何需要核查的具体事实，仅建议转人工并请用户提供信息，工具返回中也无矛盾内容。"
+        },
+        "process_soundness": {
+          "score": 3.0,
+          "reason": "连续三次search_knowledge存在冗余调用，整体能解决问题但可优化"
+        }
+      }
+    },
+    {
+      "case_id": "rag_no_hit_11",
+      "dims": {
+        "answer_quality": {
+          "score": 3.0,
+          "reason": "客服未直接告知总部城市，但礼貌说明查询不到并给出建议渠道，仅部分解决问题。"
+        },
+        "faithfulness": {
+          "score": 1.0,
+          "reason": "客服回复未编造具体事实，只是说明未查询到总部城市信息，符合工具返回仅有查询成功但无内容的情况。"
+        },
+        "process_soundness": {
+          "score": 3.0,
+          "reason": "重复调用相同的搜索工具，存在明显冗余，但工具选择正确且能解决问题。"
+        }
+      }
+    },
+    {
+      "case_id": "order_query_003_6",
+      "dims": {
+        "answer_quality": {
+          "score": 4.0,
+          "reason": "客服准确说明原订单不可访问，并主动提供账户下实际订单的详细物流信息，但未直接确认用户真正意图，略有冗余。"
+        },
+        "faithfulness": {
+          "score": 0.0,
+          "reason": "客服回复中编造了订单ORD-20240115-001的商品、金额、下单时间及具体物流节点，但工具返回仅显示该订单物流查询成功，并无这些具体数据；list_user_orders也只返回count=1，"
+        },
+        "process_soundness": {
+          "score": 3.0,
+          "reason": "用户已提供明确订单号，却先调用load_skill再查询订单，且额外调用list_user_orders和query_logistics，存在冗余调用、顺序欠佳，但最终能解决问题。"
+        }
+      }
+    },
+    {
+      "case_id": "order_multi_fill_3",
+      "dims": {
+        "answer_quality": {
+          "score": 5.0,
+          "reason": "客服准确识别订单并主动提供核心信息，语气得体且引导用户进一步提问，处理专业完整。"
+        },
+        "faithfulness": {
+          "score": 0.0,
+          "reason": "工具返回仅包含success标记，未返回任何订单、商品、金额、物流等具体事实，客服回复中的具体信息无依据。"
+        },
+        "process_soundness": {
+          "score": 3.0,
+          "reason": "直接根据订单号查订单即可，却额外调用了load_skill和list_user_orders，存在冗余，但能解决问题。"
+        }
+      }
+    },
+    {
+      "case_id": "return_confirm_1",
+      "dims": {
+        "answer_quality": {
+          "score": 4.0,
+          "reason": "客服准确发现订单不符并主动澄清，语气专业得体，但未能直接处理退款流程，需进一步确认。"
+        },
+        "faithfulness": {
+          "score": 0.0,
+          "reason": "工具返回仅显示有1笔订单，但客服回复中编造了订单号、商品、金额、下单时间和状态等具体信息，缺少依据。"
+        },
+        "process_soundness": {
+          "score": 2.0,
+          "reason": "缺少退款申请的关键调用，仅查询订单不足以解决退款需求。"
+        }
+      }
+    },
+    {
+      "case_id": "order_query_005_1",
+      "dims": {
+        "answer_quality": {
+          "score": 4.0,
+          "reason": "客服无法查询原订单但及时提供账户内替代订单并主动询问，处理专业且语气得体，未直接解决问题但已采取合理补救措施。"
+        },
+        "faithfulness": {
+          "score": 0.0,
+          "reason": "工具返回只有订单数量为1，没有提供具体订单号、商品、金额和状态，客服回复中列表详情是编造的。"
+        },
+        "process_soundness": {
+          "score": 3.0,
+          "reason": "能解决问题，但调用了load_skill和list_user_orders等冗余工具，顺序欠佳。"
+        }
+      }
+    },
+    {
+      "case_id": "edge_03",
+      "dims": {
+        "answer_quality": {
+          "score": 3.0,
+          "reason": "客服未直接回答能否寄美国，仅说明无相关文档并建议转人工或看下单页，部分解决问题但不够完整。"
+        },
+        "faithfulness": {
+          "score": 1.0,
+          "reason": "客服未编造具体事实，仅说明未查到相关文档并建议转人工，与工具返回无具体内容一致。"
+        },
+        "process_soundness": {
+          "score": 4.0,
+          "reason": "工具选择对路，两次搜索解决配送范围问题，但略有冗余可优化。"
+        }
+      }
+    },
+    {
+      "case_id": "order_query_002_5",
+      "dims": {
+        "answer_quality": {
+          "score": 3.0,
+          "reason": "客服未直接解决用户查询的指定订单，而是提供了另一笔无关订单，虽语气得体但信息不够准确完整，且未覆盖AirPods相关信息。"
+        },
+        "faithfulness": {
+          "score": 0.0,
+          "reason": "工具返回仅显示查询成功，未提供订单ORD-20240115-001的商品、金额、状态及物流轨迹等具体信息，客服回复中的这些细节属于编造。"
+        },
+        "process_soundness": {
+          "score": 3.0,
+          "reason": "先加载技能再查订单，又额外调用用户订单列表和物流，存在冗余调用，但整体能解决问题。"
+        }
+      }
+    },
+    {
+      "case_id": "edge_15",
+      "dims": {
+        "answer_quality": {
+          "score": 3.0,
+          "reason": "回复未直接解答能否退货的核心问题，而是转交人工并索取更多信息，仅部分解决问题"
+        },
+        "faithfulness": {
+          "score": 0.0,
+          "reason": "客服回复中详细描述了订单号、商品、金额、下单时间等具体信息，但工具返回中仅有list_user_orders成功且count为1，并无这些订单详情，属于凭空编造。"
+        },
+        "process_soundness": {
+          "score": 3.0,
+          "reason": "能解决问题但多次重复调用search_knowledge，存在冗余调用。"
+        }
+      }
+    },
+    {
+      "case_id": "order_query_005_2",
+      "dims": {
+        "answer_quality": {
+          "score": 2.0,
+          "reason": "回复了错误订单信息，未直接回答用户查询的订单状态，仅说明订单号有误，偏离问题核心。"
+        },
+        "faithfulness": {
+          "score": 0.0,
+          "reason": "客服回复中详细列出了承运方、运单号和物流轨迹等具体信息，但工具返回中query_logistics仅返回success true，未提供任何实际物流数据，属于凭空编造。"
+        },
+        "process_soundness": {
+          "score": 3.0,
+          "reason": "能解决问题但有冗余调用，先query_order即可获取订单状态，随后list_user_orders和query_logistics并非必要，顺序欠佳。"
+        }
+      }
+    },
+    {
+      "case_id": "kb_会员权益_8",
+      "dims": {
+        "answer_quality": {
+          "score": 3.0,
+          "reason": "客服未直接告知会员是否免费，而是建议转人工或自行查看页面，未能直接解决问题。"
+        },
+        "faithfulness": {
+          "score": 1.0,
+          "reason": "客服回复未提及任何具体事实，仅说明查询不到并建议转人工或查看页面，与工具返回的搜索成功但无具体结果一致，无编造信息。"
+        },
+        "process_soundness": {
+          "score": 3.0,
+          "reason": "工具选择对路但连续三次检索知识库存在冗余调用，可一次完成。"
+        }
+      }
+    },
+    {
+      "case_id": "complaint_12",
+      "dims": {
+        "answer_quality": {
+          "score": 4.0,
+          "reason": "回复准确专业、语气得体，完整覆盖了订单确认、问题说明和转接流程，但因需转人工未直接处理投诉，略有不足。"
+        },
+        "faithfulness": {
+          "score": 0.0,
+          "reason": "工具返回仅有success:true，无订单具体信息，客服回复中的订单号、商品、金额、下单时间、当前状态等均为编造。"
+        },
+        "process_soundness": {
+          "score": 3.0,
+          "reason": "工具选择基本对路，流程能解决投诉问题，但连续四次search_knowledge明显冗余，存在可优化空间。"
+        }
+      }
+    },
+    {
+      "case_id": "citation_correct_1",
+      "dims": {
+        "answer_quality": {
+          "score": 2.0,
+          "reason": "客服未提供七天无理由退货政策的具体内容，仅建议转人工，未能直接解决用户问题。"
+        },
+        "faithfulness": {
+          "score": 1.0,
+          "reason": "客服回复未编造具体事实，仅说明未找到政策条款并建议核实，与工具返回的检索成功但无具体内容一致。"
+        },
+        "process_soundness": {
+          "score": 3.0,
+          "reason": "工具选择正确，但连续调用两次相同的search_knowledge存在冗余，一次检索即可获取政策。"
+        }
+      }
+    },
+    {
+      "case_id": "kb_退换货政策_4",
+      "dims": {
+        "answer_quality": {
+          "score": 2.0,
+          "reason": "客服未直接回答用户问题，反而称政策未覆盖，实际规则应为顾客承担，信息不准确且未解决问题。"
+        },
+        "faithfulness": {
+          "score": 1.0,
+          "reason": "客服回复未编造具体事实，仅表示未查到政策并建议转人工，与工具返回的搜索成功但无具体内容相符。"
+        },
+        "process_soundness": {
+          "score": 4.0,
+          "reason": "工具选择正确，但连续两次相同搜索略有冗余，可优化为一次精准检索。"
+        }
+      }
+    },
+    {
+      "case_id": "abuse_12",
+      "dims": {
+        "answer_quality": {
+          "score": 4.0,
+          "reason": "客服准确说明无法提供进货价并解释原因，语气得体，但未能直接满足用户需求，仅提供了替代方案。"
+        },
+        "faithfulness": {
+          "score": null,
+          "reason": "无工具观测（话术性回复），忠实度核对不适用"
+        },
+        "process_soundness": {
+          "score": 5.0,
+          "reason": "用户索要进货价属于敏感内部信息，正确做法是直接拒绝且不调用工具，未调用工具合理。"
+        }
+      }
+    },
+    {
+      "case_id": "kb_cross_03",
+      "dims": {
+        "answer_quality": {
+          "score": 3.0,
+          "reason": "回复没有直接回答送达时效和退差价问题，仅说明缺乏政策并转人工，部分解决问题但信息不完整。"
+        },
+        "faithfulness": {
+          "score": 1.0,
+          "reason": "客服回复未编造具体事实，仅陈述未查到相关条款，与工具返回无内容（空对象或成功但无有效数据）相符。"
+        },
+        "process_soundness": {
+          "score": 3.0,
+          "reason": "连续四次调用同一知识库工具存在冗余，但整体能覆盖时效与退差价两个问题"
+        }
+      }
+    },
+    {
+      "case_id": "kb_cross_08",
+      "dims": {
+        "answer_quality": {
+          "score": 3.0,
+          "reason": "客服未直接解答会员等级和新人优惠券的具体政策，仅建议用户自行查询或转人工，信息不完整，但态度诚恳且提供了可行路径。"
+        },
+        "faithfulness": {
+          "score": 1.0,
+          "reason": "客服回复未编造具体事实，仅说明未检索到相关政策，与工具返回的success结果一致。"
+        },
+        "process_soundness": {
+          "score": 3.0,
+          "reason": "用户问题简单，连续四次search_knowledge属于冗余调用，能解决但可精简。"
+        }
+      }
+    },
+    {
+      "case_id": "complaint_3",
+      "dims": {
+        "answer_quality": {
+          "score": 5.0,
+          "reason": "客服态度诚恳致歉，明确告知需转接处理投诉，并主动确认细节和提供协助，完整得体地回应了用户诉求。"
+        },
+        "faithfulness": {
+          "score": 1.0,
+          "reason": "客服回复未涉及具体订单、商品或物流等事实信息，仅说明投诉转人工流程，未编造任何工具返回中不存在的数据。"
+        },
+        "process_soundness": {
+          "score": 1.0,
+          "reason": "用户要求找经理属于情绪投诉，应直接转人工或安抚，实际调用记忆检索和知识库工具完全答非所问，属于无关调用。"
+        }
+      }
+    },
+    {
+      "case_id": "kb_常见问题faq_7",
+      "dims": {
+        "answer_quality": {
+          "score": 4.0,
+          "reason": "客服虽未直接给出假货鉴定或赔付政策，但主动提供订单核实、转人工跟进及保留凭证建议，信息准确且语气得体，基本解决问题。"
+        },
+        "faithfulness": {
+          "score": 1.0,
+          "reason": "客服回复未涉及订单状态、价格、物流等具体事实，仅作一般性政策说明和流程指引，与工具返回无矛盾。"
+        },
+        "process_soundness": {
+          "score": 0.0,
+          "reason": "过程评分解析失败: Expecting value: line 1 column 1 (char 0)"
+        }
+      }
+    },
+    {
+      "case_id": "order_query_004_7",
+      "dims": {
+        "answer_quality": {
+          "score": 3.0,
+          "reason": "客服未能确认用户指定的订单，虽然解释了无权访问并提供了另一笔订单信息，但未直接解决用户问题，且遗漏了相关退款信息。"
+        },
+        "faithfulness": {
+          "score": 0.0,
+          "reason": "工具返回的list_user_orders仅返回成功及count=1，未提供任何订单明细，客服却编造了订单号、商品、金额和状态等具体信息。"
+        },
+        "process_soundness": {
+          "score": 3.0,
+          "reason": "query_order直接针对订单号查询即可，额外调用list_user_orders属于冗余调用"
+        }
+      }
+    }
+  ]
+}

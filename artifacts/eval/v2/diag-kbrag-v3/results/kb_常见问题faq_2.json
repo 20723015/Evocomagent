@@ -1,0 +1,60 @@
+{
+  "case_id": "kb_常见问题faq_2",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 11254,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 0.0,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "支持哪些支付方式"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "支付方式有哪些 微信 支付宝 银行卡",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 2,
+    "route": null,
+    "reply": "非常抱歉，关于支付方式的具体说明，我这边暂时没有检索到对应的帮助文档记录😔\n\n为了给您准确的信息，我需要帮您转接人工客服进一步核实。您也可以在**「我的 - 设置 - 关于支付」**页面查看当前支持的具体支付渠道，以页面实际展示为准。\n\n请问还有其他可以帮到您的吗？比如查订单、看物流，我这边都可以帮您处理～",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

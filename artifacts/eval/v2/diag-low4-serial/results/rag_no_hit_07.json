@@ -1,0 +1,69 @@
+{
+  "case_id": "rag_no_hit_07",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 12832,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": null,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "支持哪些支付方式 比特币"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "支付方式有哪些"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "付款 结算 银行卡 支付宝 微信"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 3,
+    "route": null,
+    "reply": "您好，抱歉让您久等了～关于**比特币支付**的问题，我这边查了平台的帮助文档，目前**没有检索到关于比特币或加密货币支付的相关说明**，因此无法确认平台是否支持这类支付方式。\n\n为了不误导您，这边建议您：\n1. **以下单结算页面实际展示的支付方式为准**（下单时会明确列出当前可用的支付渠道）；\n2. 如果您在结算时遇到困难，或者想确认某个具体支付渠道是否可用，可以联系**人工客服**进一步核实。\n\n很抱歉没能直接给您确定的答复，还有什么可以帮您的吗？😊",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

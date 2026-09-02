@@ -1,0 +1,1 @@
+{"case_id": "kb_退换货政策_12", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确完整，专业解释了生鲜不支持七天无理由退货并提供了质量问题售后方案，语气得体直接解决问题。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中的政策要点均可在工具返回的知识库结果中找到对应依据，未出现编造或矛盾的具体事实。"}, "process_soundness": {"score": 5.0, "reason": "工具选择精准，直接调用知识库查询生鲜水果退换政策，顺序合理且无多余调用。"}}}

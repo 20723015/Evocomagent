@@ -1,0 +1,38 @@
+{
+  "case_id": "greeting_5",
+  "passed": true,
+  "process": {
+    "tool_accuracy": null,
+    "tool_efficiency": null,
+    "token_cost": 3424,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": null
+  },
+  "result": {
+    "intent_match": 1.0,
+    "keyword_coverage": null,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 1.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [],
+    "tool_outcomes": [],
+    "num_tool_calls": 0,
+    "route": null,
+    "reply": "下午好呀～我是小夕，很高兴为您服务 😊\n\n有什么可以帮您的吗？无论是查订单、看物流、咨询商品，还是退换货的问题，您都可以告诉我哦！",
+    "retrieved_sources": [],
+    "error": null,
+    "tool_outputs": []
+  }
+}

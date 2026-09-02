@@ -1,0 +1,59 @@
+{
+  "case_id": "kb_配送说明_13",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 10333,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 1.0,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.5
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "预售商品多久发货"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "预售 发货时间 规则"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 2,
+    "route": null,
+    "reply": "很抱歉，关于「预售商品多久发货」的具体时效，我这边目前还没有查到明确的政策说明，暂时无法给您一个准确的时间，请您理解🙏\n\n建议您可以通过以下方式进一步确认：\n1. 在商品详情页查看「预售」标签旁通常会有商家标注的发货时间说明；\n2. 也可以咨询该商品的商家，预售发货时间以商家页面的承诺为准。\n\n目前这一问题我还需要帮您转接人工客服做进一步核实，请问还有其他可以帮您的吗？",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

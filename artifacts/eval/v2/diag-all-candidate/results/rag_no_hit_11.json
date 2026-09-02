@@ -1,0 +1,58 @@
+{
+  "case_id": "rag_no_hit_11",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 6601,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": null,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "公司总部在哪个城市"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 1,
+    "route": null,
+    "reply": "抱歉，我检索了平台的知识库，暂时没有找到关于公司总部所在地的官方资料，这类信息不便由我代为确认。\n\n建议您通过以下方式核实：\n1. **并夕夕 App 内**的「关于我们」或官方公告页面查看公司信息；\n2. 拨打**官方客服热线**咨询人工客服确认。\n\n如果还有其他购物相关的问题（比如查订单、退换货、商品咨询），我随时为您服务哦～😊",
+    "retrieved_sources": [],
+    "error": null,
+    "tool_outputs": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "公司总部在哪个城市"
+        },
+        "result": "{\"success\": true, \"backend\": \"es\", \"query\": \"公司总部在哪个城市\", \"results\": []}"
+      }
+    ]
+  }
+}

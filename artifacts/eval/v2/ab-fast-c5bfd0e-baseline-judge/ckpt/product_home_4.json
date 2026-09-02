@@ -1,0 +1,1 @@
+{"case_id": "product_home_4", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "回复准确完整地介绍了戴森V15 Detect的价格、核心卖点等信息，语气得体，直接解决了用户问题。"}, "faithfulness": {"score": 1.0, "reason": "回复中的商品价格、颜色、续航、吸力、库存及核心卖点均来自query_product工具返回，无编造信息。"}, "process_soundness": {"score": 4.0, "reason": "工具选择基本合理，query_product核心，但load_skill和recall_user_memory非必需，略有冗余可优化"}}}

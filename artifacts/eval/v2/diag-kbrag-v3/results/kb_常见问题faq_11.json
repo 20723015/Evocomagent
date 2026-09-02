@@ -1,0 +1,60 @@
+{
+  "case_id": "kb_常见问题faq_11",
+  "passed": true,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 10717,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 1.0,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 1.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "注销账户流程 政策"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "账户注销 账号删除",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 2,
+    "route": null,
+    "reply": "抱歉，关于「账户注销」这个操作，我在平台的政策文档中没有检索到相关说明，这类涉及账户安全的敏感操作我也无法直接帮您办理。\n\n建议您通过以下方式处理：\n\n1. **App 内操作**：在「设置-账户与安全」中查看是否有「注销账户」入口（若有，请按页面提示操作）\n2. **转人工客服**：在 App 内联系人工客服，由专业人员为您核实账户状态并协助处理注销事宜\n\n另外温馨提醒：注销账户前建议先确认账户内没有未完成的订单、退款或余额，以免造成不便哦～\n\n请问还有其他可以帮到您的吗？😊",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

@@ -1,0 +1,1 @@
+{"case_id": "order_query_001_7", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "客服准确、完整地确认了订单信息，涵盖商品、金额、物流状态及轨迹，语气得体并直接解决问题。"}, "faithfulness": {"score": 1.0, "reason": "回复中订单信息、金额、物流轨迹及预计送达等具体内容均与工具返回数据完全一致，无编造或矛盾。"}, "process_soundness": {"score": 3.0, "reason": "能解决订单确认问题，但调用query_logistics属于冗余，用户未要求物流信息，略有可优化空间"}}}

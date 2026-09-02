@@ -1,0 +1,38 @@
+{
+  "case_id": "complaint_10",
+  "passed": true,
+  "process": {
+    "tool_accuracy": null,
+    "tool_efficiency": null,
+    "token_cost": 3918,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": null
+  },
+  "result": {
+    "intent_match": 1.0,
+    "keyword_coverage": null,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 1.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [],
+    "tool_outcomes": [],
+    "num_tool_calls": 0,
+    "route": null,
+    "reply": "您好，我是客服小夕 😊 先给您道个歉，让您有这样的体验，真的很抱歉！\n\n您的情绪我完全理解，咱们平台向来希望让每一位顾客都买得放心。您说广告和实际体验有落差，具体是哪方面让您不满意呢？比如：\n\n1. **商品问题**：收到的商品和宣传不符、有质量瑕疵？\n2. **物流问题**：发货慢、配送延迟？\n3. **服务问题**：售前售后处理流程不顺？\n\n您把情况告诉我，如果涉及具体订单，也麻烦提供一下**订单号**，我马上帮您核实处理，一定给您一个满意的答复 🙏",
+    "retrieved_sources": [],
+    "error": null,
+    "tool_outputs": []
+  }
+}

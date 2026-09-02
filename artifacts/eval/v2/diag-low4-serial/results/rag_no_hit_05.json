@@ -1,0 +1,59 @@
+{
+  "case_id": "rag_no_hit_05",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 9755,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": null,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "线下门店在哪里 实体店"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "线下门店 实体店 地址"
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 2,
+    "route": null,
+    "reply": "我检索了我们的政策与帮助文档，暂时没有找到关于线下门店的信息。😊\n\n这种情况可能有两种原因：\n1. 我们目前主要以线上商城的形式提供服务，尚未在帮助文档中收录线下门店信息；\n2. 相关门店信息需要进一步向人工客服核实确认。\n\n如果您需要了解线下门店的位置或营业信息，建议您：\n- 提供**所在城市**，我可以帮您进一步核实是否开通了相关服务；\n- 或者**转接人工客服**，为您查询更准确的门店信息。\n\n请问您是想了解哪个城市的线下门店呢？或者您更关心的其实是其他问题（比如退换货的线下办理）？我可以继续帮您处理～",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

@@ -1,0 +1,1 @@
+{"case_id": "kb_会员权益_10", "passed_rule": true, "dims": {"answer_quality": {"score": 5.0, "reason": "客服准确完整地提供了新人30元无门槛券等优惠信息，语气得体，直接解决了用户问题。"}, "faithfulness": {"score": 0.0, "reason": "工具返回仅规定“全场通用券可叠加店铺券1张”，未说明新人券可叠加店铺券，回复宣称新人券可与店铺券叠加，属于编造规则。"}, "process_soundness": {"score": 5.0, "reason": "用户询问新人优惠券，调用知识库检索相关活动合理且无多余调用。"}}}

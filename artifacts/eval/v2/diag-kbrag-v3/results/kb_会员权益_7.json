@@ -1,0 +1,72 @@
+{
+  "case_id": "kb_会员权益_7",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 14418,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 0.0,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "会员生日福利",
+          "top_k": 3
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "生日 优惠 权益 会员",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "生日福利",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 3,
+    "route": null,
+    "reply": "抱歉让您久等了！我尝试检索了多个关键词（「会员生日福利」「生日 优惠 权益」「生日福利」），目前知识库中都没有查询到关于生日福利的具体政策文档。😞\n\n也就是说，关于**生日当天是否有专属优惠、生日券、积分翻倍**等福利内容，我这边暂时无法给您确切答复，以免提供不实信息。\n\n**建议您通过以下方式确认：**\n1. 进入「我的」-「会员中心」页面，查看是否有生日相关的活动入口或弹窗提示；\n2. 关注并夕夕 App 内的站内信或短信通知，生日福利通常会以消息形式推送；\n3. 也可以联系在线人工客服，帮您进一步核实生日权益的具体规则。\n\n给您带来不便非常抱歉，需要我帮您转人工客服进一步确认吗？😊",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

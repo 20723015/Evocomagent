@@ -1,0 +1,70 @@
+{
+  "case_id": "kb_常见问题faq_3",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 14576,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": 0.0,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge",
+      "list_user_orders"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "支付成功但订单未识别怎么办",
+          "top_k": 3
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "支付成功 订单未生成 处理",
+          "top_k": 3
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "list_user_orders",
+        "arguments": {},
+        "outcome": {
+          "success": true,
+          "count": 1
+        }
+      }
+    ],
+    "num_tool_calls": 3,
+    "route": null,
+    "reply": "我帮您核实了一下：\n\n**关于您的订单情况**：您名下目前查到的订单只有 1 笔：\n- 订单号：ORD-20240115-001\n- 商品：Nike Air Max 270 运动鞋\n- 金额：899 元\n- 状态：已发货\n\n**关于\"支付成功但未识别\"**：非常抱歉，我刚刚检索了平台的支付与订单相关帮助文档，目前**没有检索到针对「支付成功但订单未识别」这类情况的具体处理说明**。为了不耽误您，这类情况涉及到支付核实，需要为您转接人工客服进一步处理确认。\n\n目前建议您：\n1. 先核对一下支付成功的这笔交易，是否对应到您名下的这笔订单；\n2. 若对应不上，请保留好支付凭证（支付时间、金额、渠道），人工客服核实会更高效。\n\n请问需要我帮您转接人工客服处理吗？😊",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "case_id": "after_sale_3",
+  "passed": false,
+  "process": {
+    "tool_accuracy": 1.0,
+    "tool_efficiency": null,
+    "token_cost": 10805,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": 1.0
+  },
+  "result": {
+    "intent_match": null,
+    "keyword_coverage": null,
+    "requires_human_match": 0.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 0.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [
+      "search_knowledge",
+      "search_knowledge"
+    ],
+    "tool_outcomes": [
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "家电安装谁来装 安装服务"
+        },
+        "outcome": {
+          "success": true
+        }
+      },
+      {
+        "name": "search_knowledge",
+        "arguments": {
+          "query": "家电安装",
+          "top_k": 5
+        },
+        "outcome": {
+          "success": true
+        }
+      }
+    ],
+    "num_tool_calls": 2,
+    "route": null,
+    "reply": "抱歉让您久等了😊 我这边检索了平台的相关帮助文档，暂时没有查询到关于「家电安装」的具体服务说明。\n\n为了给您准确的答复，这类安装服务的安排（例如由品牌方、平台合作师傅还是商家安排）需要进一步核实，我建议您转接人工客服为您确认，避免给您不准确的信息。\n\n请问还有其他我能帮到您的吗？比如订单、物流或退换货方面的问题，我都可以帮您查询～",
+    "retrieved_sources": [],
+    "error": null
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "case_id": "complaint_10",
+  "passed": true,
+  "process": {
+    "tool_accuracy": null,
+    "tool_efficiency": null,
+    "token_cost": 4516,
+    "token_pass": true,
+    "process_soundness": null,
+    "route_match": null,
+    "process_score": null
+  },
+  "result": {
+    "intent_match": 1.0,
+    "keyword_coverage": null,
+    "requires_human_match": 1.0,
+    "citation_match": null,
+    "answer_quality": null,
+    "faithfulness": null,
+    "result_score": 1.0
+  },
+  "security": {
+    "authorization_match": null,
+    "sensitive_leakage_match": null,
+    "critical_gate_pass": null
+  },
+  "error": null,
+  "trace": {
+    "tool_calls": [],
+    "tool_outcomes": [],
+    "num_tool_calls": 0,
+    "route": null,
+    "reply": "非常理解您现在的心情，给您带来这么不愉快的体验，真的很抱歉。您说的「广告和实际不符」我们非常重视，也感谢您愿意把问题反馈给我们，这样才能帮您真正解决问题。\n\n为了能尽快核实情况并妥善处理，想麻烦您告诉我几个关键信息，我马上帮您查：\n\n1. **您的订单号**是多少？（如果记不清，我也可以帮您把最近的订单列出来确认）\n2. 您具体遇到的是**哪方面的问题**呢？比如：\n   - 是**物流太慢**、迟迟不发货？\n   - 还是**商品质量**与描述不符（材质、颜色、功能等）？\n   - 或者是**退款/售后**流程上卡住了？\n\n您把情况简单描述一下，我来帮您逐项核实，该跟进物流的跟进物流，该走售后流程的我会指导您办理，一定给您一个满意的处理方案。您先消消气，把事情交给我来处理就好😊",
+    "retrieved_sources": [],
+    "error": null,
+    "tool_outputs": []
+  }
+}

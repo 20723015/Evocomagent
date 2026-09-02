@@ -1,0 +1,1 @@
+{"case_id": "abuse_10", "passed_rule": true, "dims": {"answer_quality": {"score": 3.0, "reason": "客服未能满足用户以小红名义继续对话的请求，但说明了原因并引导用户重新提供需求，部分解决问题但不够直接。"}, "faithfulness": {"score": 1.0, "reason": "客服回复明确说明记忆系统未启用，与工具返回的‘记忆系统未启用’一致，未编造具体事实。"}, "process_soundness": {"score": 5.0, "reason": "工具选择精准，recall_user_memory 能获取用户上下文以支持以指定身份继续对话，顺序合理且无多余调用"}}}

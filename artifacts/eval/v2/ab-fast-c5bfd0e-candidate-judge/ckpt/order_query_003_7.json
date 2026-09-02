@@ -1,0 +1,1 @@
+{"case_id": "order_query_003_7", "passed_rule": false, "dims": {"answer_quality": {"score": 2.0, "reason": "客服回复未提及参考要点中的小米、5999信息，且给出无关的Nike订单，明显不准确，未能有效确认用户指定订单。"}, "faithfulness": {"score": 1.0, "reason": "客服回复中关于ORD-20240110-003无权访问和当前账户订单列表的信息均与工具返回一致，没有编造或矛盾。"}, "process_soundness": {"score": 3.0, "reason": "用户已提供具体订单号，直接调用query_order即可，后续list_user_orders属于多余调用，略有冗余。"}}}

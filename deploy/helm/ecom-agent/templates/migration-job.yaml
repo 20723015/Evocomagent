@@ -1,0 +1,38 @@
+# 2.9 数据库迁移 Job：pre-install / pre-upgrade hook——
+# 成功完成后才滚动 Deployment（helm install/upgrade 按 hook 权重顺序执行）。
+{{- if .Values.migration.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Release.Name }}-db-migrate
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: migrate
+          image: "{{ .Values.migration.image | default (printf "%s:%s" .Values.image.repository .Values.image.tag) }}"
+          command: ["python", "-m", "app.scripts.migrate_db"]
+          env:
+            - name: APP_ENV
+              value: "prod"
+            {{- range $k, $v := .Values.env }}
+            {{- if ne $k "APP_ENV" }}
+            - name: {{ $k }}
+              value: {{ $v | quote }}
+            {{- end }}
+            {{- end }}
+          envFrom:
+            - secretRef:
+                name: {{ .Values.envFromSecret }}
+          resources:
+            {{- toYaml .Values.migration.resources | nindent 12 }}
+{{- end }}
