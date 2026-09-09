@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import math
 
 import fakeredis
@@ -60,7 +61,11 @@ def test_sql_session_roundtrip_and_cas():
 
 
 def test_sql_session_append_only_not_lost_on_compression():
-    """压缩只裁窗口：save 带 new_messages 时，历史消息行式保留。"""
+    """压缩只裁窗口：save 带 new_messages 时，审计正本行式保留。
+
+    Review 修复：load 返回按 turn 归一化的模型历史（user + 最终 assistant）；
+    完整审计（含中间消息）在 chat_messages 行中。
+    """
     store = SqlSessionStore(_engine())
     store.save("u1", "s1", _state(messages=[_msg("user", "旧")]))
     # 模拟压缩后：state.messages 只剩窗口内 1 条，但新消息 2 条
@@ -71,10 +76,24 @@ def test_sql_session_append_only_not_lost_on_compression():
         new_messages=[_msg("assistant", "窗口内"), _msg("user", "新问")],
     )
     loaded = store.load("u1", "s1")
-    assert len(loaded.messages) == 3  # 正本永续：旧+窗口内+新问
-    assert loaded.messages[0]["content"] == "旧"
-    assert loaded.messages[-1]["content"] == "新问"
+    # 归一化模型历史（seq 序保留）：turn1 缺终答只留 user；
+    # turn2 = assistant(窗口内) + user(新问)（按库内原序）
+    assert [m["content"] for m in loaded.messages] == ["旧", "窗口内", "新问"]
     assert loaded.summary == "压缩摘要"
+
+    # 审计正本：3 行全在
+    with engine_connect(store) as conn:
+        rows = conn.execute(
+            select(chat_messages.c.content).where(
+                chat_messages.c.session_key == "u1/s1")
+            .order_by(chat_messages.c.seq)
+        ).scalars().all()
+    assert len(rows) == 3
+    assert json.loads(rows[1])["content"] == "窗口内"
+
+
+def engine_connect(store):
+    return store._engine.connect()
 
 
 def test_sql_session_delete_and_iter_all():
@@ -367,7 +386,8 @@ class _MiniES:
                 {"_id": d, "_score": 0.0,
                  "_source": {f: store["docs"][d].get(f, "") for f in
                              ("chunk_id", "doc", "section", "text", "source_path",
-                              "provenance", "owner", "parent_text")}}
+                              "provenance", "owner", "parent_text",
+                              "heading_path", "parent_id")}}
                 for d in merged
             ]}}
         if knn is None:  # match_all（chunks() 用）
@@ -376,7 +396,8 @@ class _MiniES:
                 {"_id": d, "_score": 0.0,
                  "_source": {f: store["docs"][d].get(f, "") for f in
                              ("chunk_id", "doc", "section", "text", "source_path",
-                              "provenance", "owner", "parent_text")}}
+                              "provenance", "owner", "parent_text",
+                              "heading_path", "parent_id")}}
                 for d in docs[:size]
             ]}}
         query_vector = knn["query_vector"]
@@ -395,7 +416,8 @@ class _MiniES:
                 "_id": doc_id, "_score": sim,
                 "_source": {f: doc.get(f, "") for f in
                             ("chunk_id", "doc", "section", "text", "source_path",
-                             "provenance", "owner", "parent_text")},
+                             "provenance", "owner", "parent_text",
+                             "heading_path", "parent_id")},
             })
         return {"hits": {"hits": hits}}
 
@@ -409,7 +431,8 @@ class _NotFoundError(Exception):
 
 def _backed_chunks():
     c1 = Chunk(chunk_id="c1", doc="退货", section="七天", text="七天无理由可退",
-               source_path="policy.md", parent_text="章节全文")
+               source_path="policy.md", parent_text="章节全文",
+               heading_path="退货 > 七天", parent_id="policy#p00")
     c2 = Chunk(chunk_id="c2", doc="配送", section="偏远", text="新疆不包邮",
                source_path="ship.md")
     return [c1, c2]
@@ -436,6 +459,8 @@ def test_es_backend_upsert_search_activate():
     assert runtime.expected_embedding_model() == "fake-model"
     assert runtime.size() == 2
     assert runtime.chunks()[0].parent_text == "章节全文"
+    assert runtime.chunks()[0].heading_path == "退货 > 七天"
+    assert runtime.chunks()[0].parent_id == "policy#p00"
     assert VectorBackend is not None  # 协议标记
 
 

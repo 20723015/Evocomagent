@@ -112,6 +112,49 @@ def test_http_status_mapping():
     assert gw401.get_order("u1", "x").code == "IDENTITY_REQUIRED"
 
 
+def test_get_order_shape_consistent_across_backends(monkeypatch):
+    """mock/http 两后端 get_order 成功时 data 均为裸订单 dict。
+
+    回归点：http 侧曾直接透传 {"order": {...}} 契约信封 → 工具层
+    {"order": {"order": ...}} 错层，与 mock 后端不可互换。
+    """
+    gw_http = _http_gateway(
+        lambda req: _json(200, {"order": {"order_id": "O1", "status": "shipped"}}),
+    )
+    res_http = gw_http.get_order("u1", "O1")
+    assert res_http.success is True
+    assert res_http.data == {"order_id": "O1", "status": "shipped"}
+
+    gw_mock = MockCommerceGateway()
+    res_mock = gw_mock.get_order("u1", "ORD-20240115-001")
+    assert res_mock.success is True
+    # 两后端都是裸订单 dict，不含信封键
+    assert "order" not in (res_http.data or {})
+    assert "order" not in (res_mock.data or {})
+
+    # 工具层经 http 网关：out["order"] 直接是订单字段（非双层嵌套）
+    from app.config.settings import settings
+
+    set_gateway(gw_http)
+    try:
+        monkeypatch.setattr(settings, "enforce_order_ownership", True)
+        out = query_order("O1", ctx=ToolContext(
+            user_id="u1", credentials={"commerce_token": "t"},
+        ))
+        assert out["success"] is True
+        assert out["order"]["order_id"] == "O1"
+    finally:
+        set_gateway(None)
+
+
+def test_http_get_order_passes_through_non_envelope_payload():
+    """下游返回裸 dict（无 order 信封）时不强行解包，原样透传。"""
+    gw = _http_gateway(lambda req: _json(200, {"order_id": "O2", "status": "created"}))
+    res = gw.get_order("u1", "O2")
+    assert res.success is True
+    assert res.data == {"order_id": "O2", "status": "created"}
+
+
 def test_http_missing_actor_fail_closed():
     gw = _http_gateway(lambda req: _json(200, {}))
     res = gw.get_order("", "ORD-1")

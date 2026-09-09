@@ -33,6 +33,7 @@ from fastapi import FastAPI, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 
 from app.config.settings import settings
+from app.review.service import ReviewLockHeld
 
 SESSION_COOKIE = "review_session"
 SESSION_TTL_SECONDS = 8 * 3600
@@ -50,13 +51,26 @@ def _make_services():
     return _build_services()
 
 
+def _review_service():
+    """每次请求独立装配（锁内 reload 保证读到磁盘正本，不做长期缓存）。"""
+    from app.review.service import ReviewService
+
+    svc = _make_services()
+    return ReviewService(
+        ledger=svc["ledger"], lock=svc["lock"], pipeline=svc["pipeline"],
+    )
+
+
 def _pending_entries():
     svc = _make_services()
-    ledger = svc["ledger"]
-    aging_entries = []
-    for cid, entry in ledger.list_pending(settings.evolve_pending_aging_days):
-        aging_entries.append((cid, entry))
-    return aging_entries
+    # GET 使用新鲜 ledger 快照，在返回副本上计算 aging；不要调用
+    # Ledger.list_pending（它会把 aging 标记写回磁盘），否则无锁请求
+    # 可能以陈旧内存态覆盖其他审核实例刚完成的编辑/批准。
+    from app.scripts.run_evolution import _pending_entries_read_only
+
+    return _pending_entries_read_only(
+        svc["ledger"], settings.evolve_pending_aging_days,
+    )
 
 
 def _session_secret() -> str:
@@ -119,16 +133,78 @@ LOGIN_HTML = """<!doctype html><html><head><meta charset="utf-8"><title>知识�
 </form></body></html>"""
 
 PENDING_HTML = """<!doctype html><html><head><meta charset="utf-8"><title>知识审核后台</title></head>
-<body><h2>待审核候选（{n}）</h2><table border="1" cellpadding="6">
-<tr><th>候选</th><th>问题</th><th>答案</th><th>状态</th><th>操作</th></tr>
+<body><h2>待审核候选（{n}）</h2>
 {rows}
-</table><p><a href="/aging">查看过期知识</a> ·
+<p><a href="/aging">查看过期知识</a> ·
 <form method="post" action="/logout" style="display:inline">{csrf_field}<button>退出登录</button></form></p></body></html>"""
+
+# 每条候选一个卡片：来源标注（人工工单显示提交客服/知识依据/证据路径）、
+# 可编辑的规范问题/标准答案（编辑走 /edit 复扫），批准/拒绝按钮。
+CANDIDATE_CARD = """<fieldset style="margin:12px 0"><legend>{cid_short}</legend>
+<p><b>来源</b>：{source_label}　<b>状态</b>：{status}　<b>创建</b>：{created_at}{human_meta}</p>
+<form method="post" action="/edit/{cid_attr}" style="margin:6px 0">
+{csrf_field}
+<input type="hidden" name="expected_revision" value="{revision}">
+<label>规范问题<br><textarea name="question" rows="2" cols="80">{question}</textarea></label><br>
+<label>标准答案<br><textarea name="answer" rows="4" cols="80">{answer}</textarea></label><br>
+<button type="submit">保存编辑（重新复扫）</button>
+</form>
+<form method="post" action="/approve/{cid_attr}" style="display:inline">
+{csrf_field}<input type="hidden" name="expected_revision" value="{revision}"><button>批准发布</button></form>
+<form method="post" action="/reject/{cid_attr}" style="display:inline">
+{csrf_field}<input type="hidden" name="expected_revision" value="{revision}"><button>拒绝</button></form>
+</fieldset>"""
 
 AGING_HTML = """<!doctype html><html><head><meta charset="utf-8"><title>过期知识</title></head>
 <body><h2>过期/临期知识文档（{n}）</h2><table border="1" cellpadding="6">
 <tr><th>文档</th><th>effective_date</th><th>owner</th></tr>
 {rows}</table><p><a href="/">返回审核列表</a></p></body></html>"""
+
+
+def _human_meta_html(entry: dict) -> str:
+    """人工候选的审核元数据（提交客服/知识依据/证据路径；全部 HTML 转义）。"""
+    if entry.get("source_kind") != "human_handoff":
+        return ""
+    basis = html.escape(str(entry.get("knowledge_basis", "")))
+    submitted = html.escape(str(entry.get("submitted_by", "")))
+    evidence = "、".join(
+        html.escape(str(p)) for p in (entry.get("evidence_paths") or [])
+    ) or "-"
+    meta = (
+        f"<br><b>提交客服</b>：{submitted}　"
+        f"<b>知识依据</b>：{basis}　<b>证据路径</b>：{evidence}"
+    )
+    review = entry.get("llm_review") or {}
+    if review:
+        meta += _llm_review_html(review)
+    return meta
+
+
+def _llm_review_html(review: dict) -> str:
+    """夜间 LLM 评审结论（建议性：新颖性/价值分；人工做最终接受/拒绝决定）。"""
+    novel = review.get("novel")
+    if novel is True:
+        novel_text = "新知识（检索无命中）"
+    elif novel is False:
+        side = html.escape(str(review.get("duplicate_of") or "?"))
+        novel_text = f"疑似重复（命中侧：{side}）"
+    else:
+        novel_text = "新颖性未知（检索不可用）"
+    worth = review.get("worth_saving")
+    score = review.get("quality_score")
+    score_text = f"（{score}）" if isinstance(score, (int, float)) else ""
+    if worth is True:
+        worth_text = f"值得沉淀{score_text}"
+    elif worth is False:
+        worth_text = f"不建议沉淀{score_text}"
+    else:
+        worth_text = "未评分"
+    reason = html.escape(str(review.get("reason", "")))
+    reviewed_at = html.escape(str(review.get("reviewed_at", "")))
+    return (
+        f"<br><b>LLM 评审（建议）</b>：新颖性 {html.escape(novel_text)}　"
+        f"价值 {html.escape(worth_text)}　{reason}　{reviewed_at}"
+    )
 
 
 def _csrf_field(csrf: str) -> str:
@@ -175,39 +251,116 @@ def create_review_app() -> FastAPI:
     async def index(request: Request):
         csrf = await _require_session(request)
         entries = _pending_entries()
+        csrf_field = _csrf_field(csrf)
         rows = "".join(
-            f"<tr><td>{html.escape(str(cid))}</td>"
-            f"<td>{html.escape(str(entry.get('question', ''))[:60])}</td>"
-            f"<td>{html.escape(str(entry.get('answer', ''))[:120])}</td>"
-            f"<td>{html.escape(str(entry.get('status', 'pending')))}</td>"
-            f"<td>"
-            f"<form method='post' action='/approve/{html.escape(str(cid), quote=True)}' style='display:inline'>"
-            f"{_csrf_field(csrf)}<button>批准发布</button></form> "
-            f"<form method='post' action='/reject/{html.escape(str(cid), quote=True)}' style='display:inline'>"
-            f"{_csrf_field(csrf)}<button>拒绝</button></form></td></tr>"
+            CANDIDATE_CARD.format(
+                cid_short=html.escape(str(cid)[:16]),
+                cid_attr=html.escape(str(cid), quote=True),
+                source_label="人工工单" if entry.get("source_kind") == "human_handoff"
+                else "机器人自进化",
+                status=html.escape(str(entry.get("status", "pending"))),
+                created_at=html.escape(str(entry.get("created_at", ""))),
+                human_meta=_human_meta_html(entry),
+                csrf_field=csrf_field,
+                revision=html.escape(str(int(entry.get("revision", 0) or 0))),
+                question=html.escape(str(entry.get("question", ""))),
+                answer=html.escape(str(entry.get("answer", ""))),
+            )
             for cid, entry in entries
         )
-        return PENDING_HTML.format(n=len(entries), rows=rows, csrf_field=_csrf_field(csrf))
+        return PENDING_HTML.format(n=len(entries), rows=rows, csrf_field=csrf_field)
+
+    @app.post("/edit/{cid}")
+    async def edit(cid: str, request: Request, csrf: str = Form(""),
+                   question: str = Form(""), answer: str = Form(""),
+                   expected_revision: str = Form("0")):
+        """审核员编辑规范问题/标准答案：锁内 reload + 乐观锁 + 重新复扫。
+
+        成功 → revision 递增并 303 返回列表页；revision 过期 → 409；
+        内容不合法/命中 PII/注入 → 422（不落盘）。
+        """
+        _check_csrf(request, csrf)
+        try:
+            revision = int(expected_revision)
+        except ValueError:
+            raise HTTPException(status_code=422, detail="expected_revision 必须为整数")
+        try:
+            result = _review_service().edit(cid, question, answer, revision)
+        except ReviewLockHeld as e:
+            raise HTTPException(status_code=503, detail=str(e)) from e
+        status = result["status"]
+        if status == "edited":
+            return RedirectResponse("/", status_code=303)
+        if status == "not_found":
+            raise HTTPException(status_code=404, detail="候选不存在或已出 pending")
+        if status == "revision_conflict":
+            raise HTTPException(
+                status_code=409,
+                detail=f"候选已被其他审核员修改（当前 revision "
+                       f"{result.get('current_revision')}），请刷新后重试",
+            )
+        raise HTTPException(status_code=422, detail=result.get("detail", status))
 
     @app.post("/approve/{cid}")
-    async def approve(cid: str, request: Request, csrf: str = Form("")):
-        _check_csrf(request, csrf)
-        from app.scripts.run_evolution import main as evo_main
+    async def approve(cid: str, request: Request, csrf: str = Form(""),
+                      expected_revision: str = Form("0")):
+        """批准发布：结构化状态返回，绝不虚报发布成功。
 
-        rc = evo_main(["--approve", cid])
-        if rc != 0:
-            raise HTTPException(status_code=400, detail=f"批准失败（exit {rc}）")
-        return {"ok": True, "candidate_id": cid, "published": True}
+        published → 200；duplicate_rejected → 200（published=false，候选已终结）；
+        publish_forbidden（SELF_EVOLVE_ENABLED=false）→ 409；
+        not_found → 404；revision_conflict → 409；publish_failed → 500。
+        """
+        _check_csrf(request, csrf)
+        try:
+            revision = int(expected_revision)
+        except ValueError:
+            raise HTTPException(status_code=422, detail="expected_revision 必须为整数")
+        try:
+            result = _review_service().approve(cid, revision)
+        except ReviewLockHeld as e:
+            raise HTTPException(status_code=503, detail=str(e)) from e
+        status = result["status"]
+        if status == "published":
+            return {"status": status, "candidate_id": cid, "published": True,
+                    "filename": result.get("filename", "")}
+        if status == "duplicate_rejected":
+            return {"status": status, "candidate_id": cid, "published": False,
+                    "detail": result.get("detail", "")}
+        if status == "publish_forbidden":
+            raise HTTPException(status_code=409, detail=result.get("detail", status))
+        if status == "not_found":
+            raise HTTPException(status_code=404, detail="候选不存在或已出 pending")
+        if status == "revision_conflict":
+            raise HTTPException(
+                status_code=409,
+                detail=f"候选已被其他审核员修改（当前 revision "
+                       f"{result.get('current_revision')}），请刷新后重试",
+            )
+        raise HTTPException(status_code=500,
+                            detail=result.get("detail", "发布事务失败"))
 
     @app.post("/reject/{cid}")
-    async def reject(cid: str, request: Request, csrf: str = Form("")):
+    async def reject(cid: str, request: Request, csrf: str = Form(""),
+                     expected_revision: str = Form("")):
+        """手工拒绝：``manual_review_reject`` 原因持久化，候选出 pending。"""
         _check_csrf(request, csrf)
-        from app.scripts.run_evolution import main as evo_main
-
-        rc = evo_main(["--reject", cid])
-        if rc != 0:
-            raise HTTPException(status_code=400, detail=f"拒绝失败（exit {rc}）")
-        return {"ok": True, "candidate_id": cid, "rejected": True}
+        revision = None
+        if expected_revision.strip():
+            try:
+                revision = int(expected_revision)
+            except ValueError:
+                raise HTTPException(
+                    status_code=422, detail="expected_revision 必须为整数",
+                )
+        try:
+            result = _review_service().reject(cid, revision)
+        except ReviewLockHeld as e:
+            raise HTTPException(status_code=503, detail=str(e)) from e
+        if result["status"] == "rejected":
+            return {"status": "rejected", "candidate_id": cid, "rejected": True}
+        if result["status"] == "not_found":
+            raise HTTPException(status_code=404, detail="候选不存在或已出 pending")
+        raise HTTPException(status_code=409, detail="候选已被其他审核员修改，请刷新后重试")
 
     @app.get("/aging", response_class=HTMLResponse)
     async def aging(request: Request):

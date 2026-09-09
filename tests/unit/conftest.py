@@ -46,7 +46,7 @@ class FakeEmbedder:
         v = [0.0] * self._dim
         for ch in str(text):
             for d in range(self._dim):
-                seed = hashlib.sha256(f"{ch}:{d}".encode("utf-8")).digest()
+                seed = hashlib.sha256(f"{ch}:{d}".encode()).digest()
                 v[d] += (seed[0] / 255.0) - 0.5
         norm = math.sqrt(sum(x * x for x in v))
         if norm == 0:
@@ -76,6 +76,25 @@ class _TextMessage:
     def __init__(self, content):
         self.content = content
         self.tool_calls = None  # 与真实 SDK 一致：无工具调用时为 None
+
+
+class _FunctionRef:
+    def __init__(self, name, arguments):
+        self.name = name
+        self.arguments = arguments
+
+
+class _ToolCall:
+    def __init__(self, call_id, name, arguments):
+        self.id = call_id
+        self.type = "function"
+        self.function = _FunctionRef(name, arguments)
+
+
+class _ToolCallMessage:
+    def __init__(self, content, tool_calls):
+        self.content = content
+        self.tool_calls = tool_calls
 
 
 class _CompletionsEndpoint:
@@ -119,7 +138,7 @@ class FakeChatClient:
         self._script: list[dict] = []
 
     # ---------- 剧本 ----------
-    def enqueue(self, result=None, error=None) -> "FakeChatClient":
+    def enqueue(self, result=None, error=None) -> FakeChatClient:
         """追加一个剧本条目。
 
         result 为 str → chat.create 的 content；为其他对象 → parse 的 .parsed；
@@ -128,16 +147,39 @@ class FakeChatClient:
         self._script.append({"result": result, "error": error})
         return self
 
-    def enqueue_chat(self, text: str) -> "FakeChatClient":
+    def enqueue_tool_call(self, call_id: str, name: str,
+                          arguments) -> FakeChatClient:
+        """追加一条工具调用响应（ReAct 步骤用；arguments 为 str 或 dict）。"""
+        if not isinstance(arguments, str):
+            arguments = json.dumps(arguments, ensure_ascii=False)
+        return self.enqueue(chat_response(
+            "",
+            tool_calls=[_ToolCall(call_id, name, arguments)],
+        ))
+
+    def enqueue_final_response(self, reply: str, intent: str = "other",
+                               requires_human: bool = False,
+                               follow_up_question=None,
+                               call_id: str = "call_final") -> FakeChatClient:
+        """追加一条 final_response 终止调用（新结构化终答协议）。"""
+
+        return self.enqueue_tool_call(call_id, "final_response", {
+            "intent": intent,
+            "reply": reply,
+            "requires_human": requires_human,
+            "follow_up_question": follow_up_question,
+        })
+
+    def enqueue_chat(self, text: str) -> FakeChatClient:
         return self.enqueue(text)
 
-    def enqueue_parse(self, parsed) -> "FakeChatClient":
+    def enqueue_parse(self, parsed) -> FakeChatClient:
         return self.enqueue(parsed)
 
-    def enqueue_error(self, exc: Exception) -> "FakeChatClient":
+    def enqueue_error(self, exc: Exception) -> FakeChatClient:
         return self.enqueue(error=exc)
 
-    def enqueue_callable(self, fn) -> "FakeChatClient":
+    def enqueue_callable(self, fn) -> FakeChatClient:
         return self.enqueue(fn)
 
     def clear_script(self) -> None:
@@ -154,6 +196,8 @@ class FakeChatClient:
         result = item["result"]
         if callable(result):
             return result(kind, kwargs)
+        if isinstance(result, _Response):
+            return result  # 完整响应对象（工具调用剧本等）直接返回
         if kind == "parse":
             return _Response([_Choice(_ParsedMessage(result))])
         content = result if result is not None else ""
@@ -223,9 +267,13 @@ class FakeRetriever:
 # ============================================================
 # 样本构造辅助
 # ============================================================
-def chat_response(text: str):
-    """构造一个文本 chat 响应对象（供 enqueue_callable 返回）。"""
-    return _Response([_Choice(_TextMessage(text))])
+def chat_response(text: str, tool_calls=None):
+    """构造一个 chat 响应对象（供 enqueue_callable/enqueue 使用）。"""
+    message = (
+        _TextMessage(text) if tool_calls is None
+        else _ToolCallMessage(text, tool_calls)
+    )
+    return _Response([_Choice(message)])
 
 
 def sample_response(**overrides) -> CustomerServiceResponse:

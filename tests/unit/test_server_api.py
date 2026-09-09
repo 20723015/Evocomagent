@@ -228,6 +228,35 @@ def test_rate_limit_429(monkeypatch, reset_settings):
         assert client.post("/v1/chat", json={"user_id": "u2", "message": "c"}).status_code == 200
 
 
+def test_stream_budget_exhausted_error_event_no_agent(monkeypatch, reset_settings):
+    """流式端点与同步 /v1/chat 同口径：日预算耗尽 → 流内 budget error 事件，
+    Agent 不启动（历史缺陷：SSE 路径只查 RPS，绕过每日 token 预算）。"""
+    settings.auth_enabled = False
+    client = _make_client(monkeypatch)
+    with client:
+        client.app.state.components.limiter = UserLimiter(
+            None, max_rps=0, daily_token_budget=10,
+        )
+        client.app.state.components.limiter.consume_tokens("u1", 100)  # 预算耗尽
+        before = len(_RECORDED_CALLS)
+        resp = client.post("/v1/chat/stream", json={
+            "user_id": "u1", "session_id": "s1", "message": "你好",
+        })
+        # SSE 语义：HTTP 仍 200，错误在流内事件（错误发生后立即 end ok=false）
+        assert resp.status_code == 200
+        assert "event: error" in resp.text
+        assert "今日用量已达上限" in resp.text
+        assert '"ok": false' in resp.text
+        # 预算拦截发生在 build_agent / Agent.chat 之前 → 不进入 Agent
+        assert len(_RECORDED_CALLS) == before
+        # 其他用户预算未耗尽 → 正常对话
+        ok = client.post("/v1/chat/stream", json={
+            "user_id": "u2", "session_id": "s2", "message": "你好",
+        })
+        assert ok.status_code == 200
+        assert "今日用量已达上限" not in ok.text
+
+
 def test_session_ownership_403(monkeypatch, reset_settings, tmp_path):
     from app.server.deps import PodComponents
     from app.stores.base import SessionState
@@ -278,8 +307,7 @@ def test_session_files_isolated_per_user(tmp_path, reset_settings, monkeypatch):
 
     def make(user_id):
         client = FakeChatClient()
-        client.enqueue("你好，请问有什么可以帮您？").enqueue(sample_response(
-            reply="您好，很高兴为您服务！"))
+        client.enqueue_final_response("您好，很高兴为您服务！", intent="greeting")
         return EcomAgent(user_id=user_id, client=client,
                          memory_enabled=False, use_mcp=False), client
 

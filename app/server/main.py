@@ -26,6 +26,7 @@ from fastapi.responses import JSONResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.config.settings import settings
+from app.handoff.board import HandoffConflict, HandoffNotFound
 from app.security.identifiers import InvalidIdentifier, validate_identifier
 from app.security.principal import SCOPE_OPS, authorize_scopes
 from app.server import runtime
@@ -38,6 +39,7 @@ from app.server.deps import (
 from app.server.schema import (
     ChatRequest,
     ChatResponse,
+    HandoffResolveRequest,
     HealthResponse,
     SessionResetRequest,
     SessionResetResponse,
@@ -55,6 +57,11 @@ PROJECT = "并夕夕 · 智能客服「小夕」API"
 
 # 3.5：命中 guardrail 的降级话术（转人工）
 SAFE_FALLBACK_REPLY = "抱歉，我无法处理您这条请求，已为您转接人工客服，请稍候。"
+# 阶段A：InputPolicy 的输入拦截话术（Agent 内同样使用，语义一致）
+GUARDRAIL_BLOCK_REPLY = (
+    "抱歉，您的消息包含疑似指令注入/敏感内容，出于安全考虑已被拦截，"
+    "本条消息已转接人工客服处理，请稍候。"
+)
 
 # GET /v1/chat/stream 弃用标记（0.3.0 弃用一个版本，0.4.0 删除）。
 # Sunset 取 0.4.0 计划发布窗口；deprecation 事件为老客户端未知的 SSE 事件
@@ -72,10 +79,7 @@ SSE_DEPRECATION_EVENT = {
 
 def _sse(event_type: str, data: dict) -> str:
     """SSE 帧：`event: <type>\ndata: <json>\n\n`。"""
-    return (
-        f"event: {event_type}\n"
-        f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
-    )
+    return f"event: {event_type}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
 
 
 def _safe_fallback(session_id: str) -> ChatResponse:
@@ -101,6 +105,41 @@ def _request_credentials(user_id: str) -> dict:
     if settings.commerce_api_key:
         creds["commerce_token"] = settings.commerce_api_key
     return creds
+
+
+def _input_prefilter(message: str):
+    """服务端快速输入预检（阶段A：经统一 InputPolicy，guardrail-only）。
+
+    返回 (message, blocked)。注入 → blocked（调用方返回降级话术）；
+    PII → 脱敏后的 message。范围闸门等完整评估由 Agent 内 InputPolicy
+    执行（需要 client/model）——两处共用同一核心实现。
+    """
+    from app.agent.input_policy import evaluate_input
+
+    decision = evaluate_input(message)
+    return decision.text, decision.action == "guardrail_block"
+
+
+def _complete_handoff(
+    components: PodComponents, agent, result, reply: str, requires_human: bool
+) -> None:
+    """共享响应完成器：普通与 SSE 接口统一的 Handoff 工单创建（阶段A）。
+
+    requires_human 时生成 handoff 包推坐席；工单失败不阻断已完成的对话。
+    """
+    if not requires_human:
+        return
+    from app.observability.metrics import record_handoff
+
+    record_handoff()
+    try:
+        if getattr(result, "reply", "") != reply:
+            result.reply = reply  # 输出侧纵深防御替换同步进工单内容
+        from app.handoff.board import build_handoff_ticket
+
+        components.handoff_board.create(build_handoff_ticket(agent, result))
+    except Exception:
+        logger.warning("handoff ticket 创建失败", exc_info=True)
 
 
 def _validate_request_ids(user_id: str, session_id: str) -> None:
@@ -138,14 +177,17 @@ def _current_trace_id() -> str:
         span = otel_trace.get_current_span()
         ctx = span.get_span_context() if span is not None else None
         if ctx is not None and ctx.is_valid:
-            return format(otel_trace.get_current_span().get_span_context().trace_id, "032x")[:16]
-    except Exception:  # noqa: BLE001 —— 观测不可用不影响错误响应
+            return format(
+                otel_trace.get_current_span().get_span_context().trace_id, "032x"
+            )[:16]
+    except Exception:
         pass
     return uuid.uuid4().hex[:16]
 
 
-def _schedule_disconnected_finalize(task, agent, components, user_id, limiter,
-                                   request_id: str = "") -> None:
+def _schedule_disconnected_finalize(
+    task, agent, components, user_id, limiter, request_id: str = ""
+) -> None:
     """断连收尾（评审·坑3：GeneratorExit 清理雷区）。
 
     收尾（等 Agent 工作结束 → close → 用量记账）放请求 cancel scope 之外的
@@ -167,17 +209,18 @@ def _schedule_disconnected_finalize(task, agent, components, user_id, limiter,
             except asyncio.TimeoutError:
                 logger.warning(
                     "客户端断连后 Agent 工作未在 %.0fs 内结束，交由工作线程"
-                    "自行完成（本轮 close 跳过，已发生用量照常入账）", bound,
+                    "自行完成（本轮 close 跳过，已发生用量照常入账）",
+                    bound,
                 )
                 _settle()
                 return
             except asyncio.CancelledError:
                 return
-            except Exception:  # noqa: BLE001 —— 断连后的轮次结果只留日志
+            except Exception:
                 logger.warning("断连后的 Agent 轮次以异常结束", exc_info=True)
         try:
             await runtime.run_agent_close(agent)
-        except Exception:  # noqa: BLE001
+        except Exception:
             logger.warning("断连收尾 agent.close() 失败", exc_info=True)
         _settle()
 
@@ -193,6 +236,13 @@ def _schedule_disconnected_finalize(task, agent, components, user_id, limiter,
 async def _idle_consolidator_loop(components: PodComponents) -> None:
     """后台兜底巩固：每 scan 间隔扫描一次静默会话（2.3），出错静默下轮再试。"""
     if components.redis is None:
+        return
+    # SQL 模式由持久化 memory-job worker 独占巩固水位；idle consolidator
+    # 使用折叠模型消息长度，和 chat_messages.seq 不同，不能并行运行。
+    # memory-job worker（SQL 或文件队列）启用后由它独占记忆巩固；idle
+    # consolidator 只作为显式关闭 worker 时的兼容兜底。文件模式也不能
+    # 并行：文件队列的水位不是 SessionState.consolidated_len，双跑会重复抽取。
+    if components.db_engine is not None or settings.memory_job_worker_enabled:
         return
     if settings.memory_consolidate_idle_minutes <= 0:
         return
@@ -219,7 +269,7 @@ async def _idle_consolidator_loop(components: PodComponents) -> None:
                 logger.info("idle consolidate 完成: %s", handled)
         except asyncio.CancelledError:
             return
-        except Exception:  # noqa: BLE001 —— 后台任务自身崩溃不应拖垮 pod
+        except Exception:
             logger.warning("idle consolidate 扫描异常", exc_info=True)
 
 
@@ -242,14 +292,14 @@ async def _kb_gc_loop(components: PodComponents) -> None:
                 lock = svc._make_lock()
                 lock.acquire(phase="gc")
                 return svc.gc(limit=settings.kb_gc_max_items)
-            except Exception as e:  # noqa: BLE001 —— GC 失败不影响主流程
+            except Exception as e:
                 _log.getLogger("app.server").warning("kb gc 失败: %s", e)
                 return 0
             finally:
                 if lock is not None:
                     try:
                         lock.release()
-                    except Exception:  # noqa: BLE001
+                    except Exception:
                         pass
 
         try:
@@ -258,7 +308,7 @@ async def _kb_gc_loop(components: PodComponents) -> None:
                 logger.info("kb gc 完成 %s 项", handled)
         except asyncio.CancelledError:
             return
-        except Exception:  # noqa: BLE001
+        except Exception:
             logger.warning("kb gc 异常", exc_info=True)
 
 
@@ -271,33 +321,67 @@ async def _es_outbox_loop(components: PodComponents) -> None:
     index = components.message_index
     try:
         ensure_message_index(components.es_client, index)
-    except Exception:  # noqa: BLE001 —— 索引建失败下轮再试
+    except Exception:
         logger.warning("message_search 索引初始化失败", exc_info=True)
     while True:
         try:
             await anyio.sleep(30)
-            from app.stores.sql.outbox import count_pending_outbox
-
             # 5.x：outbox 积压指标（ES 同步滞后告警依据）
             from app.observability.metrics import set_outbox_backlog
+            from app.stores.sql.outbox import count_pending_outbox
 
             try:
                 backlog = await to_thread.run_sync(
                     partial(count_pending_outbox, components.db_engine)
                 )
                 set_outbox_backlog(backlog)
-            except Exception:  # noqa: BLE001 —— 积压统计失败不影响同步
+            except Exception:
                 pass
             synced = await to_thread.run_sync(
-                partial(sync_outbox_to_es, components.db_engine,
-                        components.es_client, index)
+                partial(
+                    sync_outbox_to_es, components.db_engine, components.es_client, index
+                )
             )
             if synced:
                 logger.info("outbox→ES 同步 %s 条", synced)
         except asyncio.CancelledError:
             return
-        except Exception:  # noqa: BLE001 —— 单轮同步异常不影响循环
+        except Exception:
             logger.warning("outbox→ES 同步异常", exc_info=True)
+
+
+async def _memory_job_worker_loop(components: PodComponents) -> None:
+    """阶段F：异步记忆 worker 循环（SQL/文件队列；LLM 巩固不再占用对话轮）。
+
+    每 5 秒领取一批 memory job（含崩溃租约接管与水位幂等）；空转/异常静默
+    下轮再试，绝不影响主流程。关闭时由 lifespan 取消。
+    """
+    if not settings.memory_job_worker_enabled:
+        return
+
+    def _tick() -> bool:
+        from app.agent.memory.jobs import build_memory_job_worker
+
+        worker = getattr(components, "memory_job_worker", None)
+        if worker is None:
+            worker = build_memory_job_worker(components)
+            components.memory_job_worker = worker
+        try:
+            return worker.process_once() > 0
+        except Exception as e:
+            logger.warning("memory job worker 异常: %s", type(e).__name__)
+            return False
+
+    while True:
+        try:
+            await anyio.sleep(5)
+            processed = await to_thread.run_sync(_tick)
+            if processed:
+                logger.info("memory job worker 处理 %s 批", processed)
+        except asyncio.CancelledError:
+            return
+        except Exception:
+            logger.warning("memory job worker 循环异常", exc_info=True)
 
 
 @asynccontextmanager
@@ -320,8 +404,10 @@ async def _lifespan(app: FastAPI):
     app.state.es_outbox_task = asyncio.create_task(
         _es_outbox_loop(app.state.components)
     )
-    app.state.kb_gc_task = asyncio.create_task(
-        _kb_gc_loop(app.state.components)
+    app.state.kb_gc_task = asyncio.create_task(_kb_gc_loop(app.state.components))
+    # 阶段F：异步记忆 worker（SQL memory_jobs / 文件轻量队列）
+    app.state.memory_job_task = asyncio.create_task(
+        _memory_job_worker_loop(app.state.components)
     )
     yield
     app.state.kb_gc_task.cancel()
@@ -339,17 +425,22 @@ async def _lifespan(app: FastAPI):
         await app.state.consolidator_task
     except asyncio.CancelledError:
         pass
+    app.state.memory_job_task.cancel()
+    try:
+        await app.state.memory_job_task
+    except asyncio.CancelledError:
+        pass
     mcp = app.state.components.mcp_client
     if mcp is not None:
         try:
             mcp.close()
-        except Exception:  # noqa: BLE001
+        except Exception:
             logger.warning("MCP client 关闭失败", exc_info=True)
     executor = app.state.components.tool_executor
     if executor is not None:
         try:
             executor.close()
-        except Exception:  # noqa: BLE001
+        except Exception:
             logger.warning("工具执行器关闭失败", exc_info=True)
 
 
@@ -361,9 +452,11 @@ def create_app() -> FastAPI:
         lifespan=_lifespan,
     )
 
+    from app.server.human_knowledge import router as human_knowledge_router
     from app.server.uploads import router as kb_uploads_router
 
     app.include_router(kb_uploads_router)
+    app.include_router(human_knowledge_router)
 
     @app.get("/metrics", include_in_schema=False, tags=["ops"])
     async def metrics():
@@ -381,7 +474,9 @@ def create_app() -> FastAPI:
         """
         trace_id = _current_trace_id()
         logger.error(
-            "unhandled error path=%s trace_id=%s", request.url.path, trace_id,
+            "unhandled error path=%s trace_id=%s",
+            request.url.path,
+            trace_id,
             exc_info=exc,
         )
         return JSONResponse(
@@ -410,7 +505,7 @@ def create_app() -> FastAPI:
         def _check(name: str, fn) -> None:
             try:
                 checks[name] = "ok" if fn() else "degraded"
-            except Exception as e:  # noqa: BLE001 —— 探针单项失败不整体崩
+            except Exception as e:
                 checks[name] = f"error: {type(e).__name__}"
 
         # 2.7：生产要求 Redis 时，未就绪 → 不接流量（探针 fail）；
@@ -418,28 +513,35 @@ def create_app() -> FastAPI:
         if settings.redis_required and components.redis is not None:
             try:
                 components.redis.ping()
-            except Exception:  # noqa: BLE001 —— 连接不可用即未就绪
+            except Exception:
                 raise HTTPException(status_code=503, detail="Redis 未就绪（ping 失败）")
         if settings.redis_required and components.redis is None:
-            raise HTTPException(status_code=503, detail="Redis 未就绪（redis_required=true）")
+            raise HTTPException(
+                status_code=503, detail="Redis 未就绪（redis_required=true）"
+            )
         checks["redis"] = "ok" if components.redis is not None else "not_configured"
 
         # 4.1：MySQL schema 版本校验（只读，不自动 DDL）
         if components.db_engine is not None:
+
             def _db_ok():
                 from app.stores.sql.engine import _verify_schema_version
+
                 if settings.app_env.lower() == "prod":
                     _verify_schema_version(components.db_engine)
                     return True
                 return True
+
             _check("mysql_schema", _db_ok)
         else:
             checks["mysql_schema"] = "not_configured"
 
         # 4.1：ES alias 指向（KB 后端为 es 时校验；否则视为不依赖）
         if getattr(components, "es_client", None) is not None:
+
             def _es_alias_ok():
                 from app.agent.rag.es_util import get_es_client
+
                 es = get_es_client()
                 if es is None:
                     return False
@@ -447,8 +549,9 @@ def create_app() -> FastAPI:
                 try:
                     hits = es.indices.get_alias(name=alias)
                     return bool(hits)
-                except Exception:  # noqa: BLE001 —— alias 不存在
+                except Exception:
                     return False
+
             _check("es_kb_alias", _es_alias_ok)
         else:
             checks["es_kb_alias"] = "not_configured"
@@ -460,7 +563,9 @@ def create_app() -> FastAPI:
         else:
             checks["object_store"] = "not_configured"
 
-        degraded = [k for k, v in checks.items() if v == "degraded" or v.startswith("error")]
+        degraded = [
+            k for k, v in checks.items() if v == "degraded" or v.startswith("error")
+        ]
         ready = "ready" if not degraded else "degraded"
         # 5.x：依赖就绪指标（探针同源，供告警与看板）
         from app.observability.metrics import set_dependency_readiness
@@ -472,7 +577,6 @@ def create_app() -> FastAPI:
             try:
                 from app.agent.rag.es_util import get_es_client
                 from app.evolution.generation import GenerationStore
-                from app.evolution.index_service import IndexBuildService
                 from app.observability.metrics import set_alias_pointer_mismatch
 
                 es = get_es_client()
@@ -485,12 +589,12 @@ def create_app() -> FastAPI:
                             name=f"{settings.es_index_prefix}-kb-active"
                         )
                         alias_target = str(list(hits.keys())[0]) if hits else ""
-                    except Exception:  # noqa: BLE001
+                    except Exception:
                         alias_target = ""
                     set_alias_pointer_mismatch(
                         bool(alias_target and alias_target != pointer.target)
                     )
-            except Exception:  # noqa: BLE001 —— 指标采集失败不影响探针
+            except Exception:
                 pass
         return {"status": ready, "components": checks}
 
@@ -500,24 +604,19 @@ def create_app() -> FastAPI:
         # 3.1：auth_enabled 时 user_id 从 Bearer JWT 解出（请求体不再接受）
         user_id = authenticate_user(request, body.user_id)
 
-        # 3.5 输入侧：注入 → 降级话术转人工；PII → 脱敏后继续
-        message = body.message
-        if settings.guardrails_enabled:
-            from app.security.guardrails import check_input
-
-            verdict = check_input(message)
-            if verdict.blocked:
-                logger.warning("guardrail block input user=%s", user_id)
-                return _safe_fallback(body.session_id)
-            message = verdict.text
+        # 3.5/阶段A 输入侧：统一 InputPolicy 快速预检（注入 → 降级话术转人工；
+        # PII → 脱敏后继续）；完整评估（含范围闸门）在 Agent 内执行
+        message, blocked = _input_prefilter(body.message)
+        if blocked:
+            logger.warning("guardrail block input user=%s", user_id)
+            return _safe_fallback(body.session_id)
 
         # 3.7：per-user RPS 与日预算（超限 429，客户端展示并升级人工）
         from app.observability.metrics import (
             RATE_LIMITED,
+            REACT_STEPS,
             record_chat_latency,
             record_conflict,
-            record_handoff,
-            REACT_STEPS,
         )
 
         limiter = components.limiter
@@ -526,7 +625,9 @@ def create_app() -> FastAPI:
             raise HTTPException(status_code=429, detail="请求过于频繁，请稍后再试")
         if not limiter.allow_budget(user_id):
             RATE_LIMITED.labels(kind="budget").inc()
-            raise HTTPException(status_code=429, detail="今日用量已达上限，请明日再试或联系人工客服")
+            raise HTTPException(
+                status_code=429, detail="今日用量已达上限，请明日再试或联系人工客服"
+            )
 
         # 评审二轮 B2：用量按 request 归集（ContextVar 随 anyio 线程池传播，
         # turn 线程与 close 线程的 LLM 调用都记到本请求名下）
@@ -575,7 +676,8 @@ def create_app() -> FastAPI:
 
         reply = result.reply
         requires_human = result.requires_human
-        # 3.5 输出侧：敏感词 → 降级安全话术并转人工
+        # 3.5 输出侧：敏感词 → 降级安全话术并转人工（Agent 内 TurnFinalizer
+        # 已做过同一检查——此处为纵深防御，命中时结果一致）
         if settings.guardrails_enabled:
             from app.security.guardrails import check_output
 
@@ -584,20 +686,14 @@ def create_app() -> FastAPI:
                 logger.warning("guardrail block output user=%s", user_id)
                 reply = SAFE_FALLBACK_REPLY
                 requires_human = True
-        if requires_human:
-            record_handoff()
-            # 6.1：转人工 → 生成 handoff 包推坐席（ticket 可查询/回写/续会话）
-            try:
-                from app.handoff.board import build_handoff_ticket
-
-                components.handoff_board.create(build_handoff_ticket(agent, result))
-            except Exception:  # noqa: BLE001 —— 工单失败不阻断已完成的对话
-                logger.warning("handoff ticket 创建失败", exc_info=True)
+        _complete_handoff(components, agent, result, reply, requires_human)
 
         return ChatResponse(
             session_id=agent.session_id,
             reply=reply,
-            intent=result.intent.value if hasattr(result.intent, "value") else str(result.intent),
+            intent=result.intent.value
+            if hasattr(result.intent, "value")
+            else str(result.intent),
             confidence=result.confidence,
             requires_human=requires_human,
             follow_up_question=result.follow_up_question,
@@ -617,8 +713,11 @@ def create_app() -> FastAPI:
         继任端点 POST /v1/chat/stream。
         """
         return _chat_stream_response(
-            request, user_id=user_id, session_id=session_id,
-            message=message, deprecate=True,
+            request,
+            user_id=user_id,
+            session_id=session_id,
+            message=message,
+            deprecate=True,
         )
 
     @app.post("/v1/chat/stream", response_class=StreamingResponse, tags=["chat"])
@@ -637,13 +736,20 @@ def create_app() -> FastAPI:
         error{detail,trace_id} / deprecation）不变。
         """
         return _chat_stream_response(
-            request, user_id=body.user_id, session_id=body.session_id,
-            message=body.message, deprecate=False,
+            request,
+            user_id=body.user_id,
+            session_id=body.session_id,
+            message=body.message,
+            deprecate=False,
         )
 
     def _chat_stream_response(
-        request: Request, *, user_id: str, session_id: str,
-        message: str, deprecate: bool,
+        request: Request,
+        *,
+        user_id: str,
+        session_id: str,
+        message: str,
+        deprecate: bool,
     ) -> StreamingResponse:
         """SSE 流式共用实现（安全修复 P2 的核心重构）。
 
@@ -664,33 +770,65 @@ def create_app() -> FastAPI:
 
             verdict = check_input(message)
             if verdict.blocked:
+
                 async def _blocked():
                     if deprecate:
                         yield _sse("deprecation", SSE_DEPRECATION_EVENT)
-                    yield _sse("reply", {"reply": SAFE_FALLBACK_REPLY,
-                                         "requires_human": True})
+                    yield _sse(
+                        "reply", {"reply": SAFE_FALLBACK_REPLY, "requires_human": True}
+                    )
                     yield _sse("end", {"ok": True})
+
                 return StreamingResponse(
-                    _blocked(), media_type="text/event-stream", headers=headers,
+                    _blocked(),
+                    media_type="text/event-stream",
+                    headers=headers,
                 )
             message = verdict.text
 
         limiter = components.limiter
         if not limiter.allow_rps(user_id):
+
             async def _limited():
                 if deprecate:
                     yield _sse("deprecation", SSE_DEPRECATION_EVENT)
                 yield _sse("error", {"detail": "请求过于频繁，请稍后再试"})
                 yield _sse("end", {"ok": False})
+
             return StreamingResponse(
-                _limited(), media_type="text/event-stream", headers=headers,
+                _limited(),
+                media_type="text/event-stream",
+                headers=headers,
+            )
+
+        # 与同步端点 /v1/chat 同口径：流式路径不得绕过每日 token 预算
+        if not limiter.allow_budget(user_id):
+            from app.observability.metrics import RATE_LIMITED
+
+            RATE_LIMITED.labels(kind="budget").inc()
+
+            async def _budget_limited():
+                if deprecate:
+                    yield _sse("deprecation", SSE_DEPRECATION_EVENT)
+                yield _sse(
+                    "error",
+                    {"detail": "今日用量已达上限，请明日再试或联系人工客服"},
+                )
+                yield _sse("end", {"ok": False})
+
+            return StreamingResponse(
+                _budget_limited(),
+                media_type="text/event-stream",
+                headers=headers,
             )
 
         # 归属校验在生成器外完成：403 语义保留（不降级为流内 error 事件）；
         # 它只读 session 文档，不需要会话锁
         try:
             agent = build_agent(
-                user_id, session_id, components,
+                user_id,
+                session_id,
+                components,
                 credentials=_request_credentials(user_id),
             )
         except SessionOwnershipError as e:
@@ -703,7 +841,9 @@ def create_app() -> FastAPI:
             request_id = uuid.uuid4().hex
             components.usage_tracker.begin_request(request_id)
             lease = SessionLease(
-                components.locks, user_id, session_id or "session",
+                components.locks,
+                user_id,
+                session_id or "session",
             )
             lease.__enter__()
             task = None
@@ -747,32 +887,51 @@ def create_app() -> FastAPI:
                     if check_output(reply).blocked:
                         reply = SAFE_FALLBACK_REPLY
                         requires_human = True
-                yield _sse("reply", {
-                    "reply": reply,
-                    "intent": result.intent.value
-                    if hasattr(result.intent, "value") else str(result.intent),
-                    "confidence": result.confidence,
-                    "requires_human": requires_human,
-                    "follow_up_question": result.follow_up_question,
-                })
+                yield _sse(
+                    "reply",
+                    {
+                        "reply": reply,
+                        "intent": result.intent.value
+                        if hasattr(result.intent, "value")
+                        else str(result.intent),
+                        "confidence": result.confidence,
+                        "requires_human": requires_human,
+                        "follow_up_question": result.follow_up_question,
+                    },
+                )
+                # 阶段A：普通与 SSE 复用同一 Handoff 完成器（SSE 之前漏建工单）
+                _complete_handoff(components, agent, result, reply, requires_human)
                 yield _sse("end", {"ok": True})
             except (GeneratorExit, asyncio.CancelledError):
                 # 客户端断连：Agent 线程不可中断——有界等待其自然结束后
                 # 在请求 scope 之外收尾（本 finally 内不做任何 await）
                 interrupted = True
                 _schedule_disconnected_finalize(
-                    task, agent, components, user_id, limiter, request_id,
+                    task,
+                    agent,
+                    components,
+                    user_id,
+                    limiter,
+                    request_id,
                 )
                 raise
-            except Exception as e:  # noqa: BLE001 —— 流式期间异常推给客户端
+            except Exception as e:
                 # 安全修复 P2：不回显异常细节（与 500 脱敏同一原则）
                 trace_id = _current_trace_id()
-                logger.error("stream turn failed session=%s/%s trace_id=%s",
-                             user_id, session_id, trace_id, exc_info=e)
-                yield _sse("error", {
-                    "detail": "本轮对话处理失败，请稍后重试",
-                    "trace_id": trace_id,
-                })
+                logger.error(
+                    "stream turn failed session=%s/%s trace_id=%s",
+                    user_id,
+                    session_id,
+                    trace_id,
+                    exc_info=e,
+                )
+                yield _sse(
+                    "error",
+                    {
+                        "detail": "本轮对话处理失败，请稍后重试",
+                        "trace_id": trace_id,
+                    },
+                )
                 yield _sse("end", {"ok": False})
             finally:
                 if not interrupted:
@@ -784,7 +943,9 @@ def create_app() -> FastAPI:
                 lease.__exit__(None, None, None)
 
         return StreamingResponse(
-            _stream(), media_type="text/event-stream", headers=headers,
+            _stream(),
+            media_type="text/event-stream",
+            headers=headers,
         )
 
     @app.post("/v1/handoffs", tags=["handoff"])
@@ -817,34 +978,89 @@ def create_app() -> FastAPI:
 
     @app.get("/v1/handoffs", tags=["handoff"])
     async def list_handoffs(request: Request, status: str = "pending"):
-        """安全修复 P1：运营面端点，要求 ops scope。"""
-        authorize_scopes(request, SCOPE_OPS)
-        components: PodComponents = request.app.state.components
-        tickets = components.handoff_board.list(status)
-        return {"tickets": [t.to_dict() for t in tickets]}
+        """工单看板（运营面，ops scope）：支持 pending/resolved/all。
 
-    @app.post("/v1/handoffs/{ticket_id}/resolve", tags=["handoff"])
-    async def resolve_handoff(ticket_id: str, request: Request, body: dict):
-        """6.1：坐席回写结论；reclaim=true 表示会话可继续（下一轮同一 session 直接续上）。
-
-        安全修复 P1：运营面端点，要求 ops scope。
+        capabilities.human_qa_evolution：UI 据此显示或禁用「沉淀为知识」表单
+        ——仅当功能开关开启且工单板为 Redis 持久实现（进程内队列不可恢复）。
         """
         authorize_scopes(request, SCOPE_OPS)
+        if status not in ("pending", "resolved", "all"):
+            raise HTTPException(
+                status_code=422,
+                detail=f"未知工单状态: {status}（支持 pending/resolved/all）",
+            )
         components: PodComponents = request.app.state.components
+        tickets = components.handoff_board.list(status)
+        return {
+            "tickets": [t.to_dict() for t in tickets],
+            "capabilities": {
+                "human_qa_evolution": (
+                    settings.human_qa_evolution_enabled
+                    and bool(getattr(components.handoff_board, "durable", False))
+                ),
+            },
+        }
+
+    @app.post("/v1/handoffs/{ticket_id}/resolve", tags=["handoff"])
+    async def resolve_handoff(
+        ticket_id: str,
+        request: Request,
+        body: HandoffResolveRequest,
+    ):
+        """6.1：坐席回写结论；reclaim=true 表示会话可继续（下一轮同一 session 直接续上）。
+
+        人工客服问答沉淀（human_qa_evolution_enabled）：resolution 勾选
+        knowledge_candidate 时规范问题/答案/依据必填，Redis Lua 原子完成
+        工单转 resolved + 事件保存 + evolution pending 登记；幂等键 =
+        SHA-256("human-handoff:v1:" + ticket_id + ":" + resolution_version)，
+        相同内容（无论 version）重放返回同一事件，不同内容返回 409。
+        resolved_by 只取 authorize_scopes 的认证主体 sub（不接受请求体伪造）；
+        功能开启但工单板非持久（无 Redis）时勾选沉淀 503，普通工单照常解决。
+
+        安全修复 P1：运营面端点，要求 ops scope（auth 关闭且未强制时开发直通）。
+        """
+        principal = authorize_scopes(request, SCOPE_OPS)
+        components: PodComponents = request.app.state.components
+        authenticate_user(request, body.user_id or "")
+        resolution = dict(body.resolution)
+        if resolution.get("knowledge_candidate"):
+            # 人工知识沉淀链路已切换为「外部会话批量接入 → MySQL 评审 →
+            # 人工批量发布」；工单勾选沉淀已弃用——明确报错避免静默丢失。
+            raise HTTPException(
+                status_code=410,
+                detail="knowledge_candidate 已弃用：人工知识改由 "
+                "POST /v1/human-conversations/batch 批量推送会话沉淀",
+            )
         ticket = components.handoff_board.get(ticket_id)
-        authenticate_user(request, str(body.get("user_id", "")))
         if ticket is None:
             raise HTTPException(status_code=404, detail="工单不存在")
-        resolved = components.handoff_board.resolve(ticket_id, body.get("resolution", {}))
+        try:
+            event, duplicate = components.handoff_board.resolve_atomic(
+                ticket_id,
+                resolution,
+                principal.sub,
+                resolution_version=body.resolution_version,
+            )
+        except HandoffConflict as e:
+            raise HTTPException(status_code=409, detail=str(e)) from e
+        except HandoffNotFound as e:  # get 与 resolve 之间的竞态删除
+            raise HTTPException(status_code=404, detail="工单不存在") from e
         return {
             "ticket_id": ticket_id,
-            "status": resolved.status,
-            "reclaim_session": bool(body.get("reclaim", True)),
+            "status": "resolved",
+            "reclaim_session": body.reclaim,
+            "resolution_event": event,
+            "duplicate": duplicate,
         }
 
     @app.get("/v1/messages/search", tags=["handoff"])
-    async def message_search(request: Request, user_id: str = "", q: str = "",
-                             session_id: str = "", limit: int = 50):
+    async def message_search(
+        request: Request,
+        user_id: str = "",
+        q: str = "",
+        session_id: str = "",
+        limit: int = 50,
+    ):
         """阶段八：对话全文检索（坐席接手/质检）。
 
         安全修复 P1：运营面端点，要求 ops scope。
@@ -872,7 +1088,7 @@ def create_app() -> FastAPI:
                 size=min(max(limit, 1), 200),
                 source=["session_key", "seq", "role", "content", "ts"],
             )
-        except Exception:  # noqa: BLE001 —— 检索失败降级为空结果
+        except Exception:
             return {"hits": [], "degraded": True, "reason": "ES 查询失败"}
         return {
             "hits": [
@@ -901,7 +1117,9 @@ def create_app() -> FastAPI:
             raise HTTPException(status_code=403, detail=str(e)) from e
         components = request.app.state.components
         with SessionLease(
-            components.locks, user_id, body.session_id or "session",
+            components.locks,
+            user_id,
+            body.session_id or "session",
         ) as lease:
             if lease.token is None:
                 raise HTTPException(

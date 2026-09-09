@@ -1,4 +1,4 @@
-"""KB 文档上传编排服务（v7 冻结）：Redis 断点续传 + MySQL 元数据 + ES 版本化重建。
+"""KB 文档上传编排服务（v7 冻结 + 多实例异步改造）：Redis 断点续传 + MySQL 元数据 + ES 版本化重建。
 
 生命周期（先 journal 后 CAS；提交点 = ES alias 切换）：
 
@@ -19,6 +19,13 @@
 恢复：持有统一写锁后、接受任何新写前——先恢复全部残留 journal（相位判定：
     < ALIAS_ACTIVATED 回滚 / == ACTIVATING 查真实 alias 三分支 / ≥ 只前进），
     再检查 kb_write_blocked（alias 指向其它代 → 阻塞全部后续写，人工 reconcile）。
+
+异步模式（kb_control 共享开关 kb_async_enabled 启用后）：
+    complete/delete 只做「幂等封口 + 事务入队」（文档 CAS 与 kb_index_jobs
+    INSERT 同事务）即返回 202；执行由独立 KB Worker 领取：
+    run_upload_job / run_delete_job 复用同一提交序列，经 JobControl 注入
+    阶段/进度上报与「副作用前 lease_token 所有权检查」；锁等待回 queued
+    （不计失败次数）；提交点后故障只前进持续重试。
 """
 
 from __future__ import annotations
@@ -28,8 +35,8 @@ import re
 import uuid
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Optional
 
+from app.agent.rag.job_store import JobLeaseLost
 from app.config.settings import settings
 from app.evolution.generation import GenerationInfo, GenerationStore, new_generation_id
 from app.evolution.index_service import IndexBuildService
@@ -41,29 +48,30 @@ from app.stores.kb_write_lock import (
     get_kb_write_lock,
 )
 from app.stores.sql.document_store import (
-    DocumentRecord,
-    KbControlStore,
-    SqlDocumentStore,
     STATUS_CANCELLED,
+    STATUS_DELETE_QUEUED,
     STATUS_DELETED,
     STATUS_DELETING,
     STATUS_FAILED,
     STATUS_INDEXED,
     STATUS_INDEXING,
+    STATUS_QUEUED,
     STATUS_UPLOADING,
     STATUS_VALIDATING,
+    DocumentRecord,
+    KbControlStore,
+    SqlDocumentStore,
 )
 from app.stores.upload_state import (
     SESSION_CANCELLED,
     SESSION_SEALED,
-    UploadSession,
     STATE_READY,
+    UploadSession,
     build_upload_state_store,
 )
 from app.stores.upload_storage import (
     OriginalStore,
     StageDir,
-    UploadStorageError,
     build_chunk_storage,
 )
 
@@ -129,6 +137,19 @@ class UploadBlocked(UploadConflictError):
     """知识库被全局阻塞（alias 指向其它代，待人工 reconcile）。"""
 
 
+class UploadLockWait(UploadConflictError):
+    """异步模式：全局写锁被占用——任务回 queued 等待（不计失败次数）。"""
+
+
+# 异步执行期的 control 协议（KbWorker 注入）：副作用前所有权检查 + 阶段上报
+class JobControlLike:  # pragma: no cover —— 仅类型说明；运行时见 kb_worker.JobControl
+    def check_alive(self) -> None:
+        """写锁 + lease_token 所有权检查；失主立即抛错中止提交。"""
+
+    def stage(self, stage: str, progress: int | None = None) -> None:
+        """阶段/进度上报（每次顺带续租）。"""
+
+
 # ============================================================
 # 服务
 # ============================================================
@@ -144,11 +165,12 @@ class DocumentUploadService:
         index_service: IndexBuildService,
         state_store=None,
         chunk_storage=None,
-        stage: Optional[StageDir] = None,
-        originals: Optional[OriginalStore] = None,
+        stage: StageDir | None = None,
+        originals: OriginalStore | None = None,
         engine=None,
         redis=None,
         kb_root=None,
+        job_store=None,
     ):
         self._doc = doc_store
         self._control = control_store
@@ -161,10 +183,23 @@ class DocumentUploadService:
         self._engine = engine
         self._redis = redis
         self._kb_root = Path(kb_root or settings.kb_dir)
+        self._jobs = job_store  # KbIndexJobStore（异步模式；None = 仅同步语义）
 
     # ---------- 基础 ----------
     def _make_lock(self):
         return get_kb_write_lock(engine=self._engine, redis=self._redis)
+
+    @staticmethod
+    def _assert_write_authority(lock, control=None) -> None:
+        """在共享写副作用前同时确认写锁与异步任务所有权。
+
+        ``control`` 为空时用于同步恢复路径，仍必须确认锁未丢失；异步
+        Worker 则额外校验 lease token/heartbeat/停机宽限。所有恢复函数
+        都通过此闸门进入 alias、pointer、文档 CAS 和 journal 清理。
+        """
+        lock.assert_held()
+        if control is not None:
+            control.check_alive()
 
     def _kb_uploads_dir(self) -> Path:
         return self._kb_root / "uploads"
@@ -174,6 +209,55 @@ class DocumentUploadService:
 
     def _new_operation(self) -> str:
         return uuid.uuid4().hex
+
+    # ---------- 异步模式（kb_control 共享开关；默认同步语义） ----------
+    def _async_enabled(self) -> bool:
+        """两阶段上线开关：kb_control.kb_async_enabled=1 启用异步。
+
+        共享开关未设置时回退 settings.kb_async_api（默认 False，保持同步语义）；
+        读取失败向上抛（503 fail-closed，不猜测语义）。
+        """
+        if self._jobs is None:
+            return False
+        raw = (self._control.get(settings.kb_async_control_key) or "").strip().lower()
+        if raw in ("1", "true", "yes", "on"):
+            return True
+        if raw in ("0", "false", "no", "off"):
+            return False
+        return bool(settings.kb_async_api)
+
+    def _find_job(self, operation: str, rec: DocumentRecord) -> dict | None:
+        if self._jobs is None or not rec.doc_id:
+            return None
+        return self._jobs.find(operation, doc_id=rec.doc_id)
+
+    def _job_payload(self, job: dict) -> dict:
+        """任务负载（API 层映射 202/200/409 与 Location/Retry-After 头）。"""
+        return {
+            "job_id": job["job_id"],
+            "operation": job["operation"],
+            "doc_id": job["doc_id"],
+            "upload_id": job.get("upload_id", "") or "",
+            "status": job["status"],
+            "stage": job.get("stage", "") or "",
+            "progress": int(job.get("progress") or 0),
+            "attempts": int(job.get("attempts") or 0),
+            "error": job.get("error", "") or "",
+            "retryable": bool(int(job.get("retryable") or 0)),
+            "status_url": f"/v1/kb/jobs/{job['job_id']}",
+        }
+
+    def _seal_idempotent(self, rec: DocumentRecord) -> None:
+        """入队前幂等封口：SQL 失败后重复 complete 可补入队（封口可重放）。"""
+        session = self._state.get(rec.upload_id)
+        if session is None:
+            raise UploadParseFailed("断点会话已过期，请重新上传")
+        if session.session_state == SESSION_CANCELLED:
+            raise UploadClosedError("会话已取消")
+        if session.session_state != SESSION_SEALED:
+            out = self._state.seal_if_ready(rec.upload_id)
+            if out != "SEALED":
+                raise UploadIncomplete(f"分片未就绪（{out}），请补传后重试")
 
     # ---------- create ----------
     def create_upload(self, uploader: str, filename: str, size_bytes: int,
@@ -212,7 +296,7 @@ class DocumentUploadService:
             sha256=sha256 or "",
             upload_chunk_count=total_chunks,
             provenance=f"upload:{upload_id}",
-            expires_at=(datetime.now() + timedelta(seconds=settings.kb_upload_session_ttl))
+            expires_at=(datetime.now() + timedelta(seconds=settings.kb_upload_session_ttl))  # noqa: DTZ005
             .isoformat(timespec="seconds"),
         )
         record = self._doc.create(record)
@@ -288,7 +372,7 @@ class DocumentUploadService:
                 raise UploadNotFound(f"上传会话不存在: {upload_id}")
         except UploadError:
             raise
-        except Exception as e:  # noqa: BLE001 —— 发布失败：撤回声明（同 token only）
+        except Exception as e:
             self._state.drop_chunk_record(upload_id, seq, token)
             raise UploadError(f"分片发布失败: {e}") from e
         return {"upload_id": upload_id, "seq": seq,
@@ -298,9 +382,26 @@ class DocumentUploadService:
     # ---------- 状态 ----------
     def get_status(self, upload_id: str) -> dict:
         session = self._state.get(upload_id)
-        if session is None:
-            raise UploadNotFound(f"上传会话不存在: {upload_id}")
         rec = self._doc.get_by_upload_id(upload_id)
+        if session is None and rec is None:
+            raise UploadNotFound(f"上传会话不存在: {upload_id}")
+        job = self._jobs.latest_for_doc(rec.doc_id) if (self._jobs and rec) else None
+        if session is None:
+            # Redis 会话/分片已清理：以 SQL 文档 + 任务为正本返回（终态可见）
+            return {
+                "upload_id": upload_id,
+                "doc_id": rec.doc_id if rec else "",
+                "session_state": "",
+                "filename": rec.filename if rec else "",
+                "size_bytes": int(rec.size_bytes) if rec else 0,
+                "chunk_size": int(rec.chunk_size) if rec else 0,
+                "total_chunks": int(rec.upload_chunk_count) if rec else 0,
+                "received": [],
+                "ready_count": 0,
+                "doc_status": rec.status if rec else "",
+                "operation_id": rec.operation_id if rec else "",
+                "job": self._job_payload(job) if job else None,
+            }
         received = self._state.received(upload_id)
         return {
             "upload_id": upload_id,
@@ -314,6 +415,7 @@ class DocumentUploadService:
             "ready_count": self._state.ready_count(upload_id),
             "doc_status": rec.status if rec else "",
             "operation_id": rec.operation_id if rec else "",
+            "job": self._job_payload(job) if job else None,
         }
 
     def _status_payload(self, rec: DocumentRecord) -> dict:
@@ -337,12 +439,78 @@ class DocumentUploadService:
         if rec is None:
             raise UploadNotFound(f"上传会话不存在: {upload_id}")
         _require_owner(rec, uploader)
+        if self._async_enabled():
+            return self._cancel_async(rec, upload_id, uploader)
+        return self._cancel_sync(rec, upload_id)
+
+    def _cancel_async(self, rec: DocumentRecord, upload_id: str,
+                      uploader: str) -> dict:
+        """委托任务取消：仅 queued/retry_wait 可取消；运行中 409。
+
+        取消 = 放弃上传（与同步语义一致）：任务 cancelled + 文档 cancelled +
+        清分片/会话。若用户想换文件，重新 create_upload 即可。
+        """
+        from app.agent.rag.job_store import JOB_QUEUED, JOB_RETRY_WAIT
+
+        job = self._find_job("upload", rec)
+        if job is not None:
+            if job["status"] not in (JOB_QUEUED, JOB_RETRY_WAIT):
+                raise UploadConflictError(
+                    f"任务已开始执行，无法取消（status={job['status']}，"
+                    f"查询 {self._job_payload(job)['status_url']}）"
+                )
+            cancelled = self.cancel_job(job["job_id"])
+            if cancelled is None:  # 竞态：任务刚被领取
+                raise UploadConflictError("任务已开始执行，无法取消")
+            return {"upload_id": upload_id, "status": STATUS_CANCELLED,
+                    "job_id": job["job_id"]}
+        if rec.status not in (STATUS_UPLOADING, STATUS_QUEUED):
+            raise UploadConflictError(f"当前状态 {rec.status} 不可取消")
+        # 无任务（尚未 complete）：仅清会话与分片，文档置 cancelled
+        updated = self._doc.update_status(
+            rec.doc_id, rec.status, STATUS_CANCELLED, rec.version,
+        )
+        if updated < 0:
+            raise UploadConflictError("上传状态已变化，无法取消")
+        self._cleanup_upload_site(upload_id)
+        return {"upload_id": upload_id, "status": STATUS_CANCELLED}
+
+    def cancel_job(self, job_id: str) -> dict | None:
+        """取消排队任务；SQL 事务提交后再清理上传会话和分片。
+
+        JobStore 在一个事务中完成 job cancelled 与文档状态转换；这里只
+        编排不可事务化的对象存储/Redis 清理，避免多实例重新入队窗口。
+        """
+        if self._jobs is None:
+            return None
+        operation = str((self._jobs.get(job_id) or {}).get("operation") or "")
+        if operation == "upload" and hasattr(self._jobs, "cancel_upload_atomic"):
+            cancelled = self._jobs.cancel_upload_atomic(job_id)
+        else:
+            cancelled = self._jobs.cancel(job_id)
+        if (cancelled is not None
+                and cancelled.get("operation") == "upload"
+                and cancelled.get("upload_id")):
+            self._cleanup_upload_site(str(cancelled["upload_id"]))
+        return cancelled
+
+    def _cancel_sync(self, rec: DocumentRecord, upload_id: str) -> dict:
         self._state.mark_closed(upload_id, SESSION_CANCELLED)
         if rec.status in (STATUS_UPLOADING, STATUS_VALIDATING):
             self._doc.update_status(rec.doc_id, rec.status, STATUS_CANCELLED, rec.version)
-        self._chunks.delete_chunks(upload_id)
-        self._state.delete(upload_id)
+        self._cleanup_upload_site(upload_id)
         return {"upload_id": upload_id, "status": STATUS_CANCELLED}
+
+    def _cleanup_upload_site(self, upload_id: str) -> None:
+        """收尾清理：分片对象 + Redis 会话（尽力而为，失败不影响结果）。"""
+        try:
+            self._chunks.delete_chunks(upload_id)
+        except Exception:  # noqa: BLE001, S110
+            pass
+        try:
+            self._state.delete(upload_id)
+        except Exception:  # noqa: BLE001, S110
+            pass
 
     # ---------- complete ----------
     def complete(self, upload_id: str, uploader: str) -> dict:
@@ -353,6 +521,41 @@ class DocumentUploadService:
 
         if rec.status == STATUS_INDEXED:
             return self._indexed_payload(rec)
+        if self._async_enabled():
+            return self._complete_async(rec, uploader)
+        return self._complete_sync(rec, upload_id, uploader)
+
+    def _complete_async(self, rec: DocumentRecord, uploader: str) -> dict:
+        """异步入队：幂等封口 + 事务（文档 CAS + 任务 INSERT），立即返回任务。"""
+        job = self._find_job("upload", rec)
+        if job is not None:
+            from app.agent.rag.job_store import JOB_ACTIVE
+
+            if job["status"] in JOB_ACTIVE:
+                return self._job_payload(job)  # 202：重复请求返回同一任务
+            if job["status"] == "succeeded":
+                return self._indexed_payload(self._doc.get(rec.doc_id) or rec)
+            if job["status"] == "failed":
+                # 永久失败/重试耗尽：返回任务负载（API 映射 409 + 任务地址，
+                # 人工 POST .../retry 可重排——仅限 retryable 任务）
+                return self._job_payload(job)
+            # cancelled → 继续走重新入队（换新任务）
+        if rec.status == STATUS_FAILED:
+            raise UploadConflictError("文档为永久失败状态，请修正后重新上传")
+        if rec.status in (STATUS_VALIDATING, STATUS_INDEXING, STATUS_DELETING):
+            # 无任务的中间态：同步路径遗留（回滚中/接管前），拒绝并发入队
+            raise UploadRecovering(f"文档正在处理（{rec.status}），请稍后重试")
+        if rec.status not in (STATUS_UPLOADING, STATUS_QUEUED):
+            raise UploadConflictError(f"当前状态 {rec.status} 不允许 complete")
+        self._seal_idempotent(rec)
+        job, _created = self._jobs.enqueue_upload(
+            rec.doc_id, rec.upload_id, uploader, rec.version,
+        )
+        return self._job_payload(job)
+
+    def _complete_sync(self, rec: DocumentRecord, upload_id: str,
+                       uploader: str) -> dict:
+        """同步兼容路径（kb_async 开关关闭）：保持 v7 冻结语义不变。"""
         if rec.status in (STATUS_VALIDATING, STATUS_INDEXING, STATUS_DELETING):
             return self._resume_after_recover(rec, upload_id)
 
@@ -460,7 +663,15 @@ class DocumentUploadService:
 
     # ---------- 锁内提交（upload 语义；下架复用同相位逻辑） ----------
     def _commit_locked(self, rec: DocumentRecord, validating_version: int,
-                       op_id: str, merged: bytes, text: str) -> dict:
+                       op_id: str, merged: bytes, text: str,
+                       control=None) -> dict:
+        """锁内提交序列（提交点 = alias 切换）。
+
+        control=None：同步语义（锁冲突回 uploading 抛 409；失败回滚）。
+        control=JobControl：异步语义——阶段/进度上报 + 每个副作用前所有权检查；
+        锁等待回 queued（UploadLockWait，不计失败）；提交点后失败只前进
+        （UploadRecovering，Worker 持续重试）。
+        """
         backend = self._backend()
         gen_id = new_generation_id()
         info = GenerationInfo(
@@ -472,39 +683,59 @@ class DocumentUploadService:
         phase = PH_PREPARED
         lock = self._make_lock()
         try:
+            if control is not None:
+                control.stage("waiting_for_lock", progress=10)
             lock.acquire(phase="upload")
         except (KbWriteLockError, KbWriteLockBackendError, LockHeldError) as e:
+            if control is not None:
+                # 等锁期间可能已被另一实例接管；失主不得把文档状态回写成
+                # queued（新 Worker 可能已经推进到提交点）。
+                control.check_alive()
+                # 异步：锁等待不计失败——文档回 queued，任务短延迟重试
+                self._doc.update_status(rec.doc_id, STATUS_VALIDATING, STATUS_QUEUED,
+                                        validating_version, operation_id="",
+                                        error=f"锁被持有: {type(e).__name__}")
+                raise UploadLockWait(f"知识库构建中: {e}") from e
             self._doc.update_status(rec.doc_id, STATUS_VALIDATING, STATUS_UPLOADING,
                                     validating_version, operation_id="",
                                     error=f"锁被持有: {type(e).__name__}")
             raise UploadConflictError(f"知识库构建中: {e}") from e
         try:
             # 持锁后、接受任何新写前：先恢复历史事务，再检查全局阻塞
-            self._recover_all_journals(lock)
+            self._assert_write_authority(lock, control)
+            self._recover_all_journals(lock, control=control)
+            self._assert_write_authority(lock, control)
             self._assert_not_blocked()
 
             # ③ 先 journal 后 CAS（消除「indexing 无 journal」窗口）
+            self._assert_write_authority(lock, control)
             self._journal(rec.upload_id, {
                 "op": "upload", "phase": PH_PREPARED,
                 "doc_id": rec.doc_id, "storage_key": storage_key,
                 "generation_id": gen_id, "target": info.target,
             })
             phase = PH_PREPARED
+            self._assert_write_authority(lock, control)
             ok = self._doc.update_status(rec.doc_id, STATUS_VALIDATING, STATUS_INDEXING,
                                          validating_version, require_op=op_id,
                                          pending_generation_id=gen_id, error="")
             if ok < 0:
+                self._assert_write_authority(lock, control)
                 self._stage.journal_clear(rec.upload_id)
                 raise UploadBusyState("状态已变化，无法进入 indexing")
 
             # ④ 原件（提交点前）→ 移入知识库（同卷 rename）
+            self._assert_write_authority(lock, control)
             self._originals.put(rec.doc_id, rec.format, merged)
-            lock.assert_held()
+            self._assert_write_authority(lock, control)
             self._stage.move_into_kb(rec.upload_id, self._kb_uploads_dir(), storage_key)
 
             # ⑤ 构建（strict：任何源文件解析失败即中止）
-            lock.assert_held()
-            built = self._index_service.build(backend, generation_id=gen_id)
+            self._assert_write_authority(lock, control)
+            if control is not None:
+                control.stage("chunking", progress=15)
+            built = self._build_with_progress(backend, gen_id, control)
+            self._assert_write_authority(lock, control)
             self._journal(rec.upload_id, {
                 "op": "upload", "phase": PH_INDEX_BUILT,
                 "doc_id": rec.doc_id, "storage_key": storage_key,
@@ -513,25 +744,36 @@ class DocumentUploadService:
             phase = PH_INDEX_BUILT
 
             # ⑥ 提交点：ACTIVATING → alias → assert → 查真实 alias
-            lock.assert_held()
+            self._assert_write_authority(lock, control)
+            if control is not None:
+                control.stage("activating", progress=80)
+            self._assert_write_authority(lock, control)
             self._journal(rec.upload_id, {
                 "op": "upload", "phase": PH_ACTIVATING,
                 "doc_id": rec.doc_id, "storage_key": storage_key,
                 "generation_id": gen_id, "target": info.target,
             })
             phase = PH_ACTIVATING
+            # journal 写入与 alias 切换之间也可能跨过租约/写锁边界，
+            # 必须在真正提交点前重新 fencing。
+            self._assert_write_authority(lock, control)
             self._index_service.activate_alias(backend, built)
-            lock.assert_held()  # 紧接 alias 操作（失锁 → 保持 ACTIVATING 等恢复）
+            self._assert_write_authority(lock, control)  # alias 后、指针前
             self._assert_alias_confirmed(built)
 
             # ⑦ 指针 → 元数据提交
+            self._assert_write_authority(lock, control)
             self._index_service.activate_pointer(backend, built)
+            self._assert_write_authority(lock, control)
             self._journal(rec.upload_id, {
                 "op": "upload", "phase": PH_POINTER_UPDATED,
                 "doc_id": rec.doc_id, "storage_key": storage_key,
                 "generation_id": gen_id, "target": info.target,
             })
             phase = PH_POINTER_UPDATED
+            if control is not None:
+                control.stage("finalizing", progress=90)
+            self._assert_write_authority(lock, control)
             ok = self._doc.update_status(
                 rec.doc_id, STATUS_INDEXING, STATUS_INDEXED, validating_version + 1,
                 require_op=op_id, generation_id=gen_id,
@@ -542,32 +784,193 @@ class DocumentUploadService:
                 raise UploadRecovering("元数据提交失败，journal 保留等待恢复")
 
             # ⑧ 成功收尾：清 journal + 分片/会话（最后清理）
+            self._assert_write_authority(lock, control)
             self._stage.journal_clear(rec.upload_id)
             try:
                 self._chunks.delete_chunks(rec.upload_id)
                 self._state.delete(rec.upload_id)
-            except Exception:  # noqa: BLE001 —— 清理失败不影响结果
+            except Exception:  # noqa: BLE001, S110
                 pass
             return self._indexed_payload(self._doc.get(rec.doc_id) or rec)
-        except UploadError:
+        except JobLeaseLost:
+            # 旧 Worker 失主后绝不能进入 rollback：共享卷、journal 和
+            # 文档状态必须留给新 lease 持有者恢复。
             raise
-        except (KbWriteLockError,) as e:
+        except UploadError as e:
+            # alias 已切换后的确认/其它编排错误属于提交点后故障，必须
+            # 保留 journal 并走只前进恢复；只有明确 blocked 继续原语义。
+            if phase in _ALIAS_PHASES and not isinstance(e, UploadBlocked):
+                raise UploadRecovering(
+                    f"提交点后异常待恢复（{rec.upload_id}）: {type(e).__name__}"
+                ) from e
+            raise
+        except KbWriteLockError as e:
             if phase in _ALIAS_PHASES:
                 raise UploadRecovering(f"处理中断待恢复（{rec.upload_id}）: {e}") from e
-            self._rollback_upload(rec, storage_key, phase)
+            if control is not None:
+                self._rollback_upload(rec, storage_key, phase, dst=STATUS_QUEUED,
+                                      lock=lock, control=control)
+                raise UploadLockWait(f"锁已丢失，已回退 queued: {e}") from e
+            self._rollback_upload(rec, storage_key, phase, lock=lock)
             raise UploadConflictError(f"锁已丢失，已回滚可重试: {e}") from e
-        except (StorageUnavailableError, Exception) as e:  # noqa: BLE001
+        except (StorageUnavailableError, Exception) as e:
             if phase in _ALIAS_PHASES:
                 raise UploadRecovering(
                     f"处理中断待恢复（{rec.upload_id}）: {type(e).__name__}") from e
-            self._rollback_upload(rec, storage_key, phase)
+            if control is not None:
+                # 异步：提交点前失败回 queued（暂态重试 / 输入错误由 Worker 分流）
+                self._rollback_upload(rec, storage_key, phase, dst=STATUS_QUEUED,
+                                      lock=lock, control=control)
+                raise
+            self._rollback_upload(rec, storage_key, phase, lock=lock)
             raise UploadConflictError(
                 f"构建失败已回滚，可重试（{type(e).__name__}: {e}）") from e
         finally:
             try:
                 lock.release()
-            except Exception:  # noqa: BLE001
+            except Exception:  # noqa: BLE001, S110
                 pass
+
+    def _build_with_progress(self, backend: str, gen_id: str, control,
+                             *, allow_empty: bool = False) -> GenerationInfo:
+        """构建 + embedding 批级进度上报（control=None 时原样调用）。
+
+        allow_empty：下架流程传 True——删掉最后一篇文档后 KB 为空是合法终态；
+        上传路径保持默认 strict（防误清空保护不回归）。
+        """
+        if control is None:
+            return self._index_service.build(
+                backend, generation_id=gen_id, allow_empty=allow_empty,
+            )
+        from app.agent.rag.kb_worker import embedding_progress_proxy
+
+        original = self._index_service._embedder
+        self._index_service._embedder = embedding_progress_proxy(original, control)
+        try:
+            return self._index_service.build(
+                backend, generation_id=gen_id, allow_empty=allow_empty,
+            )
+        finally:
+            self._index_service._embedder = original
+
+    # ---------- Worker 执行入口（异步模式；kb_worker 调用） ----------
+    def run_upload_job(self, job: dict, control) -> None:
+        """上传任务执行：接管恢复 → CAS validating → 验证区 → 锁内提交。
+
+        异常分类由 Worker 处理（输入错误=永久 / 锁等待=回队不计失败 /
+        提交点后=只前进持续重试 / blocked=人工 reconcile）。
+        """
+        rec = self._doc.get(job["doc_id"])
+        if rec is None or rec.upload_id != (job.get("upload_id") or rec.upload_id):
+            raise UploadParseFailed("任务与文档记录不一致（疑似数据异常）")
+        # 接管恢复：journal 残留 → 相位表判定（回滚重跑 / 前进 / blocked）
+        rec = self._recover_takeover(rec, rec.upload_id, control)
+        if rec.status == STATUS_INDEXED:
+            return  # 前进恢复已入库
+        control.check_alive()
+        validating_version = self._enter_validating(rec, job["job_id"])
+        control.stage("validating", progress=5)
+        try:
+            merged, text = self._validate_and_prepare(rec)
+        except UploadIncomplete:
+            control.check_alive()
+            cur = self._doc.get(rec.doc_id)
+            if cur is not None and cur.status == STATUS_VALIDATING:
+                control.check_alive()
+                self._doc.update_status(
+                    cur.doc_id, STATUS_VALIDATING, STATUS_UPLOADING, cur.version,
+                    operation_id="", error="分片未就绪（等待补传）",
+                )
+            raise
+        except (UploadParseFailed, UploadSanitized, UploadTooLarge) as e:
+            control.check_alive()
+            cur = self._doc.get(rec.doc_id)
+            if cur is not None and cur.status == STATUS_VALIDATING:
+                control.check_alive()
+                self._doc.update_status(
+                    cur.doc_id, STATUS_VALIDATING, STATUS_FAILED, cur.version,
+                    operation_id="", error=str(e)[:200],
+                )
+            raise
+        return self._commit_locked(rec, validating_version, job["job_id"],
+                                   merged, text, control=control)
+
+    def run_delete_job(self, job: dict, control) -> None:
+        """下架任务执行：接管恢复 → CAS deleting → 锁内提交。"""
+        rec = self._doc.get(job["doc_id"])
+        if rec is None:
+            raise UploadParseFailed("文档不存在（job 与文档不一致）")
+        rec = self._recover_takeover(rec, f"del-{rec.doc_id}", control)
+        if rec.status == STATUS_DELETED:
+            return  # 前进恢复已完成下架
+        control.check_alive()
+        deleting_version = self._enter_deleting(rec, job["job_id"])
+        control.stage("validating", progress=5)
+        return self._commit_locked_delete(rec, job["job_id"],
+                                          control=control,
+                                          deleting_version=deleting_version)
+
+    def _recover_takeover(self, rec: DocumentRecord, op_id: str,
+                          control=None) -> DocumentRecord:
+        """Worker 接管：journal 残留 → 持锁按相位表恢复。
+
+        - 无 journal：原样返回（validating 无 journal → 从解析阶段安全重跑）；
+        - PREPARED/INDEX_BUILT：回滚（uploading/indexed）后由调用方重跑；
+        - ACTIVATING/ALIAS_ACTIVATED/POINTER_UPDATED：只前进；
+        - alias 指向未知代：抛 UploadBlocked（Worker 置 blocked + 全局写阻塞）。
+        """
+        payload = self._stage.journal_read(op_id)
+        if not payload:
+            return rec
+        lock = self._make_lock()
+        try:
+            if control is not None:
+                control.stage("waiting_for_lock", progress=10)
+            lock.acquire(phase="recover")
+        except (KbWriteLockError, KbWriteLockBackendError, LockHeldError) as e:
+            raise UploadLockWait(f"知识库构建中: {e}") from e
+        try:
+            # 领取恢复任务后，锁已拿到但租约可能在等待锁时过期；恢复的每个
+            # 共享副作用仍须由同一个 lease + write lock 闸门保护。
+            self._assert_write_authority(lock, control)
+            self._recover_one(op_id, lock=lock, control=control)
+        finally:
+            try:
+                lock.release()
+            except Exception:  # noqa: BLE001, S110
+                pass
+        fresh = self._doc.get(rec.doc_id)
+        return fresh or rec
+
+    def _enter_validating(self, rec: DocumentRecord, op_id: str) -> int:
+        """queued/uploading/validating → validating（CAS；返回 validating 版本号）。"""
+        if rec.status == STATUS_VALIDATING:
+            return rec.version  # 接管续跑（同一 job_id/operation_id）
+        if rec.status not in (STATUS_QUEUED, STATUS_UPLOADING):
+            raise UploadConflictError(f"文档状态 {rec.status} 不允许执行上传任务")
+        v = self._doc.update_status(rec.doc_id, rec.status, STATUS_VALIDATING,
+                                    rec.version, operation_id=op_id)
+        if v < 0:
+            raise UploadConflictError("文档状态已变化（可能已被取消）")
+        return v
+
+    def _enter_deleting(self, rec: DocumentRecord, op_id: str) -> int:
+        """delete_queued/deleting/indexed → deleting（CAS；返回 deleting 版本号）。"""
+        if rec.status == STATUS_DELETING:
+            return rec.version  # 接管续跑
+        if rec.status == STATUS_DELETE_QUEUED:
+            v = self._doc.update_status(rec.doc_id, STATUS_DELETE_QUEUED,
+                                        STATUS_DELETING, rec.version,
+                                        operation_id=op_id)
+        elif rec.status == STATUS_INDEXED:
+            # 恢复机把提交点前失败回滚到 indexed（异步接管场景）→ 重新进入 deleting
+            v = self._doc.update_status(rec.doc_id, STATUS_INDEXED, STATUS_DELETING,
+                                        rec.version, operation_id=op_id)
+        else:
+            raise UploadConflictError(f"文档状态 {rec.status} 不允许执行下架任务")
+        if v < 0:
+            raise UploadConflictError("文档状态已变化（可能已被取消）")
+        return v
 
     # ---------- 下架 ----------
     def delete_document(self, doc_id: str, uploader: str) -> dict:
@@ -575,6 +978,33 @@ class DocumentUploadService:
         if rec is None:
             raise UploadNotFound(f"文档不存在: {doc_id}")
         _require_owner(rec, uploader)
+        if rec.status == STATUS_DELETED:
+            return {"doc_id": doc_id, "status": STATUS_DELETED}  # 200 幂等
+        if self._async_enabled():
+            return self._delete_async(rec, doc_id, uploader)
+        return self._delete_sync(rec, doc_id, uploader)
+
+    def _delete_async(self, rec: DocumentRecord, doc_id: str,
+                      uploader: str) -> dict:
+        """异步下架入队：CAS indexed→delete_queued + 任务 INSERT（同事务）。"""
+        job = self._find_job("delete", rec)
+        if job is not None:
+            from app.agent.rag.job_store import JOB_ACTIVE
+
+            if job["status"] in JOB_ACTIVE:
+                return self._job_payload(job)  # 202：重复请求返回同一任务
+            if job["status"] == "succeeded":
+                return {"doc_id": doc_id, "status": STATUS_DELETED}
+            # failed / cancelled → 重入队（cancelled 换新任务；failed 幂等返回）
+        if rec.status in (STATUS_DELETE_QUEUED, STATUS_DELETING):
+            raise UploadRecovering(f"文档正在下架（{rec.status}），请稍后查询")
+        if rec.status != STATUS_INDEXED:
+            raise UploadConflictError(f"仅已入库文档可下架（当前 {rec.status}）")
+        job, _created = self._jobs.enqueue_delete(doc_id, uploader, rec.version)
+        return self._job_payload(job)
+
+    def _delete_sync(self, rec: DocumentRecord, doc_id: str, uploader: str) -> dict:
+        """同步兼容路径（kb_async 开关关闭）：保持 v7 冻结语义不变。"""
         if rec.status != STATUS_INDEXED:
             raise UploadConflictError(f"仅已入库文档可下架（当前 {rec.status}）")
 
@@ -583,6 +1013,18 @@ class DocumentUploadService:
                                      rec.version, operation_id=op_id)
         if ok < 0:
             raise UploadConflictError("文档状态已变化")
+        return self._commit_locked_delete(rec, op_id)
+
+    def _commit_locked_delete(self, rec: DocumentRecord, op_id: str,
+                              control=None,
+                              deleting_version: int | None = None) -> dict:
+        """下架锁内提交序列（control 语义同 _commit_locked；同步默认路径）。
+
+        deleting_version：deleting 状态的版本号（异步接管续跑时显式传入；
+        同步路径缺省 = rec.version + 1，即刚 CAS 进入 deleting 的版本）。
+        """
+        doc_id = rec.doc_id
+        del_ver = deleting_version if deleting_version is not None else rec.version + 1
         backend = self._backend()
         gen_id = new_generation_id()
         info = GenerationInfo(
@@ -594,102 +1036,185 @@ class DocumentUploadService:
         phase = PH_PREPARED
         lock = self._make_lock()
         try:
+            if control is not None:
+                control.stage("waiting_for_lock", progress=10)
             lock.acquire(phase="delete")
         except (KbWriteLockError, KbWriteLockBackendError, LockHeldError) as e:
+            if control is not None:
+                control.check_alive()
+                self._doc.update_status(rec.doc_id, STATUS_DELETING,
+                                        STATUS_DELETE_QUEUED, del_ver,
+                                        require_op=op_id,
+                                        error=f"锁被持有: {type(e).__name__}")
+                raise UploadLockWait(f"知识库构建中: {e}") from e
             self._doc.update_status(rec.doc_id, STATUS_DELETING, STATUS_INDEXED,
-                                    rec.version + 1, require_op=op_id,
+                                    del_ver, require_op=op_id,
                                     error=f"锁被持有: {type(e).__name__}")
             raise UploadConflictError(f"知识库构建中: {e}") from e
         try:
-            self._recover_all_journals(lock)
+            self._assert_write_authority(lock, control)
+            self._recover_all_journals(lock, control=control)
+            self._assert_write_authority(lock, control)
             self._assert_not_blocked()
+            if control is not None:
+                control.check_alive()
             # 先 journal 再移动（下架可恢复）
+            self._assert_write_authority(lock, control)
             self._journal(journal_op, {
                 "op": "delete", "phase": PH_PREPARED,
                 "doc_id": doc_id, "storage_key": rec.storage_key,
                 "generation_id": gen_id, "target": info.target,
             })
             phase = PH_PREPARED
-            lock.assert_held()
+            self._assert_write_authority(lock, control)
+            if control is not None:
+                control.stage("chunking", progress=20)
+            self._assert_write_authority(lock, control)
             self._stage.move_to_trash(self._kb_uploads_dir(), rec.storage_key)
-            lock.assert_held()
-            built = self._index_service.build(backend, generation_id=gen_id)
+            self._assert_write_authority(lock, control)
+            # 下架后 KB 为空是合法终态 → allow_empty=True（删最后一篇不再失败）
+            built = self._build_with_progress(backend, gen_id, control,
+                                              allow_empty=True)
+            self._assert_write_authority(lock, control)
             self._journal(journal_op, {
                 "op": "delete", "phase": PH_INDEX_BUILT,
                 "doc_id": doc_id, "storage_key": rec.storage_key,
                 "generation_id": gen_id, "target": info.target,
             })
             phase = PH_INDEX_BUILT
-            lock.assert_held()
+            self._assert_write_authority(lock, control)
+            if control is not None:
+                control.stage("activating", progress=80)
+            self._assert_write_authority(lock, control)
             self._journal(journal_op, {
                 "op": "delete", "phase": PH_ACTIVATING,
                 "doc_id": doc_id, "storage_key": rec.storage_key,
                 "generation_id": gen_id, "target": info.target,
             })
             phase = PH_ACTIVATING
+            self._assert_write_authority(lock, control)
             self._index_service.activate_alias(backend, built)
-            lock.assert_held()
+            self._assert_write_authority(lock, control)
             self._assert_alias_confirmed(built)
+            self._assert_write_authority(lock, control)
             self._index_service.activate_pointer(backend, built)
+            self._assert_write_authority(lock, control)
             self._journal(journal_op, {
                 "op": "delete", "phase": PH_POINTER_UPDATED,
                 "doc_id": doc_id, "storage_key": rec.storage_key,
                 "generation_id": gen_id, "target": info.target,
             })
             phase = PH_POINTER_UPDATED
+            if control is not None:
+                control.stage("finalizing", progress=90)
+            self._assert_write_authority(lock, control)
             ok = self._doc.update_status(rec.doc_id, STATUS_DELETING, STATUS_DELETED,
-                                         rec.version + 1, require_op=op_id,
+                                         del_ver, require_op=op_id,
                                          generation_id=gen_id, error="")
             if ok < 0:
                 raise UploadRecovering("下架元数据提交失败，journal 保留等待恢复")
             # 成功收尾：清 journal（残留会被恢复机误判为 pending 代并重放旧代激活）
+            self._assert_write_authority(lock, control)
             self._stage.journal_clear(journal_op)
-        except UploadError:
+        except JobLeaseLost:
+            # 旧 Worker 失主后不回滚、不清理共享 journal，也不改文档；新
+            # lease 持有者会按相位继续恢复。
             raise
-        except (KbWriteLockError,) as e:
+        except UploadError as e:
+            if phase in _ALIAS_PHASES and not isinstance(e, UploadBlocked):
+                raise UploadRecovering(
+                    f"下架提交点后异常待恢复（{doc_id}）: {type(e).__name__}"
+                ) from e
+            raise
+        except KbWriteLockError as e:
             if phase in _ALIAS_PHASES:
                 raise UploadRecovering(f"下架中断待恢复（{doc_id}）: {e}") from e
-            self._rollback_delete(rec, op_id)
+            if control is not None:
+                self._rollback_delete(rec, op_id, dst=STATUS_DELETE_QUEUED,
+                                      lock=lock, control=control)
+                raise UploadLockWait(f"锁丢失已回退（{doc_id}）: {e}") from e
+            self._rollback_delete(rec, op_id, lock=lock)
             raise UploadConflictError(f"锁丢失已回滚（{doc_id}）: {e}") from e
-        except (StorageUnavailableError, Exception) as e:  # noqa: BLE001
+        except (StorageUnavailableError, Exception) as e:
             if phase in _ALIAS_PHASES:
                 raise UploadRecovering(f"下架中断待恢复（{doc_id}）: {type(e).__name__}") from e
-            self._rollback_delete(rec, op_id)
+            if control is not None:
+                self._rollback_delete(rec, op_id, dst=STATUS_DELETE_QUEUED,
+                                      lock=lock, control=control)
+                raise
+            self._rollback_delete(rec, op_id, lock=lock)
             raise UploadConflictError(f"下架失败已回滚（{doc_id}）: {type(e).__name__}") from e
         finally:
             try:
                 lock.release()
-            except Exception:  # noqa: BLE001
+            except Exception:  # noqa: BLE001, S110
                 pass
         return {"doc_id": doc_id, "status": STATUS_DELETED, "generation_id": gen_id}
 
     # ---------- 回滚 ----------
-    def _rollback_upload(self, rec: DocumentRecord, storage_key: str, phase: str) -> None:
-        """提交点前回滚：文件移出知识目录 + 清 journal + 回退 uploading。"""
+    def _rollback_upload(self, rec: DocumentRecord, storage_key: str, phase: str,
+                         dst: str = STATUS_UPLOADING, *, lock=None,
+                         control=None) -> None:
+        """提交点前回滚：文件移出知识目录 + 清 journal + 回退（dst=上传中/排队）。"""
         try:
+            if lock is not None:
+                self._assert_write_authority(lock, control)
             kb_file = self._kb_uploads_dir() / storage_key
             if kb_file.exists():
+                if lock is not None:
+                    self._assert_write_authority(lock, control)
                 self._stage.move_out_of_kb(self._kb_uploads_dir(), storage_key, rec.doc_id)
-            self._stage.journal_clear(rec.upload_id)
             cur = self._doc.get(rec.doc_id)
             if cur is not None and cur.status in (STATUS_INDEXING, STATUS_VALIDATING):
-                self._doc.update_status(
-                    cur.doc_id, cur.status, STATUS_UPLOADING, cur.version,
+                if lock is not None:
+                    self._assert_write_authority(lock, control)
+                updated = self._doc.update_status(
+                    cur.doc_id, cur.status, dst, cur.version,
                     operation_id="", pending_generation_id="",
                     error=f"回滚（phase={phase}）",
                 )
-        except Exception:  # noqa: BLE001 —— 回滚尽力而为；残留由恢复机接管
+                if updated < 0:
+                    return
+            # journal 必须最后清：若文档 CAS 失败或进程在 CAS 前崩溃，
+            # 接管者仍能看到恢复依据，不能留下无 journal 的中间态。
+            if lock is not None:
+                self._assert_write_authority(lock, control)
+            self._stage.journal_clear(rec.upload_id)
+        except JobLeaseLost:
+            raise
+        except KbWriteLockError:
+            # 锁已丢失：保留 journal/中间态，交给接管者前进或回滚。
+            return
+        except Exception:  # noqa: BLE001
             return
 
-    def _rollback_delete(self, rec: DocumentRecord, op_id: str) -> None:
+    def _rollback_delete(self, rec: DocumentRecord, op_id: str,
+                         dst: str = STATUS_INDEXED, *, lock=None,
+                         control=None) -> None:
         try:
+            if lock is not None:
+                self._assert_write_authority(lock, control)
             if self._stage.trash_exists(rec.storage_key):
+                if lock is not None:
+                    self._assert_write_authority(lock, control)
                 self._stage.restore_from_trash(self._kb_uploads_dir(), rec.storage_key)
             cur = self._doc.get(rec.doc_id)
-            if cur is not None and cur.status == STATUS_DELETING:
-                self._doc.update_status(cur.doc_id, STATUS_DELETING, STATUS_INDEXED,
-                                        cur.version, require_op=op_id, error="下架回滚")
+            if cur is not None and cur.status in (STATUS_DELETING,):
+                if lock is not None:
+                    self._assert_write_authority(lock, control)
+                updated = self._doc.update_status(
+                    cur.doc_id, STATUS_DELETING, dst,
+                    cur.version, require_op=op_id, error="下架回滚",
+                )
+                if updated < 0:
+                    return
+            if lock is not None:
+                self._assert_write_authority(lock, control)
             self._stage.journal_clear(f"del-{rec.doc_id}")
+        except JobLeaseLost:
+            raise
+        except KbWriteLockError:
+            return
         except Exception:  # noqa: BLE001
             return
 
@@ -705,7 +1230,7 @@ class DocumentUploadService:
         finally:
             try:
                 lock.release()
-            except Exception:  # noqa: BLE001
+            except Exception:  # noqa: BLE001, S110
                 pass
         rec2 = self._doc.get_by_upload_id(upload_id)
         if rec2 is None:
@@ -716,87 +1241,164 @@ class DocumentUploadService:
             raise UploadIncomplete("已回退可重试（请重新 complete）")
         raise UploadRecovering(f"仍在处理（{rec2.status}），请稍后再试")
 
-    def _recover_all_journals(self, lock) -> None:
+    def _recover_all_journals(self, lock, control=None) -> None:
+        self._assert_write_authority(lock, control)
         for op_id in self._stage.journal_list():
-            self._recover_one(op_id)
+            self._assert_write_authority(lock, control)
+            self._recover_one(op_id, lock=lock, control=control)
 
-    def _recover_one(self, op_id: str) -> None:
+    def _recover_one(self, op_id: str, *, lock=None, control=None) -> None:
         if op_id.startswith("del-"):
-            self._recover_delete(op_id)
+            self._recover_delete(op_id, lock=lock, control=control)
         else:
-            self._recover_upload(op_id)
+            self._recover_upload(op_id, lock=lock, control=control)
 
-    def _recover_upload(self, op_id: str) -> None:
+    def _recover_upload(self, op_id: str, *, lock=None, control=None) -> None:
         payload = self._stage.journal_read(op_id)
         rec = self._doc.get_by_upload_id(op_id)
         phase = (payload or {}).get("phase", "")
         if rec is None:
+            if lock is not None:
+                self._assert_write_authority(lock, control)
             self._stage.journal_clear(op_id)
             return
         target = (payload or {}).get("target") or ""
         gen_id = (payload or {}).get("generation_id") or ""
         if phase in ("", PH_PREPARED):
             # journal 在但记录未到 indexing（先 journal 后 CAS 崩溃点）→ 清 journal 回退
-            self._stage.journal_clear(op_id)
+            kb_file = self._kb_uploads_dir() / rec.storage_key
+            if kb_file.exists():
+                if lock is not None:
+                    self._assert_write_authority(lock, control)
+                self._stage.move_out_of_kb(self._kb_uploads_dir(), rec.storage_key,
+                                            rec.doc_id)
             if rec.status in (STATUS_VALIDATING, STATUS_INDEXING):
-                self._doc.update_status(
+                if lock is not None:
+                    self._assert_write_authority(lock, control)
+                updated = self._doc.update_status(
                     rec.doc_id, rec.status, STATUS_UPLOADING, rec.version,
                     operation_id="", pending_generation_id="", error="恢复回退",
                 )
+                if updated < 0:
+                    return
+            if lock is not None:
+                self._assert_write_authority(lock, control)
+            self._stage.journal_clear(op_id)
             return
         if phase == PH_INDEX_BUILT:
             # alias 未动：可回滚
-            self._stage.journal_clear(op_id)
+            kb_file = self._kb_uploads_dir() / rec.storage_key
+            if kb_file.exists():
+                if lock is not None:
+                    self._assert_write_authority(lock, control)
+                self._stage.move_out_of_kb(self._kb_uploads_dir(), rec.storage_key,
+                                            rec.doc_id)
             if rec.status == STATUS_INDEXING:
-                self._doc.update_status(
+                if lock is not None:
+                    self._assert_write_authority(lock, control)
+                updated = self._doc.update_status(
                     rec.doc_id, STATUS_INDEXING, STATUS_UPLOADING, rec.version,
                     operation_id="", pending_generation_id="", error="恢复回滚",
                 )
+                if updated < 0:
+                    return
+            if lock is not None:
+                self._assert_write_authority(lock, control)
+            self._stage.journal_clear(op_id)
             return
         if phase == PH_ACTIVATING:
+            if lock is not None:
+                self._assert_write_authority(lock, control)
             st = self._index_service.reconcile(self._backend())
+            if not st.get("alias_known", st.get("alias_target") is not None):
+                raise UploadRecovering("alias 状态暂不可确认，保留 journal 等待恢复")
             if st["alias_target"] == target:
-                self._forward_upload(op_id, rec, target, gen_id)
+                self._forward_upload(op_id, rec, target, gen_id,
+                                     lock=lock, control=control)
                 return
             if st["alias_target"] == "" or st["alias_target"] == st["pointer_target"]:
-                self._stage.journal_clear(op_id)
+                # 回滚：先把文件移出知识库目录（与 PREPARED/INDEX_BUILT 回滚
+                # 分支对称）——文件在步骤④已 move_into_kb，只回滚状态不移
+                # 文件会留下孤儿，下次重建索引会把未提交文档扫进活动索引
+                kb_file = self._kb_uploads_dir() / rec.storage_key
+                if kb_file.exists():
+                    if lock is not None:
+                        self._assert_write_authority(lock, control)
+                    self._stage.move_out_of_kb(self._kb_uploads_dir(), rec.storage_key,
+                                                rec.doc_id)
                 if rec.status == STATUS_INDEXING:
-                    self._doc.update_status(
+                    if lock is not None:
+                        self._assert_write_authority(lock, control)
+                    updated = self._doc.update_status(
                         rec.doc_id, STATUS_INDEXING, STATUS_UPLOADING, rec.version,
                         operation_id="", pending_generation_id="", error="恢复回滚(ACTIVATING)",
                     )
+                    if updated < 0:
+                        return
+                if lock is not None:
+                    self._assert_write_authority(lock, control)
+                self._stage.journal_clear(op_id)
                 return
-            self._block_for_reconcile()
+            self._block_for_reconcile(lock=lock, control=control)
             return
         if phase in (PH_ALIAS_ACTIVATED, PH_POINTER_UPDATED):
-            self._forward_upload(op_id, rec, target, gen_id)
+            self._forward_upload(op_id, rec, target, gen_id,
+                                 lock=lock, control=control)
             return
 
     def _forward_upload(self, op_id: str, rec: DocumentRecord, target: str,
-                        gen_id: str) -> None:
+                        gen_id: str, *, lock=None, control=None) -> None:
+        """提交点后恢复；所有非 fencing 异常都保持可恢复语义。"""
+        try:
+            self._forward_upload_impl(op_id, rec, target, gen_id,
+                                      lock=lock, control=control)
+        except (JobLeaseLost, UploadBlocked, UploadRecovering):
+            raise
+        except Exception as e:
+            raise UploadRecovering(
+                f"上传提交点后恢复失败（{rec.upload_id}）: {type(e).__name__}"
+            ) from e
+
+    def _forward_upload_impl(self, op_id: str, rec: DocumentRecord, target: str,
+                             gen_id: str, *, lock=None, control=None) -> None:
         """提交点后只前进：activate（幂等）→ CAS indexed。"""
         backend = self._backend()
         info = GenerationInfo(
             generation_id=gen_id, target=target,
             embedding_model=settings.embedding_model,
         )
+        if lock is not None:
+            self._assert_write_authority(lock, control)
         self._index_service.activate_alias(backend, info)
+        if lock is not None:
+            self._assert_write_authority(lock, control)
+        self._assert_alias_confirmed(info)
+        if lock is not None:
+            self._assert_write_authority(lock, control)
         self._index_service.activate_pointer(backend, info)
+        if lock is not None:
+            self._assert_write_authority(lock, control)
         cur = self._doc.get(rec.doc_id)
         if cur is not None and cur.status == STATUS_INDEXING:
+            if lock is not None:
+                self._assert_write_authority(lock, control)
             ok = self._doc.update_status(cur.doc_id, STATUS_INDEXING, STATUS_INDEXED,
                                          cur.version, generation_id=gen_id,
                                          pending_generation_id="", error="")
             if ok < 0:
                 raise UploadRecovering("元数据提交待恢复（人工）")
+        if lock is not None:
+            self._assert_write_authority(lock, control)
         self._stage.journal_clear(op_id)
 
-    def _recover_delete(self, op_id: str) -> None:
+    def _recover_delete(self, op_id: str, *, lock=None, control=None) -> None:
         payload = self._stage.journal_read(op_id)
         doc_id = op_id[len("del-"):]
         rec = self._doc.get(doc_id)
         phase = (payload or {}).get("phase", "")
         if rec is None or phase == "":
+            if lock is not None:
+                self._assert_write_authority(lock, control)
             self._stage.journal_clear(op_id)
             return
         target = (payload or {}).get("target") or ""
@@ -804,61 +1406,124 @@ class DocumentUploadService:
         if phase in (PH_PREPARED, PH_INDEX_BUILT):
             if rec.status == STATUS_DELETING:
                 try:
+                    if lock is not None:
+                        self._assert_write_authority(lock, control)
                     if self._stage.trash_exists(rec.storage_key):
+                        if lock is not None:
+                            self._assert_write_authority(lock, control)
                         self._stage.restore_from_trash(self._kb_uploads_dir(), rec.storage_key)
-                    self._doc.update_status(rec.doc_id, STATUS_DELETING, STATUS_INDEXED,
-                                            rec.version, error=f"恢复回滚（{phase}）")
-                except Exception:  # noqa: BLE001 —— 尽力
-                    pass
+                    if lock is not None:
+                        self._assert_write_authority(lock, control)
+                    updated = self._doc.update_status(
+                        rec.doc_id, STATUS_DELETING, STATUS_INDEXED,
+                        rec.version, error=f"恢复回滚（{phase}）",
+                    )
+                    if updated < 0:
+                        return
+                except JobLeaseLost:
+                    raise
+                except Exception:  # noqa: BLE001
+                    return
+            if lock is not None:
+                self._assert_write_authority(lock, control)
             self._stage.journal_clear(op_id)
             return
         if phase == PH_ACTIVATING:
+            if lock is not None:
+                self._assert_write_authority(lock, control)
             st = self._index_service.reconcile(self._backend())
+            if not st.get("alias_known", st.get("alias_target") is not None):
+                raise UploadRecovering("alias 状态暂不可确认，保留 journal 等待恢复")
             if st["alias_target"] == target:
-                self._forward_delete(op_id, rec, target, gen_id)
+                self._forward_delete(op_id, rec, target, gen_id,
+                                     lock=lock, control=control)
                 return
             if st["alias_target"] == "" or st["alias_target"] == st["pointer_target"]:
-                self._rollback_delete_static(rec, op_id)
+                self._rollback_delete_static(rec, op_id, lock=lock, control=control)
                 return
-            self._block_for_reconcile()
+            self._block_for_reconcile(lock=lock, control=control)
             return
         if phase in (PH_ALIAS_ACTIVATED, PH_POINTER_UPDATED):
-            self._forward_delete(op_id, rec, target, gen_id)
+            self._forward_delete(op_id, rec, target, gen_id,
+                                 lock=lock, control=control)
             return
 
     def _forward_delete(self, op_id: str, rec: DocumentRecord, target: str,
-                        gen_id: str) -> None:
+                        gen_id: str, *, lock=None, control=None) -> None:
+        """下架提交点后恢复；失败必须保留 journal 供下次继续。"""
+        try:
+            self._forward_delete_impl(op_id, rec, target, gen_id,
+                                      lock=lock, control=control)
+        except (JobLeaseLost, UploadBlocked, UploadRecovering):
+            raise
+        except Exception as e:
+            raise UploadRecovering(
+                f"下架提交点后恢复失败（{rec.doc_id}）: {type(e).__name__}"
+            ) from e
+
+    def _forward_delete_impl(self, op_id: str, rec: DocumentRecord, target: str,
+                             gen_id: str, *, lock=None, control=None) -> None:
         backend = self._backend()
         info = GenerationInfo(
             generation_id=gen_id, target=target,
             embedding_model=settings.embedding_model,
         )
+        if lock is not None:
+            self._assert_write_authority(lock, control)
         self._index_service.activate_alias(backend, info)
+        if lock is not None:
+            self._assert_write_authority(lock, control)
+        self._assert_alias_confirmed(info)
+        if lock is not None:
+            self._assert_write_authority(lock, control)
         self._index_service.activate_pointer(backend, info)
+        if lock is not None:
+            self._assert_write_authority(lock, control)
         cur = self._doc.get(rec.doc_id)
         if cur is not None and cur.status == STATUS_DELETING:
+            if lock is not None:
+                self._assert_write_authority(lock, control)
             ok = self._doc.update_status(cur.doc_id, STATUS_DELETING, STATUS_DELETED,
                                          cur.version, generation_id=gen_id, error="")
             if ok < 0:
                 raise UploadRecovering("下架元数据提交待恢复（人工）")
+        if lock is not None:
+            self._assert_write_authority(lock, control)
         self._stage.journal_clear(op_id)
 
-    def _rollback_delete_static(self, rec: DocumentRecord, op_id: str) -> None:
+    def _rollback_delete_static(self, rec: DocumentRecord, op_id: str,
+                                *, lock=None, control=None) -> None:
         try:
+            if lock is not None:
+                self._assert_write_authority(lock, control)
             if self._stage.trash_exists(rec.storage_key):
+                if lock is not None:
+                    self._assert_write_authority(lock, control)
                 self._stage.restore_from_trash(self._kb_uploads_dir(), rec.storage_key)
             cur = self._doc.get(rec.doc_id)
             if cur is not None and cur.status == STATUS_DELETING:
-                self._doc.update_status(cur.doc_id, STATUS_DELETING, STATUS_INDEXED,
-                                        cur.version, error="恢复回滚(ACTIVATING)")
+                if lock is not None:
+                    self._assert_write_authority(lock, control)
+                updated = self._doc.update_status(
+                    cur.doc_id, STATUS_DELETING, STATUS_INDEXED,
+                    cur.version, error="恢复回滚(ACTIVATING)",
+                )
+                if updated < 0:
+                    return
+            if lock is not None:
+                self._assert_write_authority(lock, control)
             self._stage.journal_clear(op_id)
+        except JobLeaseLost:
+            raise
         except Exception:  # noqa: BLE001
             return
 
-    def _block_for_reconcile(self) -> None:
+    def _block_for_reconcile(self, *, lock=None, control=None) -> None:
         try:
+            if lock is not None:
+                self._assert_write_authority(lock, control)
             self._control.set(BLOCKED_KEY, BLOCKED_VALUE)
-        except StorageUnavailableError:  # noqa: BLE001 —— blocked 记录失败：journal 仍在，
+        except StorageUnavailableError:
             pass  # 下次恢复仍会重判
         raise UploadBlocked("alias 指向未知代，已阻塞知识库写入，请人工 reconcile")
 
@@ -889,7 +1554,7 @@ class DocumentUploadService:
 
     # ---------- GC（须持 kb_write 锁调用；上限处理） ----------
     def gc(self, limit: int = 100) -> int:
-        now = datetime.now()
+        now = datetime.now()  # noqa: DTZ005
         handled = 0
 
         for rec in self._doc.list_before_status_changed(
@@ -956,6 +1621,10 @@ def _format_of(filename: str) -> str:
 
     allowed = tuple(sorted({s.lstrip(".") for s in SUPPORTED_SUFFIXES}))
     ext = Path(filename or "").suffix.lower().lstrip(".")
+    if ext == "doc":
+        raise UploadError(
+            "不支持的文件格式: doc（旧版 Word 格式，请先转换为 .docx 后上传）"
+        )
     if ext not in allowed:
         raise UploadError(f"不支持的文件格式: {ext or '(无后缀)'}（支持 {', '.join(allowed)}）")
     return ext
@@ -989,7 +1658,7 @@ def _magic_check(data: bytes, fmt: str) -> None:
 
 
 def _zip_limits(data: bytes, fmt: str) -> None:
-    if fmt not in ("docx", "doc"):
+    if fmt != "docx":
         return
     import zipfile
     from io import BytesIO
@@ -1007,7 +1676,7 @@ def _zip_limits(data: bytes, fmt: str) -> None:
                 raise UploadParseFailed("zip 压缩比超过上限（zip bomb 防护）")
     except UploadParseFailed:
         raise
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         raise UploadParseFailed(f"zip 结构检查失败: {e}") from e
 
 
@@ -1025,5 +1694,5 @@ def _page_limits(data: bytes, fmt: str) -> None:
             raise UploadParseFailed(f"PDF 页数 {n} 超过上限 {settings.kb_upload_max_pages}")
     except UploadParseFailed:
         raise
-    except Exception:  # noqa: BLE001 —— 页数检查失败放行给子进程解析（那里 fail-fast）
+    except Exception:  # noqa: BLE001
         return

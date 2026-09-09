@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Optional
 
 from fastapi import HTTPException, Request
 from openai import OpenAI
@@ -41,22 +40,25 @@ class PodComponents:
 
     client: OpenAI
     skill_manager: object  # SkillManager
-    mcp_client: Optional[object] = None  # MCPClient（未启用时为 None）
-    redis: Optional[object] = None  # Redis 客户端；不可用时 None（降级文件实现）
-    session_store: Optional[object] = None  # SessionStore
-    ltm_store: Optional[object] = None  # LTMStore
-    locks: Optional[object] = None  # SessionLockManager
-    turns_archive: Optional[object] = None  # ObjectStore（turns 归档）
-    limiter: Optional[object] = None  # 阶段三 3.7 UserLimiter
-    usage_tracker: Optional[object] = None  # 阶段三 3.7 UsageTracker
-    refund_store: Optional[object] = None  # 阶段三 3.3 一次性确认令牌存储
-    handoff_board: Optional[object] = None  # 阶段六 6.1 转人工板
-    db_engine: Optional[object] = None  # 阶段八：SQL 正本引擎（db_url 配置时启用）
-    es_client: Optional[object] = None  # 阶段八：ES 客户端（es_url 配置时启用）
+    mcp_client: object | None = None  # MCPClient（未启用时为 None）
+    redis: object | None = None  # Redis 客户端；不可用时 None（降级文件实现）
+    session_store: object | None = None  # SessionStore
+    ltm_store: object | None = None  # LTMStore
+    locks: object | None = None  # SessionLockManager
+    turns_archive: object | None = None  # ObjectStore（turns 归档）
+    limiter: object | None = None  # 阶段三 3.7 UserLimiter
+    usage_tracker: object | None = None  # 阶段三 3.7 UsageTracker
+    refund_store: object | None = None  # 阶段三 3.3 一次性确认令牌存储
+    handoff_board: object | None = None  # 阶段六 6.1 转人工板
+    db_engine: object | None = None  # 阶段八：SQL 正本引擎（db_url 配置时启用）
+    es_client: object | None = None  # 阶段八：ES 客户端（es_url 配置时启用）
     message_index: str = ""  # 阶段八：对话全文检索索引名（{prefix}-messages）
-    tool_executor: Optional[object] = None  # Agent能力强化计划：pod 级工具批次执行器（无状态单例）
-    upload_service: Optional[object] = None  # KB 文档上传编排（kb_upload_enabled 且 DB 可用时）
-    object_store: Optional[object] = None  # 4.1：S3/OSS 共享客户端（turns/分片/原件；未配置 None）
+    tool_executor: object | None = None  # Agent能力强化计划：pod 级工具批次执行器（无状态单例）
+    upload_service: object | None = None  # KB 文档上传编排（kb_upload_enabled 且 DB 可用时）
+    object_store: object | None = None  # 4.1：S3/OSS 共享客户端（turns/分片/原件；未配置 None）
+    memory_job_worker: object | None = None  # 阶段F：异步记忆 worker（首次用时惰性装配）
+    kb_job_store: object | None = None  # KB 异步建库任务队列（多实例异步改造；DB 可用时）
+    human_knowledge_store: object | None = None  # 人工会话知识链路正本（迁移008；DB 可用时）
 
 
 def build_openai_client() -> OpenAI:
@@ -102,7 +104,7 @@ def build_pod_components() -> PodComponents:
                 settings.mcp_server_url, auth_token=settings.mcp_auth_token,
             )
             mcp_client.connect()
-        except Exception:  # noqa: BLE001 —— 连接失败降级本地工具（与既有降级哲学一致）
+        except Exception:
             mcp_client = None
 
     # 阶段二 2.1/2.3：Redis 可用 → 外置；否则本地文件（处处降级）
@@ -179,7 +181,7 @@ def build_pod_components() -> PodComponents:
         )
 
     # 阶段三 3.7：用户级限流/配额 + LLM 用量归集
-    from app.security.ratelimit import UserLimiter, UsageTracker, install_usage_tracking
+    from app.security.ratelimit import UsageTracker, UserLimiter, install_usage_tracking
     from app.security.refunds import (
         InProcessConfirmationStore,
         RedisConfirmationStore,
@@ -214,7 +216,17 @@ def build_pod_components() -> PodComponents:
 
     # KB 文档上传编排（v7：依赖 SQL 正本；Redis 用于断点状态与 generation 指针；
     # 2.8：共享 S3 client 注入分片/原件存储）
-    upload_service = _build_upload_service(engine, redis, object_store)
+    kb_job_store = None
+    human_knowledge_store = None
+    if engine is not None:
+        from app.agent.rag.job_store import KbIndexJobStore
+
+        kb_job_store = KbIndexJobStore(engine)
+        from app.evolution.human_store import HumanKnowledgeStore
+
+        human_knowledge_store = HumanKnowledgeStore(engine)
+    upload_service = _build_upload_service(engine, redis, object_store,
+                                           job_store=kb_job_store)
 
     return PodComponents(
         client=client,
@@ -235,10 +247,12 @@ def build_pod_components() -> PodComponents:
         tool_executor=tool_executor,
         upload_service=upload_service,
         object_store=object_store,
+        kb_job_store=kb_job_store,
+        human_knowledge_store=human_knowledge_store,
     )
 
 
-def _build_upload_service(engine, redis, object_store=None):
+def _build_upload_service(engine, redis, object_store=None, job_store=None):
     """构造 KB 上传编排；无 DB/未启用/初始化失败 → None（端点 503 fail-closed）。
 
     注意（冻结约束）：生产路径（引擎/Redis 任一可用时）GenerationStore 走
@@ -247,6 +261,7 @@ def _build_upload_service(engine, redis, object_store=None):
 
     2.8：object_store 注入时（KB_UPLOAD_STORAGE=s3），分片与原件都走对象
     存储（uploads/ 与 originals/ 前缀隔离）；None 时维持本地目录。
+    job_store：KbIndexJobStore（多实例异步改造；None = 仅同步语义）。
     """
     import logging
 
@@ -303,8 +318,9 @@ def _build_upload_service(engine, redis, object_store=None):
             kb_root=root / settings.kb_dir,
             chunk_storage=chunk_storage or build_chunk_storage(),
             originals=originals or OriginalStore(),
+            job_store=job_store,
         )
-    except Exception as e:  # noqa: BLE001 —— 上传属可选能力：初始化失败降级 503
+    except Exception as e:
         log.warning("KB 上传服务初始化失败（端点将返回 503）: %s", e)
         return None
 
@@ -312,13 +328,13 @@ def _build_upload_service(engine, redis, object_store=None):
 def build_agent(
     user_id: str,
     session_id: str = "",
-    components: Optional[PodComponents] = None,
+    components: PodComponents | None = None,
     *,
-    memory_enabled: Optional[bool] = None,
-    use_mcp: Optional[bool] = None,
-    temperature: Optional[float] = None,
-    credentials: Optional[dict] = None,
-    enforce_order_ownership: Optional[bool] = None,
+    memory_enabled: bool | None = None,
+    use_mcp: bool | None = None,
+    temperature: float | None = None,
+    credentials: dict | None = None,
+    enforce_order_ownership: bool | None = None,
 ):
     """按 user_id/session_id 构造 Agent（单 Agent/多 Agent 同一入口）。
 

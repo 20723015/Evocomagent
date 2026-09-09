@@ -21,7 +21,8 @@ from fastapi import HTTPException, Request
 
 from app.config.settings import settings
 
-SCOPE_OPS = "ops"  # 运营面（handoffs / messages/search）
+SCOPE_OPS = "ops"  # 运营面（handoffs / messages/search / human-knowledge）
+SCOPE_HUMAN_INGEST = "human_chat_ingest"  # 外部客服系统会话批量接入
 
 
 @dataclass(frozen=True)
@@ -37,7 +38,12 @@ class Principal:
 
 
 def _anonymous() -> Principal:
-    return Principal(sub="anonymous", scopes=frozenset({SCOPE_OPS}), via="anonymous")
+    # 开发直通同时覆盖运营面与会话接入面（auth 关闭时的等价语义）
+    return Principal(
+        sub="anonymous",
+        scopes=frozenset({SCOPE_OPS, SCOPE_HUMAN_INGEST}),
+        via="anonymous",
+    )
 
 
 def _parse_scopes(raw: str) -> set[str]:

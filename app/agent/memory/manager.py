@@ -5,8 +5,6 @@ EcomAgent 和 MultiAgentOrchestrator 通过此管理器与记忆系统交互。
 
 from __future__ import annotations
 
-from typing import Optional
-
 from openai import OpenAI
 
 from app.agent.memory.long_term import LongTermMemory
@@ -48,10 +46,36 @@ class MemoryManager:
         self.ltm.source_session = session_id
 
     def update_short_term(self, recent_messages: list[dict]) -> None:
-        """每轮对话后更新短期记忆。"""
+        """每轮对话后更新短期记忆（LLM 路径；阶段F后仅离线工具使用）。
+
+        主链路已切换为 update_short_term_deterministic（零 LLM）。
+        """
         if not self.memory_enabled:
             return
         self.stm.update(self.client, self.model, recent_messages)
+
+    def update_short_term_deterministic(
+        self, recent_messages: list[dict], query: str = "",
+    ) -> None:
+        """阶段F：确定性规则即时提取会话槽位（零 LLM，不抛错）。"""
+        if not self.memory_enabled:
+            return
+        from app.agent.memory.stm_rules import extract_stm_slots
+
+        changes = extract_stm_slots(
+            recent_messages,
+            [fact for fact in self.stm.records if fact.status == "active"],
+        )
+        if not changes:
+            return
+        from app.agent.memory.models import MemoryMutation, apply_memory_mutations
+
+        if all(isinstance(item, MemoryMutation) for item in changes):
+            self.stm.records = apply_memory_mutations(
+                self.stm.records, changes, max_active=50,
+            )
+        else:
+            self.stm.facts = changes
 
     def build_memory_prompt_sections(self, query: str = "") -> list[dict]:
         """生成所有记忆相关的 system prompt 消息列表。
@@ -72,7 +96,7 @@ class MemoryManager:
         return sections
 
     def consolidate_to_long_term(
-        self, messages: list[dict], summary: Optional[str],
+        self, messages: list[dict], summary: str | None,
     ) -> None:
         """会话结束时，将本次对话的关键事实巩固到长期记忆。"""
         if not self.memory_enabled:

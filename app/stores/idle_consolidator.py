@@ -43,7 +43,13 @@ def find_idle_sessions(
 
     store 需同时支持「枚举全部会话」——LocalFileSessionStore 无此能力，
     仅在 RedisSessionStore（SCAN session:*）下生效；其余返回 []。
+
+    SQL 会话的 consolidated_len 是 chat_messages.seq 水位，且由持久化
+    memory-job worker 消费。SQL store 不走这里的「规范消息数组索引」语义，
+    以免 idle consolidator 与 memory-job worker 并行巩固/互相覆盖水位。
     """
+    if getattr(store, "memory_jobs_enabled", False):
+        return []
     scanner = getattr(store, "iter_all", None)
     if scanner is None:
         return []
@@ -73,6 +79,11 @@ def run_idle_consolidation(
     max_ltm_facts: int = 50,
 ) -> list[str]:
     """对全部静默会话执行一次兜底巩固，返回处理的 (user_id, session_id) 列表。"""
+    # SQL 模式的唯一巩固入口是 memory_jobs worker：它使用
+    # chat_messages.seq 水位，而本函数使用折叠后的模型消息长度。即使调用方
+    # 绕过 find_idle_sessions 直接调用，也必须 fail-closed，避免漏处理/重复处理。
+    if getattr(session_store, "memory_jobs_enabled", False):
+        return []
     handled: list[str] = []
     from app.agent.memory import MemoryManager
 

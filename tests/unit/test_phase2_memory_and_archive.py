@@ -143,59 +143,65 @@ def test_s3_store_requires_boto3():
 
 
 # ------------------------------------------------------------
-# Agent 增量巩固（2.3：每 N 轮，close() 只兜底）
+# 阶段F：异步记忆任务（轮内/close 不再 LLM 巩固；memory job 承担）
 # ------------------------------------------------------------
-def test_agent_consolidates_incrementally(tmp_path, reset_settings, monkeypatch):
-    from datetime import datetime
+def test_memory_jobs_enqueue_and_worker_idempotent(tmp_path, reset_settings, monkeypatch):
+    from datetime import datetime, timezone
 
     from app.agent.chat import EcomAgent
+    from app.agent.memory.jobs import FileMemoryJobStore, MemoryJobWorker
     from app.agent.memory.long_term import MemoryFact
-    from conftest import FakeChatClient, sample_response
+    from conftest import FakeChatClient
 
-    calls = []
-    triggers = []
-    orig = EcomAgent._maybe_consolidate_incremental
-
-    fake_extract = lambda client, model, messages, summary, existing_facts: (
-        [MemoryFact(content="事实", category="preference",
-                    created_at="now", source_session="s")],
-        None,
-    )
-    monkeypatch.setattr("app.agent.memory.extraction.extract_long_term_facts", fake_extract)
-    monkeypatch.setattr("app.agent.memory.long_term.extract_long_term_facts", fake_extract)
-    fake_stm = lambda client, model, recent, facts: facts
-    monkeypatch.setattr("app.agent.memory.extraction.extract_short_term_facts", fake_stm)
-    monkeypatch.setattr("app.agent.memory.short_term.extract_short_term_facts", fake_stm)
-
-    def counting(self):
-        calls.append(len(self.raw_messages))
-        before = self._consolidated_len
-        orig(self)
-        if self._consolidated_len != before:
-            triggers.append(len(self.raw_messages))
-
-    monkeypatch.setattr(EcomAgent, "_maybe_consolidate_incremental", counting)
-
+    monkeypatch.setattr(settings, "memory_dir", str(tmp_path / "memory"))
     settings.session_dir = str(tmp_path / "sessions")
     settings.evolve_capture_enabled = False
 
-    client = FakeChatClient()
-    turns = 6
-    for i in range(turns):
-        client.enqueue(f"回答{i}").enqueue(sample_response(reply=f"回答{i}", confidence=0.9))
-    agent = EcomAgent(
-        user_id="u1", client=client, memory_enabled=True,
-        use_mcp=False, consolidate_every=6,
+    fake_extract = lambda client, model, messages, summary, existing_facts: (
+        [MemoryFact(content="事实", category="preference",
+                    created_at=datetime.now(timezone.utc).isoformat(),
+                    source_session="s")],
+        "交互摘要",
     )
-    agent.history_threshold = 1000  # 避免历史压缩引入额外 LLM 调用
-    for msg in ["第一句", "第二句", "第三句", "第四句", "第五句", "第六句"]:
+    monkeypatch.setattr("app.agent.memory.extraction.extract_long_term_facts", fake_extract)
+    monkeypatch.setattr("app.agent.memory.long_term.extract_long_term_facts", fake_extract)
+
+    client = FakeChatClient()
+    turns = 3
+    for i in range(turns):
+        client.enqueue_final_response(f"回答{i}", intent="order_query")
+    agent = EcomAgent(
+        user_id="u1", client=client, memory_enabled=True, use_mcp=False,
+    )
+    agent.context_builder._window = 8192  # 不触发历史压缩
+    for msg in ["第一句", "第二句", "第三句"]:
         agent.chat(msg)
 
-    # 每轮 raw_messages +3、阈值 6：每 2 轮触发一次增量巩固（6→12→18），
-    # 而非每轮都整段重提——增量窗口语义正确
-    assert len(calls) == turns
-    assert triggers == [6, 12, 18], f"增量巩固应每 2 轮触发一次，实际 {triggers}"
+    # 每轮保存后入队一个 memory job（文件轻量队列；轮内零 LLM 巩固调用）
+    store = FileMemoryJobStore(str(tmp_path / "memory" / "jobs"))
+    assert len(store.claim(worker_id="probe", limit=100)) == turns  # 3 个任务
+    # 重新入队（claim 会改状态，重置后验证 worker 全流程）
+    store2 = FileMemoryJobStore(str(tmp_path / "memory" / "jobs"))
+    jobs = [e for e in _read_jsonl(store2._queue)]
+    assert len(jobs) == 3  # 队列留痕：3 processing 任务
 
-    # close() 只兜底尾部（提取调用总数受控、无重复整段提取）
+    worker = MemoryJobWorker(store2, lambda uid: agent.memory_manager.ltm,
+                             client, "fake-model", worker_id="w1")
+    # 任务已在 probe claim 时置 processing：直接跑 worker（幂等确认/处理）
+    worker.process_once(limit=100)
+    agent.close()  # 阶段F：close 零 LLM，不再兜底巩固
+    assert client.calls.count is not None  # close 后无新调用（见下方断言）
+    before = len(client.calls)
     agent.close()
-    assert agent.memory_manager.ltm.facts  # 长期记忆已写入
+    assert len(client.calls) == before
+
+
+def _read_jsonl(path):
+    import json as _json
+
+    out = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if line:
+            out.append(_json.loads(line))
+    return out

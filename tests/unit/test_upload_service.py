@@ -88,7 +88,7 @@ def _build_service(tmp_path: Path, monkeypatch, *, broken_build=False):
         strict_build=True,  # 与 deps._build_upload_service 生产装配一致
     )
     if broken_build:
-        def _boom(backend, generation_id=None):
+        def _boom(backend, generation_id=None, allow_empty=False):
             raise RuntimeError("embedding 服务不可用（注入）")
         index.build = _boom  # type: ignore[method-assign]
 
@@ -316,7 +316,7 @@ class TestDeleteDocument:
         out = svc.complete("up-1", uploader="ops-a")
         original = svc._index_service.build
 
-        def _boom(backend, generation_id=None):
+        def _boom(backend, generation_id=None, allow_empty=False):
             raise RuntimeError("injected")
 
         svc._index_service.build = _boom  # type: ignore[method-assign]
@@ -326,6 +326,30 @@ class TestDeleteDocument:
         assert rec.status == STATUS_INDEXED  # 回滚
         assert list((kb / "uploads").glob("*.md"))  # 文件移回
         svc._index_service.build = original
+
+    def test_delete_last_document_succeeds_with_empty_kb(self, tmp_path, monkeypatch):
+        """KB 仅一篇文档：下架成功、状态机到 deleted、活动代为合法空索引。
+
+        回归点：下架流程的重建曾是 strict——删掉最后一篇文档时
+        「知识库目录未发现任何文档」抛错，删除永远失败。
+        """
+        svc, (doc_store, _c, gen, kb, _t) = _build_service(tmp_path, monkeypatch)
+        (kb / "根文档.md").unlink()  # KB 只剩将上传的这一篇
+        cresp, _ = _upload_two_chunks(svc)
+        out = svc.complete("up-1", uploader="ops-a")
+        assert out["status"] == "indexed"
+        d = svc.delete_document(out["doc_id"], uploader="ops-a")
+        assert d["status"] == "deleted"
+        assert doc_store.get(out["doc_id"]).status == STATUS_DELETED
+        # KB 目录已空；活动代索引是合法空索引，检索返回空
+        assert list((kb / "uploads").glob("*.md")) == []
+        active = gen.active("numpy")
+        assert active is not None
+        from app.agent.rag.backends.numpy_backend import NumpyBackend
+
+        impl = NumpyBackend(Path(active.target))
+        assert impl.size() == 0
+        assert impl.search([0.1, 0.2], top_k=5) == []
 
 
 class TestRecovery:
@@ -400,6 +424,35 @@ class TestRecovery:
         rec = doc_store.get(doc_id)
         assert rec.status == STATUS_INDEXED
         assert rec.generation_id == info.generation_id
+
+    def test_recover_activating_rollback_moves_file_out_of_kb(self, tmp_path, monkeypatch):
+        """ACTIVATING 回滚必须把已入 KB 的文件移出（与 PREPARED/INDEX_BUILT
+        回滚分支对称）；只回滚状态不移文件会留孤儿，下次重建索引会把未提交
+        文档扫进活动索引。"""
+        svc, (doc_store, _c, gen, kb, _t) = _build_service(tmp_path, monkeypatch)
+        cresp, _ = _upload_two_chunks(svc)
+        doc_id = svc._doc.get_by_upload_id("up-1").doc_id
+        rec = svc._doc.get_by_upload_id("up-1")
+        v = svc._doc.update_status(doc_id, STATUS_UPLOADING, STATUS_VALIDATING, 0, operation_id="op-x")
+        v = svc._doc.update_status(doc_id, STATUS_VALIDATING, STATUS_INDEXING, v, require_op="op-x")
+        info = svc._index_service.build("numpy", generation_id="20260830000000-99999999")
+        # 模拟步骤④已 move_into_kb：文件已在 KB uploads 目录
+        kb_file = kb / "uploads" / rec.storage_key
+        kb_file.write_text(DOC_MD, encoding="utf-8")
+        assert kb_file.exists()
+        svc._stage.journal_write("up-1", {
+            "phase": PH_ACTIVATING, "doc_id": doc_id,
+            "generation_id": info.generation_id, "target": info.target,
+        })
+        lock = svc._make_lock()
+        lock.acquire(phase="recover")
+        try:
+            svc._recover_all_journals(lock)  # numpy：alias=="" → 回滚
+        finally:
+            lock.release()
+        assert doc_store.get(doc_id).status == STATUS_UPLOADING  # 状态回滚
+        assert not kb_file.exists()  # 文件已移出知识库目录
+        assert svc._stage.journal_read("up-1") is None
 
     def test_blocked_prevents_writes(self, tmp_path, monkeypatch):
         svc, *_ = _build_service(tmp_path, monkeypatch)

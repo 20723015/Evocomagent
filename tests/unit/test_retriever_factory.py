@@ -196,6 +196,9 @@ class _FakeChunk:
         self.section = "s"
         self.text = "t"
         self.provenance = ""
+        self.parent_id = ""
+        self.parent_text = ""
+        self.heading_path = ""
 
 
 class _FakeHit:
@@ -229,10 +232,15 @@ def test_probe_records_rank_and_blocks_missing(tmp_path, monkeypatch):
     """探针记录 rank/精排分数/source_path；未进 Top-K 的候选阻断发布。"""
     from types import SimpleNamespace
 
+    from app.config.settings import settings
+
     from app.evolution.pipeline import EvolutionPipeline
 
-    # 复用 make_services 构建真实 pipeline，只替换 staged retriever
     from tests.unit.test_pipeline import make_services
+
+    # 探针经 final_search 统一口径会应用线上阈值——本测试只关心排名行为，
+    # 显式固定为未配置，避免依赖本地 .env
+    monkeypatch.setattr(settings, "rag_min_relevance_score", None)
 
     svc = make_services(tmp_path)
     pipe: EvolutionPipeline = svc["pipeline"]
@@ -271,9 +279,13 @@ def test_probe_blocks_candidate_not_in_top_k(tmp_path, monkeypatch):
     """候选在 Top-5 内未命中 → probe_failures + blocked。"""
     from types import SimpleNamespace
 
+    from app.config.settings import settings
+
     from app.evolution.pipeline import EvolutionPipeline
 
     from tests.unit.test_pipeline import make_services
+
+    monkeypatch.setattr(settings, "rag_min_relevance_score", None)
 
     svc = make_services(tmp_path)
     pipe: EvolutionPipeline = svc["pipeline"]

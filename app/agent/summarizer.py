@@ -4,6 +4,7 @@ from typing import Optional
 from openai import OpenAI
 
 from app.agent.tools.digest import render_tool_result_line, tool_call_name_map
+from app.config.settings import settings
 from app.prompts.summarizer import SUMMARY_PROMPT
 
 
@@ -54,5 +55,6 @@ def summarize(
             {"role": "system", "content": SUMMARY_PROMPT},
             {"role": "user", "content": user_content},
         ],
+        max_tokens=settings.llm_max_tokens,
     )
     return response.choices[0].message.content.strip()

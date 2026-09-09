@@ -5999,6 +5999,30 @@
       ]
     },
     {
+      "id": "retrieval_evolved_slo_01",
+      "query": "钻石会员专属客服的响应时效SLO是多少",
+      "expected": [
+        "evolved/20260901-938835580ee4-钻石会员专属客服的响应时效SLO是多少.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "retrieval_evolved_measure_install_01",
+      "query": "全屋定制什么时候上门量尺？多久能安装？",
+      "expected": [
+        "evolved/20260908-human-1-全屋定制衣柜的下单后流程和时间节点是怎样的.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
       "id": "retrieval_hard_noisy_01",
       "query": "衣服就套着试了下，牌子盒子都在，七天内能不要嘛",
       "expected": [
@@ -6404,6 +6428,24 @@
         "no_hit",
         "near_domain"
       ]
+    }
+  ],
+  "_change_log": [
+    {
+      "date": "2026-09-05",
+      "reason": "知识库新增自进化文档 20260901-938835580ee4（钻石会员专属客服响应时效SLO），检索评测集补一条直接命中用例以满足文档覆盖门禁（check_eval_dataset）",
+      "added": [
+        "retrieval_evolved_slo_01（同步生成器 RETRIEVAL_HARD）"
+      ],
+      "basis": "docs: 单 Agent 全量优化计划·阶段D（评测数据修正需保留变更依据与版本记录）"
+    },
+    {
+      "date": "2026-09-08",
+      "reason": "知识库经 010 人工链路发布新文档 20260908-human-1（全屋定制量尺/安装流程），检索评测集补一条直接命中用例以满足文档覆盖门禁（check_eval_dataset）",
+      "added": [
+        "retrieval_evolved_measure_install_01"
+      ],
+      "basis": "docs/evidence/human-knowledge-lifecycle-eval.md（真实环境验收：发布后 536 例零回退）"
     }
   ]
 }

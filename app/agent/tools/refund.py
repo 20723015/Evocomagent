@@ -87,8 +87,13 @@ def apply_refund(
 ) -> dict:
     """为指定订单申请退款（两段式：先确认后执行）。
 
-    refund_id / idempotency_key：第一段返回的幂等锚点（同值重复 confirm
-    幂等重放；不传则退回旧哈希键——仅供兼容，新调用应传 refund_id）。
+    Review 修复后的确认通道：
+    - confirmation_token / idempotency_key / refund_id 属**执行器内部注入**
+      （服务端判定 confirm 后经内部参数通道传入），模型参数面不出现这些
+      保留字段（registry 层拒绝）；
+    - 第一段签发后把待确认条目注册进确认存储（user+session+refund_id 反向
+      解析），模型可见结果不含 token；
+    - token 载荷绑定用户/会话/订单/原因，提交时全量校验。
     """
     denied = require_identity(ctx)
     if denied is not None:
@@ -99,6 +104,8 @@ def apply_refund(
 
     from app.security.refunds import ConfirmationInvalid, RefundConfirmation
 
+    user_id = ctx.user_id if ctx is not None else ""
+    session_id = ctx.session_id if ctx is not None else ""
     controller = RefundConfirmation(_confirmation_store())
     if not confirmation_token:
         # 第一段：先过归属（网关侧校验防越权签发），再签发
@@ -107,8 +114,24 @@ def apply_refund(
         pre = gateway.get_order(actor_of(ctx), order_id, credentials_of(ctx))
         if not pre.success:
             return gateway_failure(pre)
-        return {**controller.request(order_id, reason),
-                "code": CONFIRMATION_REQUIRED}
+        issued = controller.request(order_id, reason,
+                                    user_id=user_id, session_id=session_id)
+        # Review 修复：模型可见结果不含 confirmation_token（token 只在确认
+        # 存储，由 user+session+refund_id 反向解析，提交由执行器注入）。
+        # refund_id 保留：幂等对账锚点（registry 层拒绝模型提交该保留字段）。
+        return {
+            "success": True,
+            "status": "pending_confirmation",
+            "code": CONFIRMATION_REQUIRED,
+            "order_id": order_id,
+            "refund_id": issued.get("refund_id", ""),
+            "idempotency_key": issued.get("refund_id", ""),
+            "message": (
+                "退款确认请求已登记，等待用户明确确认；"
+                "用户确认后再次调用本工具（相同订单号与原因），"
+                "系统会自动完成提交。不要向用户索要、复述或提交任何凭证。"
+            ),
+        }
     try:
         return controller.confirm(
             confirmation_token,
@@ -116,6 +139,8 @@ def apply_refund(
             order_id=order_id,
             reason=reason,
             refund_id=refund_id or idempotency_key or "",
+            user_id=user_id,
+            session_id=session_id,
         )
     except ConfirmationInvalid as e:
         return {

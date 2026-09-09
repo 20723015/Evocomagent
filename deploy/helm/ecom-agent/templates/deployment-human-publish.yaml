@@ -1,0 +1,83 @@
+{{- if .Values.humanPublishWorker.enabled }}
+# 人工批量发布 Worker（迁移008）：多实例租约领取发布批次，一个批次一个
+# staging generation，全局 KB 写锁内原子切代；Web Pod 不启动本进程。
+{{- $flag := "" }}
+{{- if hasKey .Values.env "HUMAN_QA_EVOLUTION_ENABLED" }}
+{{- $flag = lower (toString (index .Values.env "HUMAN_QA_EVOLUTION_ENABLED")) }}
+{{- end }}
+{{- if ne $flag "true" }}
+{{- fail (printf "humanPublishWorker.enabled=true 要求 env.HUMAN_QA_EVOLUTION_ENABLED 为 true（当前 %q）" $flag) }}
+{{- end }}
+{{- if not .Values.kbSharedVolume.enabled }}
+{{- fail "humanPublishWorker.enabled=true 要求 kbSharedVolume.enabled=true" }}
+{{- end }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-human-publish
+  labels:
+    app: ecom-agent-human-publish
+    app.kubernetes.io/version: {{ .Values.image.tag | quote }}
+spec:
+  replicas: {{ .Values.humanPublishWorker.replicaCount }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: ecom-agent-human-publish
+  template:
+    metadata:
+      labels:
+        app: ecom-agent-human-publish
+        app.kubernetes.io/version: {{ .Values.image.tag | quote }}
+    spec:
+      # SIGTERM → 停止领取新批次；当前批次由租约接管
+      terminationGracePeriodSeconds: {{ .Values.humanPublishWorker.terminationGracePeriodSeconds }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        fsGroup: 10001
+      affinity:
+        podAntiAffinity:
+          {{- if .Values.humanPublishWorker.podAntiAffinity.required }}
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: ecom-agent-human-publish
+              topologyKey: kubernetes.io/hostname
+          {{- else }}
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app: ecom-agent-human-publish
+                topologyKey: kubernetes.io/hostname
+          {{- end }}
+      containers:
+        - name: human-publish
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["python", "-m", "app.scripts.run_evolution"]
+          args: ["--human-publish-worker"]
+          env:
+            {{- range $k, $v := .Values.env }}
+            - name: {{ $k }}
+              value: {{ $v | quote }}
+            {{- end }}
+          envFrom:
+            - secretRef:
+                name: {{ .Values.envFromSecret }}
+          resources:
+            {{- toYaml .Values.humanPublishWorker.resources | nindent 12 }}
+          volumeMounts:
+            - name: kb-shared
+              mountPath: {{ .Values.kbSharedVolume.mountPath }}
+      volumes:
+        - name: kb-shared
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-kb-shared
+{{- end }}

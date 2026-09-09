@@ -18,7 +18,6 @@ import re
 import unicodedata
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Optional
 
 from openai import OpenAI
 
@@ -120,6 +119,11 @@ class LongTermMemory:
         self.max_facts = max_facts
         self._store = store
         self.source_session = source_session
+        # 阶段F：注入相关性阈值与有效期（可按用户/测试覆盖）
+        from app.config.settings import settings as _settings
+
+        self.relevance_threshold: float = _settings.memory_relevance_threshold
+        self.ttl_days: int = _settings.memory_fact_ttl_days
         self.facts: list[MemoryFact] = []
         self.interaction_summaries: list[dict] = []
 
@@ -237,7 +241,7 @@ class LongTermMemory:
         client: OpenAI,
         model: str,
         messages: list[dict],
-        summary: Optional[str],
+        summary: str | None,
     ) -> None:
         """从会话消息中提取长期记忆事实并保存。
 
@@ -261,7 +265,7 @@ class LongTermMemory:
             self.save()
             return
 
-        def _apply(current: Optional[dict]) -> dict:
+        def _apply(current: dict | None) -> dict:
             base = current if isinstance(current, dict) else {}
             facts = [
                 MemoryFact.from_dict(f)
@@ -297,7 +301,7 @@ class LongTermMemory:
         self.interaction_summaries = list(merged.get("interaction_summaries", []))
 
     def ranked_facts(self, query: str, limit: int = 8,
-                     now_utc: Optional[datetime] = None) -> list[MemoryFact]:
+                     now_utc: datetime | None = None) -> list[MemoryFact]:
         """按相关性排序取 top-N（改造四）。
 
         得分 = Dice + 类别权重 + 新近度；同分排序：得分降序 → created_at
@@ -318,69 +322,47 @@ class LongTermMemory:
         return [t[3] for t in scored[: max(limit, 0)]]
 
     def select_facts_for_prompt(self, query: str, max_facts: int = 8,
-                                now_utc: Optional[datetime] = None
+                                now_utc: datetime | None = None,
+                                relevance_threshold: float | None = None,
                                 ) -> list[MemoryFact]:
-        """最终注入集合：严格 ≤ max_facts（含保底）。
+        """最终注入集合：严格 ≤ max_facts（阶段F：相关性阈值 + 有效期）。
 
-        修复计划（保底算法修正）：只保护**实际作为保底插入**的对象（guaranteed
-        集合）；top-N 里自然选中的 identity/preference 不享受保护。插入缺失
-        类别时淘汰最低分且非保底的事实——因此即使 top-N 全是 identity，
-        preference 保底仍能挤入（类内淘汰同类高分者），两类各至少 1 条
-        （该类别存在时），总数恒 ≤ max_facts。
+        单 Agent 全量优化计划·阶段F修订：
+        - 身份/偏好不再无条件保底注入无关请求——非空 query 时事实必须与
+          query 有词面相关（dice ≥ relevance_threshold，默认 0.02）；
+        - 有效期：updated_at 超过 memory_fact_ttl_days 的事实不注入；
+        - query 为空（开场等无意图信号场景）：按权重+新近度取 top-N，
+          同样受有效期约束，但不做保底。
         """
         active_facts = self.active_facts
         if not active_facts:
             return []
         now_utc = now_utc or datetime.now(timezone.utc)
+        threshold = (
+            relevance_threshold
+            if relevance_threshold is not None
+            else self.relevance_threshold
+        )
+        ttl_cutoff = now_utc - timedelta(days=self.ttl_days)
         query_tokens = _token_set(query)
-        scored = [
-            (
+        scored = []
+        for f in active_facts:
+            # 有效期（阶段F）：超期事实不注入
+            created = _created_at_utc(f.created_at, now_utc)
+            if created < ttl_cutoff:
+                continue
+            relevance = dice_score(query_tokens, _token_set(f.content))
+            # 相关性阈值（阶段F）：非空 query 时要求词面相关
+            if query and relevance < threshold:
+                continue
+            scored.append((
                 score_fact(f.content, f.category, f.created_at, query_tokens, now_utc),
-                _created_at_utc(f.created_at, now_utc),
+                created,
                 f.content,
                 f,
-            )
-            for f in active_facts
-        ]
+            ))
         scored.sort(key=lambda t: (-t[0], -t[1].timestamp(), t[2]))
-
         selected = scored[: max(max_facts, 0)]
-        guaranteed_ids: set[int] = set()  # 仅记录实际保底插入的对象
-
-        def _best_of(category: str):
-            for item in scored:
-                if item[3].category == category:
-                    return item
-            return None
-
-        for category in ("identity", "preference"):
-            best = _best_of(category)
-            if best is None:
-                continue
-            if id(best[3]) in {id(t[3]) for t in selected}:
-                # 该类最高分已自然入选，无需占用保底名额
-                continue
-            if len(selected) < max_facts:
-                selected.append(best)
-                selected_ids = {id(t[3]) for t in selected}
-                guaranteed_ids.add(id(best[3]))
-                continue
-            # 满员：淘汰最低分且非保底的事实（含 top-N 自然选中的 identity/
-            # preference——只有已插入的保底对象受保护，保证 preference 能挤入
-            # 全 identity 的 top-N）
-            evicted = None
-            for pos in range(len(selected) - 1, -1, -1):
-                if id(selected[pos][3]) not in guaranteed_ids:
-                    evicted = selected.pop(pos)
-                    break
-            if evicted is None:
-                continue  # 理论不可达（保底对象 ≤ 2，其余均可淘汰）
-            selected.append(best)
-            selected_ids = {id(t[3]) for t in selected}
-            guaranteed_ids.add(id(best[3]))
-
-        # 恢复得分序输出
-        selected.sort(key=lambda t: (-t[0], -t[1].timestamp(), t[2]))
         return [t[3] for t in selected]
 
     def build_prompt_section(self, query: str = "") -> str | None:

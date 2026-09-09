@@ -326,6 +326,42 @@ class TestChunkStrictAndHidden:
             svc.build("numpy")
 
 
+class TestEmptyIndexBuild:
+    """allow_empty：下架后 KB 为空是合法终态；默认 strict 保护不回归。"""
+
+    def test_build_allow_empty_creates_valid_empty_index(self, tmp_kb):
+        (tmp_kb / "根文档.md").unlink()  # KB 目录为空
+        svc = _build_service(tmp_kb)
+        # 默认 strict：仍抛错（防误清空保护不回归）
+        with pytest.raises(ValueError, match="未发现任何文档"):
+            svc.build("numpy", generation_id="20260830000000-e1e1e1e1")
+        # allow_empty=True：合法空索引（numpy：空 payload 文件）
+        info = svc.build("numpy", generation_id="20260830000000-e2e2e2e2",
+                         allow_empty=True)
+        assert svc.last_built_size == 0
+        assert svc.last_chunks == []
+        from app.agent.rag.backends.numpy_backend import NumpyBackend
+
+        impl = NumpyBackend(Path(info.target))
+        assert impl.size() == 0
+        assert impl.search([0.1, 0.2], top_k=5) == []
+        assert impl.expected_embedding_model() == "fake-embed"
+
+    def test_build_allow_empty_es_creates_empty_mapping_index(self, tmp_kb):
+        """ES 空索引：dense_vector dims 用 embedder 维度常量（0 非法），跳过 bulk。"""
+        (tmp_kb / "根文档.md").unlink()
+        es = MiniES()
+        svc = _build_service(tmp_kb, es=es)
+        info = svc.build("es", generation_id="20260830000000-f5f5f5f5",
+                         allow_empty=True)
+        assert info.target in es._indices  # 空 mapping 索引已创建
+        data = es._indices[info.target]
+        assert data["docs"] == {}  # 无 bulk 写入
+        dims = (data["mappings"]["properties"]["vector"]["dims"])
+        assert dims > 0  # embedder 维度常量（fake 无维度属性 → 缺省 1024）
+        assert dims == 1024
+
+
 class TestParseGuard:
     def test_parse_md_ok(self, tmp_path: Path):
         p = tmp_path / "a.md"

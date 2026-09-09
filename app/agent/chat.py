@@ -1,30 +1,31 @@
-import json
 import uuid
 from pathlib import Path
-from typing import Optional
 
 from openai import OpenAI
 
 from app.agent.context import ToolContext
-from app.agent.summarizer import summarize
+from app.agent.context_builder import ContextBuilder
+from app.agent.input_policy import evaluate_input
+from app.agent.react_runner import ForcedFinalizeFailed, ReactRunner
 from app.agent.tools.batch_executor import ToolBatchExecutor, ToolTurnState
+from app.agent.tools.manager import ToolManager
 from app.agent.turn_budget import (
     LLMBudgetExhausted,
     TurnBudget,
     bind_budget,
-    budget_fallback_response,
     reset_budget,
 )
+from app.agent.turn_context import AgentTurnContext
+from app.agent.turn_finalizer import (
+    TurnFinalizer,
+)
+from app.agent.turn_repository import TurnRepository
 from app.config.settings import settings
-from app.prompts.customer_service import SYSTEM_PROMPT
-from app.schemas.response import CustomerServiceResponse, IntentType
-from app.security.guardrails import check_input, guardrail_enabled
-from app.security.scope_gate import SCOPE_BLOCK_REPLY, check_scope, scope_gate_enabled
-from app.agent.tools.manager import ToolManager
 from app.observability.logging import get_logger
 from app.observability.metrics import record_budget_exhausted
+from app.schemas.response import CustomerServiceResponse
+from app.security.scope_gate import SCOPE_BLOCK_REPLY
 from app.stores.base import (
-    SessionConflictError,
     SessionOwnershipError,
     SessionState,
     SessionStore,
@@ -33,57 +34,45 @@ from app.stores.session_store import LocalFileSessionStore
 
 log = get_logger("app.agent.chat")
 
-# 业务升级规则（2026-08 评测后接线：模型对投诉/购买类倾向自行消化，需规则兜底）
-# 命中任一强投诉信号 → 归为投诉意图并强制转人工
-_COMPLAINT_SIGNALS = (
-    "投诉", "举报", "消协", "工商局", "起诉", "曝光", "赔偿",
-    "告你们", "态度差", "敷衍", "欺诈",
-)
-# 强购买意图（平台无下单工具）→ 转人工；同句含咨询词（价格/介绍等）视为咨询不升级
-_PURCHASE_SIGNALS = ("我要买", "买一个", "拍下", "立即购买", "帮我下单", "直接买")
-_CONSULT_HINTS = ("多少钱", "价格", "批发", "介绍", "推荐", "有货吗", "怎么卖")
-
-
-def _has_complaint_signal(text: str) -> bool:
-    return any(k in text for k in _COMPLAINT_SIGNALS)
-
-
-def _has_purchase_signal(text: str) -> bool:
-    if any(k in text for k in _PURCHASE_SIGNALS):
-        return not any(k in text for k in _CONSULT_HINTS)
-    return False
+# 预算耗尽的确定性 fallback 话术（零 LLM 收尾）
+BUDGET_FALLBACK_REPLY = "很抱歉，本轮处理时间已达上限，已为您转接人工客服，请稍候。"
 
 
 class EcomAgent:
-    """电商客服 Agent —— 阶段一 1.5：请求级参数化（user_id/session_id）。
+    """电商客服 Agent —— 单 Agent 全量优化后的统一执行流水线。
+
+    输入策略 → 上下文构建 → ReAct/工具执行（final_response 终止协议）→
+    结构化终答 → 安全与事实校验（TurnFinalizer 固定顺序）→ 持久化
+    （TurnRepository）→ 异步记忆（memory job / 确定性 STM）。
 
     Agent 是「无状态算子」：构造 → 处理一轮 → 写回 → 丢弃。
     user_id/session_id 为请求级参数，pod 级资源（client/skill_manager/
-    mcp_client）可注入共享，不再读全局套用单一用户。
+    mcp_client）注入共享；轮次状态统一在 AgentTurnContext，实例不再持有
+    请求级临时字段。
     """
 
     def __init__(
         self,
         user_id: str = "default",
-        session_id: Optional[str] = None,
-        session_path: Optional[str] = None,
-        client: Optional[OpenAI] = None,
+        session_id: str | None = None,
+        session_path: str | None = None,
+        client: OpenAI | None = None,
         skill_manager=None,
         mcp_client=None,
-        tool_manager: Optional[ToolManager] = None,
-        memory_enabled: Optional[bool] = None,
-        use_mcp: Optional[bool] = None,
-        temperature: Optional[float] = None,
-        model: Optional[str] = None,
-        session_store: Optional[SessionStore] = None,
+        tool_manager: ToolManager | None = None,
+        memory_enabled: bool | None = None,
+        use_mcp: bool | None = None,
+        temperature: float | None = None,
+        model: str | None = None,
+        session_store: SessionStore | None = None,
         ltm_store=None,
-        consolidate_every: Optional[int] = None,
+        consolidate_every: int | None = None,
         turns_archive=None,
-        credentials: Optional[dict] = None,
+        credentials: dict | None = None,
         event_callback=None,
-        tool_executor: Optional[ToolBatchExecutor] = None,
+        tool_executor: ToolBatchExecutor | None = None,
         turn_state_factory=None,
-        enforce_order_ownership: Optional[bool] = None,
+        enforce_order_ownership: bool | None = None,
     ):
         self.user_id = user_id
         self.client = client or self._build_default_client()
@@ -92,19 +81,21 @@ class EcomAgent:
             settings.temperature if temperature is None else temperature
         )
         self.session_path = session_path or self._derive_session_path(user_id, session_id)
-        # 阶段二 2.1：会话/记忆经 SessionStore/LTMStore 协议读写（可外置 Redis）
         self.session_store = session_store or LocalFileSessionStore(
             settings.session_dir,
-            exact_path=session_path,  # 沙箱等显式单文件场景
+            exact_path=session_path,
         )
-        self._state_version = 0  # 乐观锁版本（CAS）
+        self._state_version = 0
+        # 兼容保留：历史压缩水位已改为 token（ContextBuilder）；增量巩固由
+        # memory job 承担（close()/轮内不再做 LLM 巩固）
         self._consolidate_every = (
             settings.memory_consolidate_every if consolidate_every is None else consolidate_every
         )
-        self._consolidated_len = 0  # 已增量巩固到的消息位置
+        self._consolidated_len = 0
         self.history_threshold = settings.history_threshold
         self.history_keep_recent = settings.history_keep_recent
         self.max_react_steps = settings.max_react_steps
+        self.llm_max_tokens = settings.llm_max_tokens
 
         self.tool_manager = tool_manager or ToolManager(
             use_mcp=settings.mcp_enabled if use_mcp is None else use_mcp,
@@ -113,6 +104,7 @@ class EcomAgent:
         )
 
         from app.agent.memory import MemoryManager
+
         self.memory_manager = MemoryManager(
             client=self.client,
             model=self.model,
@@ -124,38 +116,42 @@ class EcomAgent:
         )
 
         from app.agent.skills import SkillManager
+
         self.skill_manager = skill_manager or SkillManager(
             skills_dir=settings.skills_dir,
             enabled=settings.skills_enabled,
         )
 
         self.raw_messages: list[dict] = []
-        self.summary: Optional[str] = None
-        # 阶段八：全量追加日志——压缩只裁剪 raw_messages（LLM 窗口），
-        # append_log 永续，SQL 正本据它做行式追加（历史压缩不丢正本）
+        self.summary: str | None = None
+        # 全量追加日志：压缩只裁剪模型窗口，append_log 永续（SQL 正本据它
+        # 行式追加，完整工具结果只进审计存储）
         self._append_log: list[dict] = []
         self._append_flushed = 0
-        # 4.5：思考/工具/结果逐条事件回调（SSE 流式）；None = 不推流
         self.event_callback = event_callback
         self._react_steps_count = 0
 
-        # Agent能力强化计划：工具批次执行器（pod 共享经注入；CLI/评估自建）
-        # + 请求级状态工厂（评估沙箱注入 on_outcomes 采集轨迹）
-        # 修复计划：自建时才负责 close（pod 共享交由 FastAPI lifespan 关闭）
         self._owns_tool_executor = tool_executor is None
-        self._tool_executor = tool_executor or ToolBatchExecutor()
+        self.tool_executor = tool_executor or ToolBatchExecutor()
         self._turn_state_factory = turn_state_factory
-        # 改造一/三：轮次预算与引用 verdict（每次 chat() 刷新）
-        self._turn_budget: Optional[TurnBudget] = None
-        self._last_citation_verdict: Optional[dict] = None
-        # 修复计划：写结果未知清单（indeterminate → 强制转人工 + handoff 对账）
+        # 写结果未知清单（indeterminate → handoff 对账）；finalize 后随 ctx 刷新
         self._indeterminate_writes: list[dict] = []
 
-        # 存储键 = 请求级 session_id（稳定：缺省 "" → session.json）；
-        # payload 里的 session_id（uuid）是会话身份，二者分离
+        # 流水线组件（阶段A）：上下文构建 / ReAct / 收尾 / 持久化
+        self.context_builder = ContextBuilder(
+            memory_manager=self.memory_manager,
+            skill_manager=self.skill_manager,
+            context_window_tokens=settings.context_window_tokens,
+        )
+        self._react_runner = ReactRunner(self)
+        self._finalizer = TurnFinalizer(TurnRepository(self))
+
+        self.current_turn_query = ""
+        self._last_turn_ctx = None  # 最近一轮 AgentTurnContext（观测/测试用）
+        self.current_confirmation = None  # 本轮退款确认判定（Review 修复）
+
         self._session_key = session_id or ""
         loaded = self.session_store.load(user_id, self._session_key)
-        # 3.1：session 归属校验（用户 B 拿用户 A 的 session_id → 403）
         if loaded is not None and loaded.user_id and loaded.user_id != user_id:
             raise SessionOwnershipError(
                 f"session {user_id}/{self._session_key} 属于用户 {loaded.user_id}"
@@ -168,17 +164,12 @@ class EcomAgent:
             self._state_version = loaded.version
             self.summary = loaded.summary
             self.raw_messages = loaded.messages
-            self._append_log = list(loaded.messages)  # 已入库历史不回灌
+            self._append_log = list(loaded.messages)
             self._append_flushed = len(self._append_log)
-            # 安全修复 P2：巩固水位随会话文档恢复（历史只在内存，重启归零
-            # → close()/兜底巩固对全量历史重复摘要）
             self._consolidated_len = loaded.consolidated_len
             if loaded.short_term_memory:
                 self.memory_manager.restore_stm(loaded.short_term_memory)
 
-        # 1.3：工具调用上下文（memory/skill 句柄随 Agent 实例走）
-        # 3.2：credentials（外部凭证）随 ctx 注入，永不进 prompt/日志
-        # 2.2：请求级归属强制开关（None=跟随全局配置；评测沙箱显式传 True）
         self.ctx = ToolContext(
             user_id=user_id,
             session_id=self.session_id,
@@ -197,10 +188,11 @@ class EcomAgent:
         else:
             self._turn_recorder = None
 
+    # ============================================================
+    # 构造辅助
+    # ============================================================
     @staticmethod
     def _build_default_client() -> OpenAI:
-        """兜底自建 client（生产路径 client 注入；安全修复 P2：显式 timeout
-        取代 SDK 默认 600s）。"""
         return OpenAI(
             api_key=settings.openai_api_key,
             base_url=settings.openai_base_url,
@@ -209,203 +201,261 @@ class EcomAgent:
         )
 
     @staticmethod
-    def _derive_session_path(user_id: str, session_id: Optional[str]) -> str:
-        """默认按 {session_dir}/{user_id}/{session_id}.json 派生；未给 session_id 用 session.json。"""
+    def _derive_session_path(user_id: str, session_id: str | None) -> str:
         return str(Path(settings.session_dir) / user_id / f"{session_id or 'session'}.json")
+
+    @property
+    def turn_recorder(self):
+        return self._turn_recorder
 
     @property
     def history_size(self) -> int:
         return len(self.raw_messages)
 
+    # ============================================================
+    # 主流程
+    # ============================================================
     def chat(self, user_input: str) -> CustomerServiceResponse:
-        """处理用户输入：ReAct 循环 → 结构化提取 → 返回结果。
-
-        改造一：chat() 起点确定 turn deadline，同时存 Agent 实例属性
-        （close 线程显式绑定用）与 ContextVar（本线程 LLM/工具调用用）。
-        """
+        """处理一轮：InputPolicy → ReAct(final_response) → TurnFinalizer。"""
         budget = TurnBudget.start(settings.turn_budget_seconds)
-        self._turn_budget = budget
+        ctx = AgentTurnContext(user_input=user_input, budget=budget)
+        ctx.sanitized_input = user_input
+        ctx.current_query = user_input
         token = bind_budget(budget)
         try:
-            return self._chat_locked(user_input, budget)
+            from app.observability.tracing import span
+
+            with span("agent.turn", turn_id=ctx.turn_id):
+                return self._chat_pipeline(ctx)
         finally:
             reset_budget(token)
 
-    def _chat_locked(self, user_input: str, budget: TurnBudget) -> CustomerServiceResponse:
+    def _chat_pipeline(self, ctx: AgentTurnContext) -> CustomerServiceResponse:
         state = (
             self._turn_state_factory()
             if self._turn_state_factory is not None
             else ToolTurnState(event_callback=self.event_callback)
         )
-        self._turn_state = state
-        self._last_citation_verdict = None
-        self._indeterminate_writes = []
-        self._current_query = user_input  # 改造四：记忆相关性 query（显式传入）
-        start = len(self.raw_messages)
+        # 写状态机唯一实例：执行器拦截与终答校验共用（ctx 与 state 同源）
+        ctx.write_ops = state.write_tracker()
+        self._react_steps_count = 0
+        self.current_turn_query = ctx.user_input
 
-        # 输入侧护栏（3.5 接线）：注入 → 零 LLM 拦截并转人工；PII → 脱敏后继续
-        if guardrail_enabled(getattr(self, "ctx", None)):
-            verdict = check_input(user_input)
-            if verdict.blocked:
-                return self._guardrail_block_response(user_input, verdict, start)
-            if verdict.masked:
-                user_input = verdict.text
-
-        # 业务范围闸门：非业务/闲聊 → 固定引导话术（不转人工；先于任何工具/主 LLM）
-        if scope_gate_enabled(getattr(self, "ctx", None)):
-            verdict = check_scope(user_input, self.client, self.model)
-            if not verdict.in_scope:
-                return self._scope_block_response(user_input, verdict, start)
-
-        self.raw_messages.append({"role": "user", "content": user_input})
-
+        # —— 输入策略（唯一实现；拦截走规则响应，零 LLM）——
         try:
-            final_text = self._react_loop(state, budget)
+            decision = evaluate_input(
+                ctx.user_input, self.ctx, client=self.client, model=self.model,
+            )
+        except LLMBudgetExhausted:
+            # 预算耗尽连 scope 判定都拒绝 → 直接确定性 fallback
+            record_budget_exhausted("input")
+            ctx.budget_fallback = True
+            self._open_turn_window(ctx, ctx.user_input)
+            return self._finalizer.finalize_rule_response(
+                ctx, BUDGET_FALLBACK_REPLY, requires_human=True,
+                handoff_reason="budget_exhausted",
+            )
+        ctx.input_action = decision.action
+        ctx.input_reason = decision.reason
+        if decision.action == "guardrail_block":
+            log.warning("guardrail.block user=%s reason=%s", self.user_id, decision.reason)
+            self._open_turn_window(ctx, ctx.user_input)
+            return self._finalizer.finalize_rule_response(
+                ctx, decision.reply, requires_human=True,
+                handoff_reason="guardrail_block",
+            )
+        if decision.action == "scope_block":
+            log.info("scope.block user=%s reason=%s", self.user_id, decision.reason)
+            self._open_turn_window(ctx, ctx.user_input)
+            return self._finalizer.finalize_rule_response(
+                ctx, SCOPE_BLOCK_REPLY, requires_human=False,
+            )
+        ctx.sanitized_input = decision.text
+        ctx.current_query = decision.text
+        self.current_turn_query = decision.text
+
+        # —— 退款确认闸门（Review 修复：服务端三态判定，程序层绝不自行执行）——
+        refund_clarification = self._judge_refund_confirmation(ctx)
+        if refund_clarification is not None:
+            # 多笔待确认且未带订单号 → 确定性澄清问题（零 LLM，不执行写操作）
+            self._open_turn_window(ctx, ctx.sanitized_input)
+            return self._finalizer.finalize_rule_response(
+                ctx, refund_clarification.clarification, requires_human=False,
+                handoff_reason="refund_confirmation_clarify",
+            )
+        # 执行器内部通道载荷（confirm 注入 / ambiguous 禁写）；
+        # 判定本体在 ctx.refund_decision（confirm/cancel/ambiguous/none）
+        state.refund_confirm = self._state_refund_confirm(ctx.refund_decision)
+
+        # —— 用户消息进窗口（审计切片同步记录）——
+        self._open_turn_window(ctx, ctx.sanitized_input)
+
+        # —— ReAct 循环（final_response 终止协议）——
+        try:
+            final = self._react_runner.run(ctx, state)
         except LLMBudgetExhausted:
             record_budget_exhausted("react")
-            return self._finish_budget_fallback(user_input, start)
-        if budget.expired():
-            # 预算耗尽路径：不调 LLM 强制收尾/提取，返回确定性 fallback
-            return self._finish_budget_fallback(user_input, start)
-        # 2.5：每轮工具调用数直方图（评估报告与生产看板同源）
-        from app.observability.metrics import record_tool_calls_per_turn
+            ctx.budget_fallback = True
+            return self._finalizer.finalize_rule_response(
+                ctx, BUDGET_FALLBACK_REPLY, requires_human=True,
+                handoff_reason="budget_exhausted",
+            )
+        except ForcedFinalizeFailed as e:
+            log.warning("react.forced_finalize_failed user=%s err=%s", self.user_id, e)
+            ctx.forced_finalize_failed = True
+            ctx.budget_fallback = True  # 无法生成有效终答 → 可靠度 0.0
+            from app.observability.metrics import record_turn_missing_final
+
+            record_turn_missing_final()
+            return self._finalizer.finalize_rule_response(
+                ctx, BUDGET_FALLBACK_REPLY, requires_human=True,
+                handoff_reason="forced_finalize_failed",
+            )
+        if ctx.budget.expired():
+            record_budget_exhausted("react")
+            ctx.budget_fallback = True
+            from app.observability.metrics import record_turn_missing_final
+
+            record_turn_missing_final()
+            return self._finalizer.finalize_rule_response(
+                ctx, BUDGET_FALLBACK_REPLY, requires_human=True,
+                handoff_reason="budget_exhausted",
+            )
+
+        ctx.final_args = final  # Review 修复：唯一成功路径 = final_response 协议
+        ctx.extra_indeterminate = list(state.indeterminate_writes)
+        ctx.sources = set(state.sources)
+        ctx.timings.react_ms = ctx.elapsed_ms()
+        self._react_steps_count = ctx.react_steps
+
+        # —— 指标（每轮工具数/步数；Phase G 补 token/工具码）——
+        from app.observability.metrics import (
+            record_react_steps,
+            record_tool_calls_per_turn,
+            record_turn_usage,
+        )
+
         record_tool_calls_per_turn(sum(state.per_name_counts.values()))
-        try:
-            result = self._extract_structured_response(final_text)
-        except LLMBudgetExhausted:
-            record_budget_exhausted("extract")
-            return self._finish_budget_fallback(user_input, start)
+        record_react_steps(ctx.react_steps)
+        record_turn_usage(ctx, state)
 
-        # 改造三：引用真实性校验——先于落库与演进采集（单/多 Agent 同约定）
-        from app.agent.citations import apply_citation_policy
-
-        self._last_citation_verdict = apply_citation_policy(result, state.sources)
-
-        # 修复计划：写结果未知 → 强制转人工（不改已生成回复，只改派发信号）
-        self._apply_indeterminate(result, state)
-
-        # 业务升级规则（2026-08 评测后接线）：强投诉 → 归为投诉并转人工；
-        # 强购买意图 → 转人工（平台无下单工具）
-        if _has_complaint_signal(user_input):
-            result.intent = IntentType.COMPLAINT
-            result.requires_human = True
-            result.confidence = round(min(result.confidence, 0.5), 4)
-        elif _has_purchase_signal(user_input):
-            result.requires_human = True
-            result.confidence = round(min(result.confidence, 0.5), 4)
-
-        # 辅助任务（STM/摘要/增量 LTM）：可跳过阶段——预算耗尽绝不毁掉已生成回复
-        try:
-            self.memory_manager.update_short_term(self.raw_messages[-6:])
-        except LLMBudgetExhausted:
-            record_budget_exhausted("stm")
-            log.info("aux.stm_skipped 轮次预算耗尽，短期记忆更新跳过")
-
-        self.raw_messages.append(
-            {"role": "assistant", "content": json.dumps(result.model_dump(), ensure_ascii=False)}
-        )
-
-        self._record_turn(user_input, result, start)
-        # 阶段八：压缩前把本轮消息快照进追加日志（压缩裁剪窗口不裁正本）
-        self._append_log.extend(self.raw_messages[start:])
-
-        if len(self.raw_messages) > self.history_threshold:
-            try:
-                self._compress_history()
-            except LLMBudgetExhausted:
-                record_budget_exhausted("summary")
-                log.info("aux.summary_skipped 轮次预算耗尽，历史摘要跳过")
-
-        try:
-            self._maybe_consolidate_incremental()
-        except LLMBudgetExhausted:
-            record_budget_exhausted("ltm")
-            log.info("aux.ltm_skipped 轮次预算耗尽，增量巩固跳过")
-        self._save_session()
+        # —— 收尾管线（固定顺序 1-7）——
+        result = self._finalizer.finalize(ctx)
+        self._indeterminate_writes = list(ctx.indeterminate_writes)
+        self._last_turn_ctx = ctx
         return result
 
-    def _apply_indeterminate(self, result, state: ToolTurnState) -> None:
-        """写结果未知（indeterminate）：强制转人工 + 压置信，操作清单留给 handoff。"""
-        if not state.indeterminate_writes:
-            return
-        self._indeterminate_writes = list(state.indeterminate_writes)
-        result.requires_human = True
-        result.confidence = round(min(result.confidence, 0.5), 4)
-        log.warning(
-            "tool.indeterminate user=%s writes=%s", self.user_id,
-            self._indeterminate_writes,
-        )
-        from app.observability.metrics import record_handoff
+    # ============================================================
+    # 流水线支撑（供 ReactRunner/TurnRepository 调用）
+    # ============================================================
+    def _confirmation_store(self):
+        from app.agent.tools.refund import _confirmation_store
 
-        record_handoff("tool_indeterminate")
+        return _confirmation_store()
 
-    def _guardrail_block_response(
-        self, user_input: str, verdict, start: int
-    ) -> CustomerServiceResponse:
-        """输入侧护栏拦截（3.5 接线）：固定拒绝话术 + 转人工，不消耗 LLM 预算。
+    def _judge_refund_confirmation(self, ctx: AgentTurnContext):
+        """服务端退款确认三态判定（Review 修复）。
 
-        复用零 LLM 收尾的落库/记录流程；写入占位 assistant 消息供会话还原。
+        返回 None = 正常继续（confirm/cancel/none/单笔 ambiguous）；
+        返回 ConfirmationDecision（含 clarification）= 确定性澄清规则响应。
         """
-        log.warning("guardrail.block user=%s reason=%s", self.user_id, verdict.reason)
-        result = CustomerServiceResponse(
-            intent=IntentType.OTHER,
-            confidence=0.1,
-            reply=(
-                "抱歉，您的消息包含疑似指令注入/敏感内容，出于安全考虑已被拦截，"
-                "本条消息已转接人工客服处理，请稍候。"
-            ),
-            requires_human=True,
+        from app.agent.refund_gate import (
+            cancel_pending,
+            get_session_pending,
+            judge_refund_confirmation,
+            migrate_legacy_metadata_tokens,
         )
-        self.raw_messages.append({"role": "user", "content": user_input})
-        self.raw_messages.append(
-            {"role": "assistant", "content": json.dumps(result.model_dump(), ensure_ascii=False)}
-        )
-        self._record_turn(user_input, result, start)
-        self._append_log.extend(self.raw_messages[start:])
-        self._save_session()
-        return result
+        from app.observability.metrics import record_refund_confirmation_blocked
 
-    def _scope_block_response(
-        self, user_input: str, verdict, start: int,
-    ) -> CustomerServiceResponse:
-        """业务范围闸门拦截：非业务/闲聊 → 固定引导话术（不转人工）。
+        store = self._confirmation_store()
+        # 旧会话 metadata 中未过期 token → 服务端内部迁移（模型上下文剔除
+        # 由 pending_write_note 层保证，token 永不回注）
+        for msg in reversed(self.raw_messages):
+            if msg.get("role") == "assistant" and "tool_calls" not in msg:
+                legacy = (msg.get("metadata") or {}).get("pending_writes") or []
+                if any(entry.get("confirmation_token") for entry in legacy
+                       if isinstance(entry, dict)):
+                    migrate_legacy_metadata_tokens(
+                        store, self.user_id, self.session_id, legacy,
+                    )
+                break
 
-        复用零 LLM 收尾的落库/记录流程；写入占位 assistant 消息供会话还原。
-        """
-        log.info("scope.block user=%s reason=%s", self.user_id, verdict.reason)
-        result = CustomerServiceResponse(
-            intent=IntentType.OTHER,
-            confidence=0.1,
-            reply=SCOPE_BLOCK_REPLY,
-            requires_human=False,
-        )
-        self.raw_messages.append({"role": "user", "content": user_input})
-        self.raw_messages.append(
-            {"role": "assistant", "content": json.dumps(result.model_dump(), ensure_ascii=False)}
-        )
-        self._record_turn(user_input, result, start)
-        self._append_log.extend(self.raw_messages[start:])
-        self._save_session()
-        return result
+        pending = get_session_pending(store, self.user_id, self.session_id)
+        gate = judge_refund_confirmation(ctx.sanitized_input, pending)
+        ctx.refund_decision = gate
+        self.current_confirmation = gate
+        if gate.action == "cancel" and gate.payload is not None:
+            cancel_pending(store, self.user_id, self.session_id, gate.payload)
+            record_refund_confirmation_blocked("cancel")
+            log.info(
+                "refund.confirmation_cancelled user=%s order=%s",
+                self.user_id, gate.matched_order_id,
+            )
+        elif gate.action == "confirm":
+            log.info(
+                "refund.confirmation_confirmed user=%s order=%s",
+                self.user_id, gate.matched_order_id,
+            )
+        elif gate.action == "ambiguous" and gate.clarification:
+            record_refund_confirmation_blocked("multiple_pending")
+            return gate
+        elif gate.action == "ambiguous":
+            record_refund_confirmation_blocked("ambiguous")
+        return None
 
-    def _finish_budget_fallback(self, user_input: str, start: int) -> CustomerServiceResponse:
-        """零 LLM 收尾：固定话术 + requires_human；STM/摘要/LTM 辅助任务跳过。"""
-        log.warning("turn.budget_exhausted user=%s", self.user_id)
-        result = budget_fallback_response()
-        self.raw_messages.append(
-            {"role": "assistant", "content": json.dumps(result.model_dump(), ensure_ascii=False)}
-        )
-        self._record_turn(user_input, result, start)
-        self._append_log.extend(self.raw_messages[start:])
-        self._save_session()
-        return result
+    @staticmethod
+    def _state_refund_confirm(gate) -> dict | None:
+        """执行器内部通道载荷：confirm 注入凭证；取消/歧义均禁写。"""
+        if gate is None:
+            return None
+        if gate.action == "confirm" and gate.payload is not None:
+            return {
+                "action": "confirm",
+                "token": gate.payload.token,
+                "refund_id": gate.payload.refund_id,
+                "order_id": gate.payload.order_id,
+                "reason": gate.payload.reason,
+            }
+        if gate.action in ("ambiguous", "cancel"):
+            # cancel 不能返回 None：否则模型会在同一轮重新调用 apply_refund
+            # 发起一笔新的待确认请求，绕过用户刚刚的取消意图。
+            return {"action": gate.action}
+        return None
 
-    def _save_session(self) -> None:
-        """经 SessionStore 保存（CAS；版本冲突抛 SessionConflictError → 409）。
+    def _open_turn_window(self, ctx: AgentTurnContext, user_text: str) -> None:
+        """本轮窗口起点：追加用户消息并记录审计切片起点。"""
+        ctx.slice_start = len(self.raw_messages)
+        message = {"role": "user", "content": user_text}
+        self.raw_messages.append(message)
+        ctx.full_turn_messages.append(message)
 
-        new_messages：未入库的增量（整包覆写型 store 忽略；SQL store 行式追加）。
+    def emit_status(self, text: str, step: int = 0) -> None:
+        """SSE thought 事件：受控状态说明（不透出模型原始思考）。"""
+        log.info("react.status step=%s", step)
+        self._emit_event("thought", {"text": text, "step": step})
+
+    def log_tool_result(self, name: str, sequence: int, display: str) -> None:
+        """工具结果审计日志：摘要展示（完整结果不进日志）。"""
+        log.info("react.tool_result", name=name, sequence=sequence, display=display)
+
+    def append_audit_messages(self, messages: list[dict]) -> None:
+        """审计切片进 append_log（完整工具结果只进审计存储）。"""
+        self._append_log.extend(messages)
+
+    def flush_session(self, enqueue_memory_job: bool = False,
+                      turn_messages: list[dict] | None = None,
+                      turn_id: str = "") -> None:
+        """经 SessionStore 保存（CAS）；SQL 同事务入队 memory job。
+
+        非 SQL 开发模式（文件/Redis）：走轻量文件队列（阶段F），任务条目
+        携带本轮待巩固消息负载（Review 修复：不再依赖可能回退的消息长度）。
         """
         pending = self._append_log[self._append_flushed:]
+        supports_jobs = getattr(self.session_store, "memory_jobs_enabled", False)
+        # idle consolidator is the explicit fallback when the durable worker is
+        # disabled; do not leave a second queue behind for a future worker to
+        # replay the same turns.
+        queue_memory_job = enqueue_memory_job and settings.memory_job_worker_enabled
         updated = self.session_store.save(
             self.user_id,
             self._session_key,
@@ -419,37 +469,78 @@ class EcomAgent:
                 consolidated_len=self._consolidated_len,
             ),
             new_messages=pending,
+            enqueue_memory_job=queue_memory_job and bool(pending),
         )
         self._state_version = updated.version
         self._append_flushed = len(self._append_log)
+        if queue_memory_job and pending and not supports_jobs:
+            from pathlib import Path as _P
 
-    def _maybe_consolidate_incremental(self) -> None:
-        """2.3：每 N 轮增量巩固 LTM——close() 在 K8s 里不可靠，这是主路径。"""
-        if not self.memory_manager.memory_enabled:
-            return
-        every = self._consolidate_every
-        if not every or every <= 0:
-            return
-        if len(self.raw_messages) - self._consolidated_len >= every:
-            self.memory_manager.consolidate_to_long_term(
-                self.raw_messages[self._consolidated_len:], self.summary
+            from app.agent.context_builder import fold_history
+            from app.agent.memory.jobs import FileMemoryJobStore
+
+            slice_msgs = turn_messages if turn_messages is not None else pending
+            # 负载只含模型可见消息（user + 最终 assistant），工具中间消息不进巩固
+            payload = [
+                m for m in fold_history(slice_msgs)
+                if m.get("role") in ("user", "assistant")
+                and "tool_calls" not in m
+                and str(m.get("content") or "").strip()
+            ]
+            store = FileMemoryJobStore(str(_P(settings.memory_dir) / "jobs"))
+            store.enqueue(
+                session_key=f"{self.user_id}/{self._session_key or 'session'}",
+                user_id=self.user_id,
+                through_seq=len(self.raw_messages),
+                session_uuid=self.session_id,
+                messages=payload,
+                turn_id=turn_id,
             )
-            self._consolidated_len = len(self.raw_messages)
 
-    def _record_turn(self, user_input: str, result, start: int) -> None:
-        """第10期：本轮轮次切片落盘（脱敏），失败不影响主流程。"""
-        if self._turn_recorder is None:
+    def compress_history_by_tokens(self, folded: list[dict]) -> None:
+        """token 水位压缩：老消息折叠视图摘要，正本只保留窗口尾部。
+
+        folded 与 raw_messages 一一对应（fold 不增删消息），split 索引通用。
+        """
+        from app.agent.token_budget import budget_shares, trim_messages_to_budget
+
+        shares = budget_shares(self.context_builder._window)
+        target = int(shares["dialog"] * 0.6)
+        kept = trim_messages_to_budget(folded, target)
+        split = len(folded) - len(kept)
+        if split <= 0:
             return
-        self._turn_recorder.record(
-            session_id=self.session_id,
-            mode="single",
-            question=user_input,
-            structured_reply=result,
-            turn_slice=self.raw_messages[start:],
-            user_id=self.user_id,
+        old_messages = folded[:split]
+        from app.agent.summarizer import summarize
+
+        new_summary = summarize(
+            client=self.client,
+            model=self.model,
+            old_messages=old_messages,
+            prev_summary=self.summary,
+        )
+        self.summary = new_summary
+        self.raw_messages = list(self.raw_messages[split:])
+        # Review 修复：SQL 水位语义 = chat_messages.seq（memory_consolidated_seq），
+        # 历史压缩只裁模型窗口，不得把水位写小（SQL save 侧另有数据库内
+        # 单调 clamp 兜底）；文件模式水位随 job 负载携带，不再依赖该值。
+        log.info(
+            "history.compressed",
+            compressed=len(old_messages),
+            summary_len=len(new_summary),
+        )
+        self._emit_event(
+            "compressed", {"count": len(old_messages), "summary_len": len(new_summary)},
         )
 
+    # ============================================================
+    # 会话管理
+    # ============================================================
     def reset(self):
+        # Review 修复：以重置前的会话标识清理（确认存储按 session_id(uuid)
+        # 注册；SQL memory_jobs 随 delete 同事务清理；文件模式按 session_key）
+        old_session_id = self.session_id
+        old_session_key = self._session_key or "session"
         self.raw_messages = []
         self.summary = None
         self.session_id = uuid.uuid4().hex
@@ -460,217 +551,37 @@ class EcomAgent:
         self._append_log = []
         self._append_flushed = 0
         self.memory_manager.reset_short_term()
-        self.session_store.delete(self.user_id, self._session_key)
+        self.current_confirmation = None
+        self.session_store.delete(self.user_id, old_session_key)
+        try:
+            from app.agent.refund_gate import cancel_pending, get_session_pending
+
+            store = self._confirmation_store()
+            for key in (old_session_id, old_session_key):
+                for entry in get_session_pending(store, self.user_id, key):
+                    cancel_pending(store, self.user_id, key, entry)
+        except Exception:
+            log.warning("reset.refund_pending_cleanup_failed", exc_info=True)
+        try:
+            from app.agent.memory.jobs import purge_session_file_jobs
+
+            purge_session_file_jobs(self.user_id, old_session_key)
+        except Exception:
+            log.warning("reset.memory_jobs_cleanup_failed", exc_info=True)
 
     def save(self) -> None:
-        self._save_session()
+        self.flush_session()
 
     def close(self):
-        # 只巩固未增量覆盖的尾部（2.3 增量后 close 只是兜底）。
-        # 改造一（评审·三轮1）：close 在另一 worker 线程执行，无法继承
-        # chat() 内的 ContextVar——这里从实例属性显式绑定并在 finally reset。
-        # 预算耗尽 → 巩固 LLM 调用被拒（辅助任务跳过），不拖垮收尾。
-        token = bind_budget(self._turn_budget)
-        try:
-            self.memory_manager.consolidate_to_long_term(
-                self.raw_messages[self._consolidated_len:], self.summary
-            )
-        except LLMBudgetExhausted:
-            log.info("close.budget_exhausted: LTM 巩固跳过（本轮预算已耗尽）")
-        except Exception:  # noqa: BLE001 —— 巩固失败不影响连接清理
-            log.warning("close.consolidate_failed", exc_info=True)
-        finally:
-            reset_budget(token)
-        self.tool_manager.close()
-        # 修复计划：自建执行器由 Agent 所有者关闭（pod 共享由 lifespan 负责）
-        if self._owns_tool_executor:
-            self._tool_executor.close()
+        """阶段F：只释放本地资源，不再调用 LLM。
 
-    def _print_thought(self, text: str) -> None:
-        log.info("react.thought", text=text)
-        self._emit_event("thought", {"text": text})
-
-    def _react_loop(self, state: ToolTurnState, budget: TurnBudget) -> str:
-        """ReAct 循环：调用 LLM → 执行工具 → 观察结果 → 重复，直到模型给出最终回答。
-
-        工具批次经 ToolBatchExecutor（原序分段并行 + 重复拦截 + 预算规则）；
-        每步前检查轮次预算，耗尽抛 LLMBudgetExhausted（上层零 LLM fallback）。
+        复杂事实巩固由持久化 memory job 异步承担（SQL 同事务入队）；
+        文件/Redis 开发模式由轻量队列 + idle scanner 漏单修复兜底。
         """
-        self._react_steps_count = 0
-        for step in range(self.max_react_steps):
-            self._react_steps_count = step + 1
-            if budget.expired():
-                raise LLMBudgetExhausted("轮次预算耗尽，停止 ReAct 循环")
-            messages = self._build_messages(self._current_query)
-
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=messages,
-                temperature=self.temperature,
-                tools=self.tool_manager.tool_definitions,
-            )
-            choice = response.choices[0]
-            assistant_msg = choice.message
-
-            if assistant_msg.content:
-                self._print_thought(assistant_msg.content)
-
-            if not assistant_msg.tool_calls:
-                content = assistant_msg.content or ""
-                self.raw_messages.append({"role": "assistant", "content": content})
-                return content
-
-            msg_dict = {"role": "assistant", "content": assistant_msg.content}
-            msg_dict["tool_calls"] = [
-                {
-                    "id": tc.id,
-                    "type": "function",
-                    "function": {
-                        "name": tc.function.name,
-                        "arguments": tc.function.arguments,
-                    },
-                }
-                for tc in assistant_msg.tool_calls
-            ]
-            self.raw_messages.append(msg_dict)
-
-            outcomes = self._tool_executor.execute(
-                [
-                    {
-                        "id": tc.id,
-                        "name": tc.function.name,
-                        "arguments": tc.function.arguments,
-                    }
-                    for tc in assistant_msg.tool_calls
-                ],
-                state, self.ctx, self.tool_manager, budget=budget,
-            )
-            for oc in outcomes:
-                display = oc.result if len(oc.result) <= 300 else oc.result[:300] + "..."
-                log.info("react.tool_result", name=oc.name,
-                         sequence=oc.sequence, display=display)
-                self.raw_messages.append({
-                    "role": "tool",
-                    "tool_call_id": oc.call_id,
-                    "content": oc.result,
-                })
-
-        if budget.expired():
-            raise LLMBudgetExhausted("轮次预算耗尽，强制收尾被拒绝")
-        messages = self._build_messages(self._current_query)
-        response = self.client.chat.completions.create(
-            model=self.model,
-            messages=messages,
-            temperature=self.temperature,
-        )
-        content = response.choices[0].message.content or ""
-        self.raw_messages.append({"role": "assistant", "content": content})
-        return content
-
-    def _extract_structured_response(self, text: str) -> CustomerServiceResponse:
-        """从最终文本中提取结构化元数据（意图、置信度等）。"""
-        try:
-            response = self.client.beta.chat.completions.parse(
-                model=self.model,
-                messages=[
-                    {
-                        "role": "system",
-                        "content": (
-                            "基于以下客服回复内容，提取结构化信息。"
-                            "reply 字段直接使用原文，不要修改或缩减。"
-                        ),
-                    },
-                    {"role": "user", "content": text},
-                ],
-                temperature=0.0,
-                response_format=CustomerServiceResponse,
-            )
-            return response.choices[0].message.parsed
-        except Exception:
-            return self._extract_structured_fallback(text)
-
-    def _extract_structured_fallback(self, text: str) -> CustomerServiceResponse:
-        """当 response_format 不被 API 支持时，用 prompt 引导 JSON 输出。"""
-        intent_values = ", ".join(f'"{e.value}"' for e in IntentType)
-        response = self.client.chat.completions.create(
-            model=self.model,
-            messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "基于以下客服回复内容，提取结构化信息并输出 JSON。\n"
-                        "reply 字段直接使用原文，不要修改或缩减。\n\n"
-                        "必须严格按照以下 JSON 格式输出（不要加 markdown 代码块）：\n"
-                        "{\n"
-                        f'  "intent": <从以下选择: {intent_values}>,\n'
-                        '  "confidence": <0.0到1.0的浮点数>,\n'
-                        '  "reply": <原文回复内容>,\n'
-                        '  "requires_human": <true或false>,\n'
-                        '  "follow_up_question": <追问问题或null>\n'
-                        "}"
-                    ),
-                },
-                {"role": "user", "content": text},
-            ],
-            temperature=0.0,
-        )
-        raw = response.choices[0].message.content.strip()
-        if raw.startswith("```"):
-            raw = raw.split("\n", 1)[-1].rsplit("```", 1)[0].strip()
-        return CustomerServiceResponse.model_validate_json(raw)
-
-    def _build_messages(self, query: str = "") -> list[dict]:
-        system_content = SYSTEM_PROMPT
-        if self.skill_manager and self.skill_manager.enabled:
-            system_content += self.skill_manager.build_catalog_prompt()
-
-        messages: list[dict] = [
-            {"role": "system", "content": system_content}
-        ]
-        # 改造四：query = 本轮原始 user_input（记忆相关性筛选）
-        messages.extend(self.memory_manager.build_memory_prompt_sections(query))
-        if self.summary:
-            messages.append(
-                {
-                    "role": "system",
-                    "content": f"以下是此前对话的摘要，用于延续上下文记忆：\n{self.summary}",
-                }
-            )
-        messages.extend(self.raw_messages)
-        return messages
-
-    def _compress_history(self) -> None:
-        keep = self.history_keep_recent
-        split = len(self.raw_messages) - keep
-        while split > 0 and self.raw_messages[split].get("role") in ("tool",):
-            split -= 1
-        if split <= 0:
-            return
-        old_messages = self.raw_messages[:split]
-        recent = self.raw_messages[split:]
-
-        new_summary = summarize(
-            client=self.client,
-            model=self.model,
-            old_messages=old_messages,
-            prev_summary=self.summary,
-        )
-        self.summary = new_summary
-        self.raw_messages = recent
-        self._consolidated_len = 0  # 增量巩固窗口随压缩重置
-        log.info(
-            "history.compressed",
-            compressed=len(old_messages),
-            summary_len=len(new_summary),
-        )
-        self._emit_event(
-            "compressed", {"count": len(old_messages), "summary_len": len(new_summary)},
-        )
+        self.tool_manager.close()
+        if self._owns_tool_executor:
+            self.tool_executor.close()
 
     def _emit_event(self, event_type: str, data: dict) -> None:
-        """4.5 SSE：回调由服务层注入（线程安全由调用方保证）。"""
         if self.event_callback is not None:
             self.event_callback(event_type, data)
-
-    # 说明：tool_call / tool_result 的 SSE 事件与日志已迁移到
-    # ToolBatchExecutor（带 tool_call_id + sequence）；Agent 不再自行发工具事件。

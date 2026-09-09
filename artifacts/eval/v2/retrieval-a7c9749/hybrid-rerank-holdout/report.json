@@ -1,0 +1,3565 @@
+{
+  "protocol": "retrieval-eval-v1",
+  "variant": "hybrid-rerank",
+  "dataset": "E:\\ea\\tmp\\wt-a7c9749\\app\\evaluation\\holdout_cases.json",
+  "top_k": 5,
+  "thresholds": {
+    "min_score": 0.052327625,
+    "min_score_hard": 0.052327625,
+    "hard_threshold_overridden": false,
+    "hard_threshold_policy": "same_as_min_score",
+    "online_threshold_match": true,
+    "min_positive_recall": 0.95,
+    "min_easy_recall": 0.98,
+    "min_hard_recall": 0.8,
+    "min_mrr": 0.9,
+    "min_ndcg": 0.9,
+    "min_negative_rejection": 0.9
+  },
+  "summary": {
+    "cases": 120,
+    "positive": {
+      "cases": 97,
+      "recall_at_k": 0.8762886597938144,
+      "mrr": 0.8096219931271478,
+      "ndcg_at_k": 0.8267644365252486
+    },
+    "easy": {
+      "cases": 80,
+      "recall_at_k": 0.9375,
+      "mrr": 0.8629166666666667,
+      "ndcg_at_k": 0.8820652573672207
+    },
+    "hard": {
+      "cases": 17,
+      "recall_at_k": 0.5882352941176471,
+      "mrr": 0.5588235294117647,
+      "ndcg_at_k": 0.5665252796218505
+    },
+    "negative": {
+      "cases": 23,
+      "rejection_rate": 0.8260869565217391,
+      "false_accept_rate": 0.17391304347826086
+    }
+  },
+  "cases": [
+    {
+      "id": "holdout_base_01_1",
+      "query": "数码产品的保修期",
+      "expected": [
+        "3C数码类目规则.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "售后维修与延保.md",
+        "3C数码类目规则.md",
+        "常见问题FAQ.md",
+        "车品配件类目规则.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 10,
+      "collapsed_hit_keys": [
+        "售后维修与延保#p00",
+        "3C数码类目规则#p03",
+        "3C数码类目规则#p01",
+        "常见问题FAQ#p09",
+        "车品配件类目规则#p01"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.92696756,
+      "accepted_hits": 5,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 0.5,
+      "ndcg_at_k": 0.6309297535714575
+    },
+    {
+      "id": "holdout_base_01_2",
+      "query": "二手数码可以退吗",
+      "expected": [
+        "3C数码类目规则.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "3C数码类目规则.md",
+        "售后维修与延保.md",
+        "美妆个护类目规则.md",
+        "车品配件类目规则.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 9,
+      "collapsed_hit_keys": [
+        "3C数码类目规则#p02",
+        "3C数码类目规则#p00",
+        "售后维修与延保#p03",
+        "美妆个护类目规则#p03",
+        "车品配件类目规则#p01"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.72535694,
+      "accepted_hits": 5,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_base_02_1",
+      "query": "评价返现是真的吗",
+      "expected": [
+        "买家评价与晒单规则.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "买家评价与晒单规则.md",
+        "纠纷仲裁与举报规则.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 2,
+      "collapsed_hit_keys": [
+        "买家评价与晒单规则#p03",
+        "纠纷仲裁与举报规则#p02"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.88856554,
+      "accepted_hits": 2,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_base_02_2",
+      "query": "晒单有什么奖励",
+      "expected": [
+        "买家评价与晒单规则.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "买家评价与晒单规则.md",
+        "包装与发货规范.md",
+        "会员权益.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 3,
+      "collapsed_hit_keys": [
+        "买家评价与晒单规则#p01",
+        "包装与发货规范#p02",
+        "会员权益#p05"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.9799382,
+      "accepted_hits": 3,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_base_03_1",
+      "query": "建材商品怎么退换",
+      "expected": [
+        "五金建材类目规则.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "五金建材类目规则.md",
+        "退换货政策.md",
+        "家居家纺类目规则.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 7,
+      "collapsed_hit_keys": [
+        "五金建材类目规则#p02",
+        "五金建材类目规则#p00",
+        "退换货政策#p06",
+        "退换货政策#p05",
+        "家居家纺类目规则#p00"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.7779754,
+      "accepted_hits": 5,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_base_03_2",
+      "query": "五金类目的质保",
+      "expected": [
+        "五金建材类目规则.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "五金建材类目规则.md",
+        "家居家纺类目规则.md",
+        "3C数码类目规则.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 11,
+      "collapsed_hit_keys": [
+        "五金建材类目规则#p01",
+        "五金建材类目规则#p03",
+        "家居家纺类目规则#p02",
+        "五金建材类目规则#p02",
+        "3C数码类目规则#p03"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.97068775,
+      "accepted_hits": 5,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_base_04_1",
+      "query": "价保怎么申请",
+      "expected": [
+        "价保与赔付规则.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "价保与赔付规则.md",
+        "图书文教类目规则.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 8,
+      "collapsed_hit_keys": [
+        "价保与赔付规则#p03",
+        "价保与赔付规则#p01",
+        "价保与赔付规则#p02",
+        "价保与赔付规则#p00",
+        "图书文教类目规则#p01"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.44450444,
+      "accepted_hits": 5,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_base_04_2",
+      "query": "哪些商品支持价保",
+      "expected": [
+        "价保与赔付规则.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "优惠券与促销规则.md",
+        "商品质检与溯源.md",
+        "常见问题FAQ.md",
+        "百亿补贴规则.md",
+        "价保与赔付规则.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 9,
+      "collapsed_hit_keys": [
+        "优惠券与促销规则#p03",
+        "商品质检与溯源#p01",
+        "常见问题FAQ#p04",
+        "百亿补贴规则#p00",
+        "价保与赔付规则#p00"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.35042137,
+      "accepted_hits": 5,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 0.2,
+      "ndcg_at_k": 0.38685280723454163
+    },
+    {
+      "id": "holdout_base_05_1",
+      "query": "企业采购有优惠吗",
+      "expected": [
+        "企业采购与团购.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "企业采购与团购.md",
+        "礼品卡与储值卡.md",
+        "发票与开票规则.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 6,
+      "collapsed_hit_keys": [
+        "企业采购与团购#p00",
+        "企业采购与团购#p03",
+        "企业采购与团购#p01",
+        "礼品卡与储值卡#p01",
+        "发票与开票规则#p02"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.8818186,
+      "accepted_hits": 5,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_base_05_2",
+      "query": "团购的起订量是多少",
+      "expected": [
+        "企业采购与团购.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "企业采购与团购.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 1,
+      "collapsed_hit_keys": [
+        "企业采购与团购#p01"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.083890386,
+      "accepted_hits": 1,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_base_06_1",
+      "query": "优惠券怎么领取",
+      "expected": [
+        "优惠券与促销规则.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "优惠券与促销规则.md",
+        "店铺粉丝与会员.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 3,
+      "collapsed_hit_keys": [
+        "优惠券与促销规则#p00",
+        "优惠券与促销规则#p02",
+        "店铺粉丝与会员#p00"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.2645483,
+      "accepted_hits": 3,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_base_06_2",
+      "query": "促销活动的规则",
+      "expected": [
+        "优惠券与促销规则.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "大促活动总规则.md",
+        "优惠券与促销规则.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 15,
+      "collapsed_hit_keys": [
+        "大促活动总规则#p01",
+        "大促活动总规则#p03",
+        "优惠券与促销规则#p04",
+        "大促活动总规则#p02",
+        "大促活动总规则#p00"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.97887486,
+      "accepted_hits": 5,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 0.5,
+      "ndcg_at_k": 0.6309297535714575
+    },
+    {
+      "id": "holdout_base_07_1",
+      "query": "会员有哪些等级",
+      "expected": [
+        "会员权益.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "会员权益.md",
+        "店铺粉丝与会员.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 7,
+      "collapsed_hit_keys": [
+        "会员权益#p00",
+        "店铺粉丝与会员#p01",
+        "会员权益#p04",
+        "会员权益#p03",
+        "会员权益#p02"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.94261247,
+      "accepted_hits": 5,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_base_07_2",
+      "query": "钻石会员有什么权益",
+      "expected": [
+        "会员权益.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "会员权益.md",
+        "配送说明.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 15,
+      "collapsed_hit_keys": [
+        "会员权益#p04",
+        "会员权益#p06",
+        "配送说明#p02",
+        "会员权益#p00",
+        "会员权益#p03"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.99746895,
+      "accepted_hits": 5,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_base_08_1",
+      "query": "先用后付怎么开通",
+      "expected": [
+        "先用后付与分期付款.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "先用后付与分期付款.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 4,
+      "collapsed_hit_keys": [
+        "先用后付与分期付款#p00",
+        "先用后付与分期付款#p01",
+        "先用后付与分期付款#p03",
+        "先用后付与分期付款#p02"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.93674946,
+      "accepted_hits": 4,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_base_08_2",
+      "query": "分期付款有利息吗",
+      "expected": [
+        "先用后付与分期付款.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "先用后付与分期付款.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 2,
+      "collapsed_hit_keys": [
+        "先用后付与分期付款#p01",
+        "先用后付与分期付款#p03"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.7778066,
+      "accepted_hits": 2,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_base_09_1",
+      "query": "发货时间多久",
+      "expected": [
+        "包装与发货规范.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "常见问题FAQ.md",
+        "包装与发货规范.md",
+        "配送说明.md",
+        "跨境与海外购.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 15,
+      "collapsed_hit_keys": [
+        "常见问题FAQ#p00",
+        "包装与发货规范#p01",
+        "配送说明#p01",
+        "常见问题FAQ#p08",
+        "跨境与海外购#p02"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.9539661,
+      "accepted_hits": 5,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 0.5,
+      "ndcg_at_k": 0.6309297535714575
+    },
+    {
+      "id": "holdout_base_09_2",
+      "query": "包装有什么要求",
+      "expected": [
+        "包装与发货规范.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "包装与发货规范.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 3,
+      "collapsed_hit_keys": [
+        "包装与发货规范#p00",
+        "包装与发货规范#p02",
+        "包装与发货规范#p01"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.78099674,
+      "accepted_hits": 3,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_base_10_1",
+      "query": "可以开发票吗",
+      "expected": [
+        "发票与开票规则.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "发票与开票规则.md",
+        "企业采购与团购.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 5,
+      "collapsed_hit_keys": [
+        "发票与开票规则#p00",
+        "发票与开票规则#p03",
+        "发票与开票规则#p01",
+        "发票与开票规则#p02",
+        "企业采购与团购#p02"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.36647636,
+      "accepted_hits": 5,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_base_10_2",
+      "query": "电子发票和纸质发票的区别",
+      "expected": [
+        "发票与开票规则.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "发票与开票规则.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 3,
+      "collapsed_hit_keys": [
+        "发票与开票规则#p00",
+        "发票与开票规则#p03",
+        "发票与开票规则#p01"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.92696756,
+      "accepted_hits": 3,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_base_11_1",
+      "query": "怎么申请售后维修",
+      "expected": [
+        "售后维修与延保.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "售后维修与延保.md",
+        "常见问题FAQ.md",
+        "珠宝钟表类目规则.md",
+        "食品饮料类目规则.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 10,
+      "collapsed_hit_keys": [
+        "售后维修与延保#p01",
+        "常见问题FAQ#p09",
+        "珠宝钟表类目规则#p03",
+        "售后维修与延保#p03",
+        "食品饮料类目规则#p01"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.8251675,
+      "accepted_hits": 5,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_base_11_2",
+      "query": "延保服务怎么购买",
+      "expected": [
+        "售后维修与延保.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "售后维修与延保.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 1,
+      "collapsed_hit_keys": [
+        "售后维修与延保#p02"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.744842,
+      "accepted_hits": 1,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_base_12_1",
+      "query": "怎么查看商品溯源信息",
+      "expected": [
+        "商品质检与溯源.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "商品质检与溯源.md",
+        "美妆个护类目规则.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 4,
+      "collapsed_hit_keys": [
+        "商品质检与溯源#p01",
+        "商品质检与溯源#p02",
+        "商品质检与溯源#p00",
+        "美妆个护类目规则#p02"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.9443824,
+      "accepted_hits": 4,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_base_12_2",
+      "query": "质检报告在哪里看",
+      "expected": [
+        "商品质检与溯源.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "商品质检与溯源.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 2,
+      "collapsed_hit_keys": [
+        "商品质检与溯源#p02",
+        "商品质检与溯源#p01"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.9535353,
+      "accepted_hits": 2,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_base_13_1",
+      "query": "图书拆封后可以退吗",
+      "expected": [
+        "图书文教类目规则.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "图书文教类目规则.md",
+        "退换货政策.md",
+        "美妆个护类目规则.md",
+        "母婴用品类目规则.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 13,
+      "collapsed_hit_keys": [
+        "图书文教类目规则#p02",
+        "退换货政策#p01",
+        "美妆个护类目规则#p03",
+        "美妆个护类目规则#p00",
+        "母婴用品类目规则#p01"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.98771137,
+      "accepted_hits": 5,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_base_13_2",
+      "query": "教辅资料的发货时效",
+      "expected": [
+        "图书文教类目规则.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "配送说明.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 1,
+      "collapsed_hit_keys": [
+        "配送说明#p01"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.09252366,
+      "accepted_hits": 1,
+      "negative_rejected": false,
+      "recall_at_k": 0.0,
+      "mrr": 0.0,
+      "ndcg_at_k": 0.0
+    },
+    {
+      "id": "holdout_base_14_1",
+      "query": "大促活动的预售规则",
+      "expected": [
+        "大促活动总规则.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "大促活动总规则.md",
+        "优惠券与促销规则.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 15,
+      "collapsed_hit_keys": [
+        "大促活动总规则#p02",
+        "大促活动总规则#p00",
+        "大促活动总规则#p03",
+        "大促活动总规则#p01",
+        "优惠券与促销规则#p03"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.989791,
+      "accepted_hits": 5,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_base_14_2",
+      "query": "大促期间价保规则",
+      "expected": [
+        "大促活动总规则.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "大促活动总规则.md",
+        "优惠券与促销规则.md",
+        "价保与赔付规则.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 15,
+      "collapsed_hit_keys": [
+        "大促活动总规则#p03",
+        "大促活动总规则#p00",
+        "优惠券与促销规则#p04",
+        "大促活动总规则#p02",
+        "价保与赔付规则#p00"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.98340684,
+      "accepted_hits": 5,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_base_15_1",
+      "query": "宠物粮可以退吗",
+      "expected": [
+        "宠物用品类目规则.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "宠物用品类目规则.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 2,
+      "collapsed_hit_keys": [
+        "宠物用品类目规则#p00",
+        "宠物用品类目规则#p01"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.93158704,
+      "accepted_hits": 2,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_base_15_2",
+      "query": "宠物用品的类目规则",
+      "expected": [
+        "宠物用品类目规则.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "宠物用品类目规则.md",
+        "母婴用品类目规则.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 13,
+      "collapsed_hit_keys": [
+        "宠物用品类目规则#p02",
+        "宠物用品类目规则#p00",
+        "宠物用品类目规则#p01",
+        "宠物用品类目规则#p03",
+        "母婴用品类目规则#p02"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.99879813,
+      "accepted_hits": 5,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_base_16_1",
+      "query": "床品可以七天无理由退吗",
+      "expected": [
+        "家居家纺类目规则.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "家居家纺类目规则.md",
+        "退换货政策.md",
+        "五金建材类目规则.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 15,
+      "collapsed_hit_keys": [
+        "家居家纺类目规则#p00",
+        "家居家纺类目规则#p03",
+        "退换货政策#p00",
+        "退换货政策#p01",
+        "五金建材类目规则#p02"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.9884919,
+      "accepted_hits": 5,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_base_16_2",
+      "query": "家具类目的发货时效",
+      "expected": [
+        "家居家纺类目规则.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "配送说明.md",
+        "家居家纺类目规则.md",
+        "大促活动总规则.md",
+        "生鲜与定制商品规则.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 9,
+      "collapsed_hit_keys": [
+        "配送说明#p01",
+        "家居家纺类目规则#p02",
+        "家居家纺类目规则#p00",
+        "大促活动总规则#p02",
+        "生鲜与定制商品规则#p01"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.952131,
+      "accepted_hits": 5,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 0.5,
+      "ndcg_at_k": 0.6309297535714575
+    },
+    {
+      "id": "holdout_base_17_1",
+      "query": "买到的商品是假货怎么办",
+      "expected": [
+        "常见问题FAQ.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "常见问题FAQ.md",
+        "价保与赔付规则.md",
+        "纠纷仲裁与举报规则.md",
+        "商品质检与溯源.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 11,
+      "collapsed_hit_keys": [
+        "常见问题FAQ#p06",
+        "价保与赔付规则#p03",
+        "纠纷仲裁与举报规则#p02",
+        "价保与赔付规则#p02",
+        "商品质检与溯源#p01"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.98197925,
+      "accepted_hits": 5,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_base_17_2",
+      "query": "怎么找回登录密码",
+      "expected": [
+        "常见问题FAQ.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "常见问题FAQ.md",
+        "支付与账户安全.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 2,
+      "collapsed_hit_keys": [
+        "常见问题FAQ#p10",
+        "支付与账户安全#p01"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.7324005,
+      "accepted_hits": 2,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_base_18_1",
+      "query": "怎么成为店铺粉丝",
+      "expected": [
+        "店铺粉丝与会员.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "店铺粉丝与会员.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 4,
+      "collapsed_hit_keys": [
+        "店铺粉丝与会员#p00",
+        "店铺粉丝与会员#p01",
+        "店铺粉丝与会员#p02",
+        "店铺粉丝与会员#p03"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.6010668,
+      "accepted_hits": 4,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_base_18_2",
+      "query": "店铺会员有什么权益",
+      "expected": [
+        "店铺粉丝与会员.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "店铺粉丝与会员.md",
+        "会员权益.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 15,
+      "collapsed_hit_keys": [
+        "店铺粉丝与会员#p01",
+        "会员权益#p03",
+        "会员权益#p05",
+        "会员权益#p06",
+        "会员权益#p02"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.9926542,
+      "accepted_hits": 5,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_base_19_1",
+      "query": "支付密码怎么修改",
+      "expected": [
+        "支付与账户安全.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "支付与账户安全.md",
+        "常见问题FAQ.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 3,
+      "collapsed_hit_keys": [
+        "支付与账户安全#p01",
+        "常见问题FAQ#p10",
+        "常见问题FAQ#p11"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.7221353,
+      "accepted_hits": 3,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_base_19_2",
+      "query": "账户被盗怎么办",
+      "expected": [
+        "支付与账户安全.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "常见问题FAQ.md",
+        "支付与账户安全.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 5,
+      "collapsed_hit_keys": [
+        "常见问题FAQ#p11",
+        "支付与账户安全#p03",
+        "常见问题FAQ#p10",
+        "支付与账户安全#p01",
+        "支付与账户安全#p02"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.97719735,
+      "accepted_hits": 5,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 0.5,
+      "ndcg_at_k": 0.6309297535714575
+    },
+    {
+      "id": "holdout_base_20_1",
+      "query": "衣服尺码不合适可以换吗",
+      "expected": [
+        "服装鞋帽类目规则.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "服装鞋帽类目规则.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 1,
+      "collapsed_hit_keys": [
+        "服装鞋帽类目规则#p00"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.2024432,
+      "accepted_hits": 1,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_base_20_2",
+      "query": "鞋类商品的退换规则",
+      "expected": [
+        "服装鞋帽类目规则.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "运动户外类目规则.md",
+        "服装鞋帽类目规则.md",
+        "生鲜与定制商品规则.md",
+        "退换货政策.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 15,
+      "collapsed_hit_keys": [
+        "运动户外类目规则#p00",
+        "服装鞋帽类目规则#p00",
+        "生鲜与定制商品规则#p01",
+        "服装鞋帽类目规则#p02",
+        "退换货政策#p01"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.950503,
+      "accepted_hits": 5,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 0.5,
+      "ndcg_at_k": 0.6309297535714575
+    },
+    {
+      "id": "holdout_base_21_1",
+      "query": "极速退款的条件",
+      "expected": [
+        "极速退款规则.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "极速退款规则.md",
+        "退换货政策.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 14,
+      "collapsed_hit_keys": [
+        "极速退款规则#p01",
+        "极速退款规则#p00",
+        "极速退款规则#p02",
+        "极速退款规则#p03",
+        "退换货政策#p03"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.98571813,
+      "accepted_hits": 5,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_base_21_2",
+      "query": "退款多久到账",
+      "expected": [
+        "极速退款规则.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "常见问题FAQ.md",
+        "极速退款规则.md",
+        "物流异常与投诉处理.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 15,
+      "collapsed_hit_keys": [
+        "常见问题FAQ#p08",
+        "极速退款规则#p02",
+        "极速退款规则#p00",
+        "物流异常与投诉处理#p00",
+        "常见问题FAQ#p00"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.9916842,
+      "accepted_hits": 5,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 0.5,
+      "ndcg_at_k": 0.6309297535714575
+    },
+    {
+      "id": "holdout_base_22_1",
+      "query": "奶粉可以退吗",
+      "expected": [
+        "母婴用品类目规则.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "母婴用品类目规则.md",
+        "食品饮料类目规则.md",
+        "退换货政策.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 7,
+      "collapsed_hit_keys": [
+        "母婴用品类目规则#p01",
+        "母婴用品类目规则#p02",
+        "母婴用品类目规则#p03",
+        "食品饮料类目规则#p00",
+        "退换货政策#p07"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.9743861,
+      "accepted_hits": 5,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_base_22_2",
+      "query": "母婴商品的质检标准",
+      "expected": [
+        "母婴用品类目规则.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "母婴用品类目规则.md",
+        "商品质检与溯源.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 8,
+      "collapsed_hit_keys": [
+        "母婴用品类目规则#p00",
+        "母婴用品类目规则#p02",
+        "商品质检与溯源#p00",
+        "母婴用品类目规则#p01",
+        "母婴用品类目规则#p03"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.936285,
+      "accepted_hits": 5,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_base_23_1",
+      "query": "物流很久没更新怎么办",
+      "expected": [
+        "物流异常与投诉处理.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "配送说明.md",
+        "物流异常与投诉处理.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 2,
+      "collapsed_hit_keys": [
+        "配送说明#p05",
+        "物流异常与投诉处理#p00"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.5009074,
+      "accepted_hits": 2,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 0.5,
+      "ndcg_at_k": 0.6309297535714575
+    },
+    {
+      "id": "holdout_base_23_2",
+      "query": "包裹丢失怎么赔付",
+      "expected": [
+        "物流异常与投诉处理.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "常见问题FAQ.md",
+        "价保与赔付规则.md",
+        "生鲜与定制商品规则.md",
+        "包装与发货规范.md",
+        "运费险细则.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 10,
+      "collapsed_hit_keys": [
+        "常见问题FAQ#p07",
+        "价保与赔付规则#p01",
+        "生鲜与定制商品规则#p03",
+        "包装与发货规范#p03",
+        "运费险细则#p01"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.9005298,
+      "accepted_hits": 5,
+      "negative_rejected": false,
+      "recall_at_k": 0.0,
+      "mrr": 0.0,
+      "ndcg_at_k": 0.0
+    },
+    {
+      "id": "holdout_base_24_1",
+      "query": "钻石饰品可以退吗",
+      "expected": [
+        "珠宝钟表类目规则.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "价保与赔付规则.md",
+        "常见问题FAQ.md",
+        "珠宝钟表类目规则.md",
+        "会员权益.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 6,
+      "collapsed_hit_keys": [
+        "价保与赔付规则#p00",
+        "常见问题FAQ#p04",
+        "珠宝钟表类目规则#p03",
+        "珠宝钟表类目规则#p01",
+        "会员权益#p04"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.8153795,
+      "accepted_hits": 5,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 0.3333333333333333,
+      "ndcg_at_k": 0.5
+    },
+    {
+      "id": "holdout_base_24_2",
+      "query": "手表怎么保修",
+      "expected": [
+        "珠宝钟表类目规则.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "珠宝钟表类目规则.md",
+        "售后维修与延保.md",
+        "3C数码类目规则.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 12,
+      "collapsed_hit_keys": [
+        "珠宝钟表类目规则#p02",
+        "售后维修与延保#p01",
+        "售后维修与延保#p02",
+        "售后维修与延保#p00",
+        "3C数码类目规则#p03"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.7689067,
+      "accepted_hits": 5,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_base_25_1",
+      "query": "生鲜商品支持无理由退货吗",
+      "expected": [
+        "生鲜与定制商品规则.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "生鲜与定制商品规则.md",
+        "退换货政策.md",
+        "家居家纺类目规则.md",
+        "运动户外类目规则.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 15,
+      "collapsed_hit_keys": [
+        "生鲜与定制商品规则#p00",
+        "退换货政策#p01",
+        "生鲜与定制商品规则#p01",
+        "家居家纺类目规则#p00",
+        "运动户外类目规则#p00"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.9828892,
+      "accepted_hits": 5,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_base_25_2",
+      "query": "定制商品可以退吗",
+      "expected": [
+        "生鲜与定制商品规则.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "生鲜与定制商品规则.md",
+        "图书文教类目规则.md",
+        "家居家纺类目规则.md",
+        "退换货政策.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 15,
+      "collapsed_hit_keys": [
+        "生鲜与定制商品规则#p02",
+        "图书文教类目规则#p02",
+        "生鲜与定制商品规则#p03",
+        "家居家纺类目规则#p00",
+        "退换货政策#p01"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.91117966,
+      "accepted_hits": 5,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_base_26_1",
+      "query": "百亿补贴活动怎么参加",
+      "expected": [
+        "百亿补贴规则.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "百亿补贴规则.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 4,
+      "collapsed_hit_keys": [
+        "百亿补贴规则#p01",
+        "百亿补贴规则#p00",
+        "百亿补贴规则#p03",
+        "百亿补贴规则#p02"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.73545164,
+      "accepted_hits": 4,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_base_26_2",
+      "query": "百亿补贴的商品是真的吗",
+      "expected": [
+        "百亿补贴规则.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "百亿补贴规则.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 4,
+      "collapsed_hit_keys": [
+        "百亿补贴规则#p00",
+        "百亿补贴规则#p01",
+        "百亿补贴规则#p02",
+        "百亿补贴规则#p03"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.8358858,
+      "accepted_hits": 4,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_base_27_1",
+      "query": "直播间购物有什么保障",
+      "expected": [
+        "直播与限时活动规则.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "直播与限时活动规则.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 2,
+      "collapsed_hit_keys": [
+        "直播与限时活动规则#p00",
+        "直播与限时活动规则#p03"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.47520953,
+      "accepted_hits": 2,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_base_27_2",
+      "query": "限时活动的规则",
+      "expected": [
+        "直播与限时活动规则.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "直播与限时活动规则.md",
+        "大促活动总规则.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 14,
+      "collapsed_hit_keys": [
+        "直播与限时活动规则#p02",
+        "直播与限时活动规则#p00",
+        "直播与限时活动规则#p01",
+        "直播与限时活动规则#p03",
+        "大促活动总规则#p03"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.99158704,
+      "accepted_hits": 5,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_base_28_1",
+      "query": "砍价免费拿怎么玩",
+      "expected": [
+        "砍价与游戏玩法规则.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "砍价与游戏玩法规则.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 4,
+      "collapsed_hit_keys": [
+        "砍价与游戏玩法规则#p00",
+        "砍价与游戏玩法规则#p01",
+        "砍价与游戏玩法规则#p02",
+        "砍价与游戏玩法规则#p03"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.98942953,
+      "accepted_hits": 4,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_base_28_2",
+      "query": "游戏玩法活动的规则",
+      "expected": [
+        "砍价与游戏玩法规则.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "砍价与游戏玩法规则.md",
+        "直播与限时活动规则.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 10,
+      "collapsed_hit_keys": [
+        "砍价与游戏玩法规则#p03",
+        "砍价与游戏玩法规则#p00",
+        "砍价与游戏玩法规则#p01",
+        "砍价与游戏玩法规则#p02",
+        "直播与限时活动规则#p01"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.92290026,
+      "accepted_hits": 5,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_base_29_1",
+      "query": "礼品卡怎么使用",
+      "expected": [
+        "礼品卡与储值卡.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "礼品卡与储值卡.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 4,
+      "collapsed_hit_keys": [
+        "礼品卡与储值卡#p00",
+        "礼品卡与储值卡#p01",
+        "礼品卡与储值卡#p02",
+        "礼品卡与储值卡#p03"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.9107044,
+      "accepted_hits": 4,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_base_29_2",
+      "query": "储值卡可以退吗",
+      "expected": [
+        "礼品卡与储值卡.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "礼品卡与储值卡.md",
+        "图书文教类目规则.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 3,
+      "collapsed_hit_keys": [
+        "礼品卡与储值卡#p03",
+        "图书文教类目规则#p00",
+        "礼品卡与储值卡#p01"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.89982784,
+      "accepted_hits": 3,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_base_30_1",
+      "query": "怎么投诉商家",
+      "expected": [
+        "纠纷仲裁与举报规则.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "纠纷仲裁与举报规则.md",
+        "物流异常与投诉处理.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 8,
+      "collapsed_hit_keys": [
+        "纠纷仲裁与举报规则#p03",
+        "纠纷仲裁与举报规则#p00",
+        "纠纷仲裁与举报规则#p02",
+        "物流异常与投诉处理#p01",
+        "物流异常与投诉处理#p02"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.4945566,
+      "accepted_hits": 5,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_base_30_2",
+      "query": "交易纠纷怎么处理",
+      "expected": [
+        "纠纷仲裁与举报规则.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "纠纷仲裁与举报规则.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 4,
+      "collapsed_hit_keys": [
+        "纠纷仲裁与举报规则#p00",
+        "纠纷仲裁与举报规则#p01",
+        "纠纷仲裁与举报规则#p03",
+        "纠纷仲裁与举报规则#p02"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.87396973,
+      "accepted_hits": 4,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_base_31_1",
+      "query": "化妆品用过敏可以退吗",
+      "expected": [
+        "美妆个护类目规则.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "美妆个护类目规则.md",
+        "退换货政策.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 5,
+      "collapsed_hit_keys": [
+        "美妆个护类目规则#p01",
+        "美妆个护类目规则#p00",
+        "退换货政策#p06",
+        "美妆个护类目规则#p03",
+        "退换货政策#p01"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.9803186,
+      "accepted_hits": 5,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_base_31_2",
+      "query": "临期化妆品可以买吗",
+      "expected": [
+        "美妆个护类目规则.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "美妆个护类目规则.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 1,
+      "collapsed_hit_keys": [
+        "美妆个护类目规则#p01"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.46399066,
+      "accepted_hits": 1,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_base_32_1",
+      "query": "购物车最多放多少件",
+      "expected": [
+        "购物车与收藏夹.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "购物车与收藏夹规则.md",
+        "百亿补贴规则.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 2,
+      "collapsed_hit_keys": [
+        "购物车与收藏夹规则#p01",
+        "百亿补贴规则#p01"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.61687815,
+      "accepted_hits": 2,
+      "negative_rejected": false,
+      "recall_at_k": 0.0,
+      "mrr": 0.0,
+      "ndcg_at_k": 0.0
+    },
+    {
+      "id": "holdout_base_32_2",
+      "query": "收藏夹有什么用",
+      "expected": [
+        "购物车与收藏夹.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "购物车与收藏夹规则.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 2,
+      "collapsed_hit_keys": [
+        "购物车与收藏夹规则#p01",
+        "购物车与收藏夹规则#p02"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.57403666,
+      "accepted_hits": 2,
+      "negative_rejected": false,
+      "recall_at_k": 0.0,
+      "mrr": 0.0,
+      "ndcg_at_k": 0.0
+    },
+    {
+      "id": "holdout_base_33_1",
+      "query": "跨境商品怎么退货",
+      "expected": [
+        "跨境与海外购.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "跨境与海外购.md",
+        "退换货政策.md",
+        "常见问题FAQ.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 10,
+      "collapsed_hit_keys": [
+        "跨境与海外购#p03",
+        "退换货政策#p06",
+        "跨境与海外购#p00",
+        "常见问题FAQ#p07",
+        "退换货政策#p09"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.87321484,
+      "accepted_hits": 5,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_base_33_2",
+      "query": "海外购的税费谁承担",
+      "expected": [
+        "跨境与海外购.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "跨境与海外购.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 2,
+      "collapsed_hit_keys": [
+        "跨境与海外购#p01",
+        "跨境与海外购#p03"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.22936256,
+      "accepted_hits": 2,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_base_34_1",
+      "query": "车品可以退吗",
+      "expected": [
+        "车品配件类目规则.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "车品配件类目规则.md",
+        "退换货政策.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 5,
+      "collapsed_hit_keys": [
+        "车品配件类目规则#p02",
+        "车品配件类目规则#p00",
+        "车品配件类目规则#p01",
+        "车品配件类目规则#p03",
+        "退换货政策#p00"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.93171144,
+      "accepted_hits": 5,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_base_34_2",
+      "query": "机油怎么辨别真假",
+      "expected": [
+        "车品配件类目规则.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [],
+      "raw_candidates": 15,
+      "gated_candidates": 0,
+      "collapsed_hit_keys": [],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.029090757,
+      "accepted_hits": 0,
+      "negative_rejected": false,
+      "recall_at_k": 0.0,
+      "mrr": 0.0,
+      "ndcg_at_k": 0.0
+    },
+    {
+      "id": "holdout_base_35_1",
+      "query": "运动鞋的退换规则",
+      "expected": [
+        "运动户外类目规则.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "运动户外类目规则.md",
+        "服装鞋帽类目规则.md",
+        "退换货政策.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 15,
+      "collapsed_hit_keys": [
+        "运动户外类目规则#p00",
+        "运动户外类目规则#p01",
+        "运动户外类目规则#p03",
+        "服装鞋帽类目规则#p00",
+        "退换货政策#p01"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.9967775,
+      "accepted_hits": 5,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_base_35_2",
+      "query": "户外装备的质保",
+      "expected": [
+        "运动户外类目规则.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "运动户外类目规则.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 4,
+      "collapsed_hit_keys": [
+        "运动户外类目规则#p01",
+        "运动户外类目规则#p03",
+        "运动户外类目规则#p00",
+        "运动户外类目规则#p02"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.81655276,
+      "accepted_hits": 4,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_base_36_1",
+      "query": "运费险怎么理赔",
+      "expected": [
+        "运费险细则.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "运费险细则.md",
+        "极速退款规则.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 12,
+      "collapsed_hit_keys": [
+        "运费险细则#p01",
+        "运费险细则#p00",
+        "运费险细则#p03",
+        "运费险细则#p02",
+        "极速退款规则#p02"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.97267544,
+      "accepted_hits": 5,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_base_36_2",
+      "query": "哪些订单赠送运费险",
+      "expected": [
+        "运费险细则.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "运费险细则.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 2,
+      "collapsed_hit_keys": [
+        "运费险细则#p00",
+        "运费险细则#p02"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.55314326,
+      "accepted_hits": 2,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_base_37_1",
+      "query": "七天无理由退货的适用范围是什么",
+      "expected": [
+        "退换货政策.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "退换货政策.md",
+        "家居家纺类目规则.md",
+        "运动户外类目规则.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 15,
+      "collapsed_hit_keys": [
+        "退换货政策#p00",
+        "退换货政策#p01",
+        "退换货政策#p02",
+        "家居家纺类目规则#p00",
+        "运动户外类目规则#p00"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.99273914,
+      "accepted_hits": 5,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_base_37_2",
+      "query": "质量问题退换货的时效是多久",
+      "expected": [
+        "退换货政策.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "退换货政策.md",
+        "食品饮料类目规则.md",
+        "母婴用品类目规则.md",
+        "图书文教类目规则.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 15,
+      "collapsed_hit_keys": [
+        "退换货政策#p04",
+        "退换货政策#p07",
+        "食品饮料类目规则#p01",
+        "母婴用品类目规则#p01",
+        "图书文教类目规则#p01"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.99356186,
+      "accepted_hits": 5,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_base_38_1",
+      "query": "发什么快递",
+      "expected": [
+        "配送说明.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "配送说明.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 2,
+      "collapsed_hit_keys": [
+        "配送说明#p03",
+        "配送说明#p00"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.12962294,
+      "accepted_hits": 2,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_base_38_2",
+      "query": "偏远地区加运费吗",
+      "expected": [
+        "配送说明.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "生鲜与定制商品规则.md",
+        "配送说明.md",
+        "会员权益.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 5,
+      "collapsed_hit_keys": [
+        "生鲜与定制商品规则#p02",
+        "配送说明#p02",
+        "会员权益#p04",
+        "会员权益#p03",
+        "配送说明#p00"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.86036915,
+      "accepted_hits": 5,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 0.5,
+      "ndcg_at_k": 0.6309297535714575
+    },
+    {
+      "id": "holdout_base_39_1",
+      "query": "我的个人信息怎么删除",
+      "expected": [
+        "隐私与个人信息.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "隐私与个人信息.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 2,
+      "collapsed_hit_keys": [
+        "隐私与个人信息#p02",
+        "隐私与个人信息#p00"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.42048058,
+      "accepted_hits": 2,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_base_39_2",
+      "query": "隐私政策有哪些内容",
+      "expected": [
+        "隐私与个人信息.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "隐私与个人信息.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 4,
+      "collapsed_hit_keys": [
+        "隐私与个人信息#p03",
+        "隐私与个人信息#p00",
+        "隐私与个人信息#p01",
+        "隐私与个人信息#p02"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.3332862,
+      "accepted_hits": 4,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_base_40_1",
+      "query": "食品过期怎么赔付",
+      "expected": [
+        "食品饮料类目规则.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "食品饮料类目规则.md",
+        "价保与赔付规则.md",
+        "生鲜与定制商品规则.md",
+        "商品质检与溯源.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 6,
+      "collapsed_hit_keys": [
+        "食品饮料类目规则#p01",
+        "价保与赔付规则#p01",
+        "生鲜与定制商品规则#p03",
+        "商品质检与溯源#p03",
+        "价保与赔付规则#p02"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.24999616,
+      "accepted_hits": 5,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_base_40_2",
+      "query": "食品类目退货规则",
+      "expected": [
+        "食品饮料类目规则.md"
+      ],
+      "tags": [
+        "easy",
+        "direct"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "食品饮料类目规则.md",
+        "母婴用品类目规则.md",
+        "宠物用品类目规则.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 15,
+      "collapsed_hit_keys": [
+        "食品饮料类目规则#p01",
+        "食品饮料类目规则#p00",
+        "母婴用品类目规则#p01",
+        "食品饮料类目规则#p03",
+        "宠物用品类目规则#p00"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.98228765,
+      "accepted_hits": 5,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_hard_01",
+      "query": "我七天无理由退的货，运费是不是我自己出啊",
+      "expected": [
+        "退换货政策.md"
+      ],
+      "tags": [
+        "hard",
+        "colloquial"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "退换货政策.md",
+        "跨境与海外购.md",
+        "运费险细则.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 11,
+      "collapsed_hit_keys": [
+        "退换货政策#p02",
+        "跨境与海外购#p03",
+        "运费险细则#p00",
+        "退换货政策#p04",
+        "运费险细则#p02"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.97958976,
+      "accepted_hits": 5,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_hard_02",
+      "query": "双十一买的东西，之后降价了能退差价不",
+      "expected": [
+        "价保与赔付规则.md"
+      ],
+      "tags": [
+        "hard",
+        "colloquial"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "常见问题FAQ.md",
+        "价保与赔付规则.md",
+        "大促活动总规则.md",
+        "优惠券与促销规则.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 5,
+      "collapsed_hit_keys": [
+        "常见问题FAQ#p04",
+        "价保与赔付规则#p00",
+        "大促活动总规则#p00",
+        "优惠券与促销规则#p04",
+        "大促活动总规则#p03"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.9457011,
+      "accepted_hits": 5,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 0.5,
+      "ndcg_at_k": 0.6309297535714575
+    },
+    {
+      "id": "holdout_hard_03",
+      "query": "买了个二手手机，结果三天就坏了，能找平台吗",
+      "expected": [
+        "3C数码类目规则.md"
+      ],
+      "tags": [
+        "hard",
+        "colloquial"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [],
+      "raw_candidates": 15,
+      "gated_candidates": 0,
+      "collapsed_hit_keys": [],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.037467506,
+      "accepted_hits": 0,
+      "negative_rejected": false,
+      "recall_at_k": 0.0,
+      "mrr": 0.0,
+      "ndcg_at_k": 0.0
+    },
+    {
+      "id": "holdout_hard_04",
+      "query": "给猫买的粮，它不吃，拆开了还能退不",
+      "expected": [
+        "宠物用品类目规则.md"
+      ],
+      "tags": [
+        "hard",
+        "colloquial"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "宠物用品类目规则.md",
+        "母婴用品类目规则.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 3,
+      "collapsed_hit_keys": [
+        "宠物用品类目规则#p00",
+        "宠物用品类目规则#p01",
+        "母婴用品类目规则#p01"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.4250085,
+      "accepted_hits": 3,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_hard_05",
+      "query": "国外买的包，关税是你们出还是我出",
+      "expected": [
+        "跨境与海外购.md"
+      ],
+      "tags": [
+        "hard",
+        "colloquial"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "跨境与海外购.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 1,
+      "collapsed_hit_keys": [
+        "跨境与海外购#p01"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.08064661,
+      "accepted_hits": 1,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_hard_06",
+      "query": "我妈收到货发现破了，拍照给谁看",
+      "expected": [
+        "物流异常与投诉处理.md"
+      ],
+      "tags": [
+        "hard",
+        "colloquial"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [],
+      "raw_candidates": 15,
+      "gated_candidates": 0,
+      "collapsed_hit_keys": [],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.020567095,
+      "accepted_hits": 0,
+      "negative_rejected": false,
+      "recall_at_k": 0.0,
+      "mrr": 0.0,
+      "ndcg_at_k": 0.0
+    },
+    {
+      "id": "holdout_hard_07",
+      "query": "想给公司采购一百台电脑，找谁谈价格",
+      "expected": [
+        "企业采购与团购.md"
+      ],
+      "tags": [
+        "hard",
+        "colloquial"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "企业采购与团购.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 2,
+      "collapsed_hit_keys": [
+        "企业采购与团购#p00",
+        "企业采购与团购#p01"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.1603975,
+      "accepted_hits": 2,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_hard_08",
+      "query": "直播间抢的东西和介绍的不一样，怎么弄",
+      "expected": [
+        "直播与限时活动规则.md"
+      ],
+      "tags": [
+        "hard",
+        "colloquial"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [],
+      "raw_candidates": 15,
+      "gated_candidates": 0,
+      "collapsed_hit_keys": [],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.009522486,
+      "accepted_hits": 0,
+      "negative_rejected": false,
+      "recall_at_k": 0.0,
+      "mrr": 0.0,
+      "ndcg_at_k": 0.0
+    },
+    {
+      "id": "holdout_hard_09",
+      "query": "积分换的券和钱买的券，退的时候一样吗",
+      "expected": [
+        "优惠券与促销规则.md"
+      ],
+      "tags": [
+        "hard",
+        "confusion"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [],
+      "raw_candidates": 15,
+      "gated_candidates": 0,
+      "collapsed_hit_keys": [],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.0139557095,
+      "accepted_hits": 0,
+      "negative_rejected": false,
+      "recall_at_k": 0.0,
+      "mrr": 0.0,
+      "ndcg_at_k": 0.0
+    },
+    {
+      "id": "holdout_hard_10",
+      "query": "我租的房子被中介骗了，能打你们客服电话吗",
+      "expected": [],
+      "tags": [
+        "hard",
+        "out_of_domain"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [],
+      "raw_candidates": 15,
+      "gated_candidates": 0,
+      "collapsed_hit_keys": [],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.008445627,
+      "accepted_hits": 0,
+      "negative_rejected": true,
+      "recall_at_k": null,
+      "mrr": null,
+      "ndcg_at_k": null
+    },
+    {
+      "id": "holdout_hard_11",
+      "query": "把游戏账号卖了，买家说被找回，平台管不管",
+      "expected": [
+        "纠纷仲裁与举报规则.md"
+      ],
+      "tags": [
+        "hard",
+        "colloquial"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [],
+      "raw_candidates": 15,
+      "gated_candidates": 0,
+      "collapsed_hit_keys": [],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.017644463,
+      "accepted_hits": 0,
+      "negative_rejected": false,
+      "recall_at_k": 0.0,
+      "mrr": 0.0,
+      "ndcg_at_k": 0.0
+    },
+    {
+      "id": "holdout_hard_12",
+      "query": "申请退货以后快递单号发哪里",
+      "expected": [
+        "退换货政策.md"
+      ],
+      "tags": [
+        "hard",
+        "colloquial"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [],
+      "raw_candidates": 15,
+      "gated_candidates": 0,
+      "collapsed_hit_keys": [],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.014009566,
+      "accepted_hits": 0,
+      "negative_rejected": false,
+      "recall_at_k": 0.0,
+      "mrr": 0.0,
+      "ndcg_at_k": 0.0
+    },
+    {
+      "id": "holdout_hard_13",
+      "query": "新买的冰箱没电是质量问题吗",
+      "expected": [
+        "售后维修与延保.md"
+      ],
+      "tags": [
+        "hard",
+        "confusion"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "退换货政策.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 1,
+      "collapsed_hit_keys": [
+        "退换货政策#p03"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.06176271,
+      "accepted_hits": 1,
+      "negative_rejected": false,
+      "recall_at_k": 0.0,
+      "mrr": 0.0,
+      "ndcg_at_k": 0.0
+    },
+    {
+      "id": "holdout_hard_14",
+      "query": "买奶粉送的小熊玩具能单独退吗",
+      "expected": [
+        "母婴用品类目规则.md"
+      ],
+      "tags": [
+        "hard",
+        "confusion"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "母婴用品类目规则.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 2,
+      "collapsed_hit_keys": [
+        "母婴用品类目规则#p01",
+        "母婴用品类目规则#p02"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.078078166,
+      "accepted_hits": 2,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_hard_15",
+      "query": "分期买的东西，提前还完还有手续费吗",
+      "expected": [
+        "先用后付与分期付款.md"
+      ],
+      "tags": [
+        "hard",
+        "colloquial"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "先用后付与分期付款.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 2,
+      "collapsed_hit_keys": [
+        "先用后付与分期付款#p03",
+        "先用后付与分期付款#p01"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.5455279,
+      "accepted_hits": 2,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_hard_16",
+      "query": "给老家亲戚寄的电视，验货发现屏裂了，谁负责",
+      "expected": [
+        "包装与发货规范.md"
+      ],
+      "tags": [
+        "hard",
+        "colloquial"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "包装与发货规范.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 1,
+      "collapsed_hit_keys": [
+        "包装与发货规范#p03"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.1201288,
+      "accepted_hits": 1,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_hard_17",
+      "query": "卖家商品页写的和实际收到的不一样，怎么投诉",
+      "expected": [
+        "纠纷仲裁与举报规则.md"
+      ],
+      "tags": [
+        "hard",
+        "colloquial"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "纠纷仲裁与举报规则.md",
+        "价保与赔付规则.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 3,
+      "collapsed_hit_keys": [
+        "纠纷仲裁与举报规则#p02",
+        "纠纷仲裁与举报规则#p01",
+        "价保与赔付规则#p03"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.18713269,
+      "accepted_hits": 3,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_hard_18",
+      "query": "我买的背单词卡，拆了激活了，能退吗",
+      "expected": [
+        "图书文教类目规则.md"
+      ],
+      "tags": [
+        "hard",
+        "confusion"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "图书文教类目规则.md",
+        "3C数码类目规则.md",
+        "退换货政策.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 4,
+      "collapsed_hit_keys": [
+        "图书文教类目规则#p02",
+        "图书文教类目规则#p00",
+        "3C数码类目规则#p00",
+        "退换货政策#p01"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.34864512,
+      "accepted_hits": 4,
+      "negative_rejected": false,
+      "recall_at_k": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_k": 1.0
+    },
+    {
+      "id": "holdout_hard_19",
+      "query": "在别的平台买东西被骗了，你们能帮我追吗",
+      "expected": [],
+      "tags": [
+        "hard",
+        "out_of_domain"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "常见问题FAQ.md",
+        "支付与账户安全.md",
+        "纠纷仲裁与举报规则.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 3,
+      "collapsed_hit_keys": [
+        "常见问题FAQ#p11",
+        "支付与账户安全#p03",
+        "纠纷仲裁与举报规则#p01"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.08570928,
+      "accepted_hits": 3,
+      "negative_rejected": false,
+      "recall_at_k": null,
+      "mrr": null,
+      "ndcg_at_k": null
+    },
+    {
+      "id": "holdout_hard_20",
+      "query": "外卖点的奶茶洒了，找谁赔",
+      "expected": [],
+      "tags": [
+        "hard",
+        "out_of_domain"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [],
+      "raw_candidates": 15,
+      "gated_candidates": 0,
+      "collapsed_hit_keys": [],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.011961099,
+      "accepted_hits": 0,
+      "negative_rejected": true,
+      "recall_at_k": null,
+      "mrr": null,
+      "ndcg_at_k": null
+    },
+    {
+      "id": "holdout_neg_01",
+      "query": "你们平台什么时候上市",
+      "expected": [],
+      "tags": [
+        "negative",
+        "near_domain"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [],
+      "raw_candidates": 15,
+      "gated_candidates": 0,
+      "collapsed_hit_keys": [],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.00078547397,
+      "accepted_hits": 0,
+      "negative_rejected": true,
+      "recall_at_k": null,
+      "mrr": null,
+      "ndcg_at_k": null
+    },
+    {
+      "id": "holdout_neg_02",
+      "query": "股票开户需要什么条件",
+      "expected": [],
+      "tags": [
+        "negative",
+        "out_of_domain"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [],
+      "raw_candidates": 15,
+      "gated_candidates": 0,
+      "collapsed_hit_keys": [],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.0034564096,
+      "accepted_hits": 0,
+      "negative_rejected": true,
+      "recall_at_k": null,
+      "mrr": null,
+      "ndcg_at_k": null
+    },
+    {
+      "id": "holdout_neg_03",
+      "query": "今天的天气怎么样",
+      "expected": [],
+      "tags": [
+        "negative",
+        "out_of_domain"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [],
+      "raw_candidates": 15,
+      "gated_candidates": 0,
+      "collapsed_hit_keys": [],
+      "collapsed_parents": 0,
+      "raw_top_score": 4.298194e-05,
+      "accepted_hits": 0,
+      "negative_rejected": true,
+      "recall_at_k": null,
+      "mrr": null,
+      "ndcg_at_k": null
+    },
+    {
+      "id": "holdout_neg_04",
+      "query": "社保断缴怎么补",
+      "expected": [],
+      "tags": [
+        "negative",
+        "out_of_domain"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [],
+      "raw_candidates": 15,
+      "gated_candidates": 0,
+      "collapsed_hit_keys": [],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.0019192374,
+      "accepted_hits": 0,
+      "negative_rejected": true,
+      "recall_at_k": null,
+      "mrr": null,
+      "ndcg_at_k": null
+    },
+    {
+      "id": "holdout_neg_05",
+      "query": "你们招不招主播，薪资多少",
+      "expected": [],
+      "tags": [
+        "negative",
+        "near_domain"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [],
+      "raw_candidates": 15,
+      "gated_candidates": 0,
+      "collapsed_hit_keys": [],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.001133569,
+      "accepted_hits": 0,
+      "negative_rejected": true,
+      "recall_at_k": null,
+      "mrr": null,
+      "ndcg_at_k": null
+    },
+    {
+      "id": "holdout_neg_06",
+      "query": "驾照到期怎么换证",
+      "expected": [],
+      "tags": [
+        "negative",
+        "out_of_domain"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [],
+      "raw_candidates": 15,
+      "gated_candidates": 0,
+      "collapsed_hit_keys": [],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.0016103574,
+      "accepted_hits": 0,
+      "negative_rejected": true,
+      "recall_at_k": null,
+      "mrr": null,
+      "ndcg_at_k": null
+    },
+    {
+      "id": "holdout_neg_07",
+      "query": "地铁票价怎么算",
+      "expected": [],
+      "tags": [
+        "negative",
+        "out_of_domain"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [],
+      "raw_candidates": 15,
+      "gated_candidates": 0,
+      "collapsed_hit_keys": [],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.00498227,
+      "accepted_hits": 0,
+      "negative_rejected": true,
+      "recall_at_k": null,
+      "mrr": null,
+      "ndcg_at_k": null
+    },
+    {
+      "id": "holdout_neg_08",
+      "query": "房贷利率现在是多少",
+      "expected": [],
+      "tags": [
+        "negative",
+        "out_of_domain"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [],
+      "raw_candidates": 15,
+      "gated_candidates": 0,
+      "collapsed_hit_keys": [],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.0012497094,
+      "accepted_hits": 0,
+      "negative_rejected": true,
+      "recall_at_k": null,
+      "mrr": null,
+      "ndcg_at_k": null
+    },
+    {
+      "id": "holdout_neg_09",
+      "query": "帮我查一下顺丰快递到哪了",
+      "expected": [],
+      "tags": [
+        "negative",
+        "near_domain"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "配送说明.md",
+        "物流异常与投诉处理.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 2,
+      "collapsed_hit_keys": [
+        "配送说明#p05",
+        "物流异常与投诉处理#p01"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.086632065,
+      "accepted_hits": 2,
+      "negative_rejected": false,
+      "recall_at_k": null,
+      "mrr": null,
+      "ndcg_at_k": null
+    },
+    {
+      "id": "holdout_neg_10",
+      "query": "淘宝的客服电话是多少",
+      "expected": [],
+      "tags": [
+        "negative",
+        "near_domain"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "物流异常与投诉处理.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 1,
+      "collapsed_hit_keys": [
+        "物流异常与投诉处理#p02"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.23988314,
+      "accepted_hits": 1,
+      "negative_rejected": false,
+      "recall_at_k": null,
+      "mrr": null,
+      "ndcg_at_k": null
+    },
+    {
+      "id": "holdout_neg_11",
+      "query": "你家楼下便利店几点开门",
+      "expected": [],
+      "tags": [
+        "negative",
+        "out_of_domain"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [],
+      "raw_candidates": 15,
+      "gated_candidates": 0,
+      "collapsed_hit_keys": [],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.0043653264,
+      "accepted_hits": 0,
+      "negative_rejected": true,
+      "recall_at_k": null,
+      "mrr": null,
+      "ndcg_at_k": null
+    },
+    {
+      "id": "holdout_neg_12",
+      "query": "牛奶和鸡蛋一起吃会不会中毒",
+      "expected": [],
+      "tags": [
+        "negative",
+        "out_of_domain"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [],
+      "raw_candidates": 15,
+      "gated_candidates": 0,
+      "collapsed_hit_keys": [],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.003707253,
+      "accepted_hits": 0,
+      "negative_rejected": true,
+      "recall_at_k": null,
+      "mrr": null,
+      "ndcg_at_k": null
+    },
+    {
+      "id": "holdout_neg_13",
+      "query": "小区物业费该交多少",
+      "expected": [],
+      "tags": [
+        "negative",
+        "out_of_domain"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [],
+      "raw_candidates": 15,
+      "gated_candidates": 0,
+      "collapsed_hit_keys": [],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.0012065896,
+      "accepted_hits": 0,
+      "negative_rejected": true,
+      "recall_at_k": null,
+      "mrr": null,
+      "ndcg_at_k": null
+    },
+    {
+      "id": "holdout_neg_14",
+      "query": "怎么预约九价疫苗",
+      "expected": [],
+      "tags": [
+        "negative",
+        "out_of_domain"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [],
+      "raw_candidates": 15,
+      "gated_candidates": 0,
+      "collapsed_hit_keys": [],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.00077632995,
+      "accepted_hits": 0,
+      "negative_rejected": true,
+      "recall_at_k": null,
+      "mrr": null,
+      "ndcg_at_k": null
+    },
+    {
+      "id": "holdout_neg_15",
+      "query": "你们平台的工号怎么查",
+      "expected": [],
+      "tags": [
+        "negative",
+        "near_domain"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [],
+      "raw_candidates": 15,
+      "gated_candidates": 0,
+      "collapsed_hit_keys": [],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.003260346,
+      "accepted_hits": 0,
+      "negative_rejected": true,
+      "recall_at_k": null,
+      "mrr": null,
+      "ndcg_at_k": null
+    },
+    {
+      "id": "holdout_neg_16",
+      "query": "快递柜超时取件收费吗",
+      "expected": [],
+      "tags": [
+        "negative",
+        "near_domain"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [
+        "配送说明.md"
+      ],
+      "raw_candidates": 15,
+      "gated_candidates": 1,
+      "collapsed_hit_keys": [
+        "配送说明#p04"
+      ],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.08151976,
+      "accepted_hits": 1,
+      "negative_rejected": false,
+      "recall_at_k": null,
+      "mrr": null,
+      "ndcg_at_k": null
+    },
+    {
+      "id": "holdout_neg_17",
+      "query": "公积金怎么提取",
+      "expected": [],
+      "tags": [
+        "negative",
+        "out_of_domain"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [],
+      "raw_candidates": 15,
+      "gated_candidates": 0,
+      "collapsed_hit_keys": [],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.0019192374,
+      "accepted_hits": 0,
+      "negative_rejected": true,
+      "recall_at_k": null,
+      "mrr": null,
+      "ndcg_at_k": null
+    },
+    {
+      "id": "holdout_neg_18",
+      "query": "今天周杰伦有演唱会吗",
+      "expected": [],
+      "tags": [
+        "negative",
+        "out_of_domain"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [],
+      "raw_candidates": 15,
+      "gated_candidates": 0,
+      "collapsed_hit_keys": [],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.007489625,
+      "accepted_hits": 0,
+      "negative_rejected": true,
+      "recall_at_k": null,
+      "mrr": null,
+      "ndcg_at_k": null
+    },
+    {
+      "id": "holdout_neg_19",
+      "query": "小区停电找谁投诉",
+      "expected": [],
+      "tags": [
+        "negative",
+        "out_of_domain"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [],
+      "raw_candidates": 15,
+      "gated_candidates": 0,
+      "collapsed_hit_keys": [],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.038394015,
+      "accepted_hits": 0,
+      "negative_rejected": true,
+      "recall_at_k": null,
+      "mrr": null,
+      "ndcg_at_k": null
+    },
+    {
+      "id": "holdout_neg_20",
+      "query": "你们商城能和京东比价吗",
+      "expected": [],
+      "tags": [
+        "negative",
+        "near_domain"
+      ],
+      "threshold_applied": 0.052327625,
+      "hit_keys": [],
+      "raw_candidates": 15,
+      "gated_candidates": 0,
+      "collapsed_hit_keys": [],
+      "collapsed_parents": 0,
+      "raw_top_score": 0.007937994,
+      "accepted_hits": 0,
+      "negative_rejected": true,
+      "recall_at_k": null,
+      "mrr": null,
+      "ndcg_at_k": null
+    }
+  ],
+  "failures": [
+    "正例 recall@k  87.6% <  95.0%",
+    "基础正例 recall@k  93.8% <  98.0%",
+    "困难正例 recall@k  58.8% <  80.0%",
+    "正例 MRR  81.0% <  90.0%",
+    "正例 nDCG@k  82.7% <  90.0%",
+    "负例拒绝率  82.6% <  90.0%"
+  ],
+  "passed": false,
+  "manifest": {
+    "protocol": "retrieval-eval-v1",
+    "frozen": true,
+    "dataset": {
+      "path": "E:\\ea\\tmp\\wt-a7c9749\\app\\evaluation\\holdout_cases.json",
+      "sha256": "ac64b86901ecb8787eb62119f9e9fda16674a5f20b66ab8fdddcbddda858fdfa",
+      "num_cases": 120
+    },
+    "top_k": 5,
+    "variant": "hybrid-rerank",
+    "retrieval": {
+      "backend": "es",
+      "embedding_model": "bge-m3",
+      "embedding_provider": "sophnet",
+      "embedding_endpoint": "https://www.sophnet.com/api/open-apis/projects/74tM3K15eJPqCtrzJcIms3/easyllms/embeddings",
+      "embedding_endpoint_sha256": "c9c53f58a0118fa5e69d36aa4f43164ba50ef4ac44b3a8b1c9a83e26520a2dee",
+      "openai_base_url": "https://www.sophnet.com/api/open-apis/v1",
+      "openai_base_url_sha256": "c789a3f0c021b2246f04d5a0318a7f937d4ac44b580b136caeb31b6387a58c37",
+      "hybrid": true,
+      "hybrid_recall_k": 60,
+      "rerank": "bge-reranker-v2-m3",
+      "rerank_endpoint": "http://127.0.0.1:8001",
+      "rerank_endpoint_sha256": "d412c05c8726a92259f446e3c79ffc81dfc27b2841cdf18a825c44fab8b71241",
+      "rerank_model": "",
+      "min_relevance_score": 0.052327625,
+      "kb_index_path": "app/sessions/kb_index.json",
+      "chroma_persist_dir": "app/sessions/chroma"
+    },
+    "thresholds": {
+      "min_positive_recall": 0.95,
+      "min_easy_recall": 0.98,
+      "min_hard_recall": 0.8,
+      "min_mrr": 0.9,
+      "min_ndcg": 0.9,
+      "min_negative_rejection": 0.9,
+      "applied_min_score": 0.052327625,
+      "applied_min_score_hard": 0.052327625,
+      "hard_threshold_overridden": false,
+      "hard_threshold_policy": "same_as_min_score",
+      "online_threshold_match": true,
+      "online_min_score": 0.052327625
+    },
+    "git": {
+      "commit": "a7c974901c2f245901fe8772aed4c4c954a393d3"
+    },
+    "runtime": {
+      "python": "3.12.2",
+      "deps_sha256": "31df2f407ef46e90887c67e331148e86c1a64662310752a049f0fff81ef78f36"
+    },
+    "config_hash": "a62b3d54e642128049918001655374248adb2005db437879961b3383bfc4a4be"
+  }
+}

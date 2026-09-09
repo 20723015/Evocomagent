@@ -27,13 +27,12 @@ import json
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
 
 from app.observability.logging import get_logger
 
 log = get_logger("app.evolution.pipeline")
 
-from app.agent.rag.retriever import KnowledgeRetriever
+from app.agent.rag.loader import parse_frontmatter
 from app.config.settings import settings
 from app.evolution import dedup
 from app.evolution.generation import GenerationInfo, GenerationStore, new_generation_id
@@ -42,7 +41,6 @@ from app.evolution.ledger import Ledger
 from app.evolution.lock import Journal, LockGuard
 from app.evolution.miner import build_candidate, mine_turns, scan_legacy_session
 from app.evolution.models import CandidateQA, EvolutionReport, TurnRecord
-from app.evolution.publisher import Publisher
 from app.evolution.publish_state import (
     PH_ALIAS_ACTIVATED,
     PH_INDEX_BUILT,
@@ -52,9 +50,9 @@ from app.evolution.publish_state import (
     REC_BLOCKED,
     REC_FORWARD,
     REC_LEDGER_ONLY,
-    REC_ROLLBACK,
     recover_decide,
 )
+from app.evolution.publisher import Publisher
 
 EVAL_SCORE_DROP = 0.02  # avg_result_score 允许的下降容差
 
@@ -105,10 +103,11 @@ class EvolutionPipeline:
         kb_dir,
         state_dir,
         output_dir,
-        session_paths: Optional[list[Path]] = None,  # legacy v1 session 文件
+        session_paths: list[Path] | None = None,  # legacy v1 session 文件
         clock=None,
         evaluator_factory=None,  # () -> Evaluator（with_eval 用）
         eval_cases=None,  # list[EvalCase]
+        lifecycle=None,  # KnowledgeLifecycleCoordinator（人工正本路由）
     ):
         self._value_judge = value_judge
         self._grounding_judge = grounding_judge
@@ -128,10 +127,11 @@ class EvolutionPipeline:
         self._clock = clock
         self._evaluator_factory = evaluator_factory
         self._eval_cases = eval_cases or []
-        self.eval_detail: Optional[dict] = None  # with_eval 的 before/after/阻断详情
+        self._lifecycle = lifecycle
+        self.eval_detail: dict | None = None  # with_eval 的 before/after/阻断详情
 
     def _now(self) -> datetime:
-        return self._clock.now() if self._clock else datetime.now()
+        return self._clock.now() if self._clock else datetime.now()  # noqa: DTZ005
 
     # ============================================================
     # 入口
@@ -194,7 +194,7 @@ class EvolutionPipeline:
             if generation_ready:
                 try:
                     self.record_current_generation()
-                except Exception:  # noqa: BLE001 —— 记录失败不掩盖原始异常/结果
+                except Exception:  # noqa: BLE001 - generation bookkeeping is best effort
                     log.info("⚠️  记录 last_human_generation 失败（不影响本次运行）")
             self._lock.release()
 
@@ -214,6 +214,10 @@ class EvolutionPipeline:
         self._publisher.clean_staging(keep)
         if not entry:
             return
+        if entry.get("kind") == "human_publish":
+            raise EvolutionRecoveryPendingError(
+                "人工知识发布事务尚未恢复，机器人自进化本轮让路"
+            )
         if entry.get("phase") == "revalidate":
             # 隔离事务：前进式恢复（完成隔离 + 重建），不走 publish 回滚
             result = self._recover_revalidate(entry)
@@ -229,7 +233,7 @@ class EvolutionPipeline:
                 "知识库恢复状态不可确认，已写入 kb_write_blocked；请人工 reconcile"
             )
 
-    def _read_alias_target(self, backend: str) -> Optional[str]:
+    def _read_alias_target(self, backend: str) -> str | None:
         """读取真实 ES alias 指向（空=明确不存在，None=读取失败/未知）。"""
         if backend != "es":
             return ""
@@ -239,12 +243,13 @@ class EvolutionPipeline:
             if target is None:
                 return None
             return str(target or "")
-        except Exception as e:  # noqa: BLE001 —— alias 不可读必须 fail-closed
+        except Exception as e:  # noqa: BLE001 - alias read must fail closed
             log.warning("读取 ES alias 失败，恢复状态置为 unknown: %s", e)
             return None
 
-    def _recover_publish_transaction(self, entry: Optional[dict],
-                                     report: Optional[EvolutionReport] = None) -> str | None:
+    def _recover_publish_transaction(
+        self, entry: dict | None, report: EvolutionReport | None = None
+    ) -> str | None:
         """2.7 统一恢复：journal 阶段 + 真实 alias + pointer 三源决策。
 
         恢复表（publish_state.recover_decide）：
@@ -266,14 +271,23 @@ class EvolutionPipeline:
         alias_target = self._read_alias_target(backend)
 
         action = recover_decide(
-            backend, stage, pointer_target, alias_target,
-            candidate_target, previous_target,
+            backend,
+            stage,
+            pointer_target,
+            alias_target,
+            candidate_target,
+            previous_target,
         )
         from app.observability.metrics import record_evolution_recovery
+
         record_evolution_recovery(action)
         log.info(
             "🔁 journal 恢复决策: %s（stage=%s alias=%r pointer=%r candidate=%r）",
-            action, stage, alias_target, pointer_target, candidate_target,
+            action,
+            stage,
+            alias_target,
+            pointer_target,
+            candidate_target,
         )
 
         if action == REC_LEDGER_ONLY:
@@ -284,7 +298,8 @@ class EvolutionPipeline:
             # alias 已生效：只前进——补 pointer、ledger、报告，绝不回滚文件
             if not active or active.target != candidate_target:
                 self._index_service.activate_pointer(
-                    backend, GenerationInfo.from_dict(index_info),
+                    backend,
+                    GenerationInfo.from_dict(index_info),
                 )
             self._complete_ledger(entry)
             self._journal.clear()
@@ -298,24 +313,52 @@ class EvolutionPipeline:
         return action
 
     def _complete_ledger(self, entry: dict) -> None:
-        """ledger 补齐（幂等）：published 缺失补记、replaced 清理。"""
-        missing = []
+        """ledger 补齐（幂等）：published 补记并移除 pending、replaced 清理。
+
+        ``forward``/``ledger_only`` 恢复都可能发生在发布进程已经把文档
+        写入知识库、但尚未完成 ledger 提交的窗口。恢复重放必须和正常
+        ``_publish`` 使用同一个原子账本操作；只调用 ``mark_published`` 会
+        留下 ``published`` 与 ``pending`` 双重终态，下一次精确去重仍会把
+        已发布候选当作待审项。
+        """
+        publish_entries = []
         for doc in entry.get("staging_docs", []):
             cid = doc.get("candidate_id") if isinstance(doc, dict) else None
             fname = doc.get("filename") if isinstance(doc, dict) else doc
-            if cid and fname and not self._ledger.published().get(cid):
-                missing.append((cid, fname))
-        if missing:
-            self._ledger.mark_published_many(missing)
+            if cid and fname:
+                publish_entries.append((cid, fname))
+        if publish_entries:
+            # commit_publish 本身是幂等的，并在同一次落盘中 drop pending。
+            commit_publish = getattr(self._ledger, "commit_publish", None)
+            if callable(commit_publish):
+                commit_publish(publish_entries)
+            else:
+                # 兼容极简依赖注入 fake；真实 Ledger 始终走上面的原子路径。
+                self._ledger.mark_published_many(publish_entries)
+                drop_pending_many = getattr(self._ledger, "drop_pending_many", None)
+                if callable(drop_pending_many):
+                    drop_pending_many([cid for cid, _ in publish_entries])
+                else:
+                    for cid, _ in publish_entries:
+                        self._ledger.drop_pending(cid)
         olds = []
         for old in entry.get("replaced_docs", []):
+            # 与 _publish 阶段 5/5 同语义：替换结算按旧文档正本路由
+            # （journal 不含被替换文档 frontmatter，从 trash 副本读取；
+            #  未命中时回退 ledger published 反查，保持幂等）
+            if self._lifecycle is not None and self._lifecycle.settle_replacement(
+                old, None, metadata=self._replaced_doc_meta(old),
+            ):
+                continue
             cid = self._cid_for_filename(old)
             if cid is not None:
                 olds.append((old, cid))
         if olds:
             self._ledger.batch_cleanup_published(olds)
 
-    def _rollback_transaction(self, entry: dict, backend: str, index_info: dict) -> None:
+    def _rollback_transaction(
+        self, entry: dict, backend: str, index_info: dict
+    ) -> None:
         """回滚：删候选索引与新文档，恢复被替换文档，成功后归档 journal。
 
         ES candidate 只有在再次确认 alias 可读且未指向 candidate 后才允许删除；
@@ -351,13 +394,14 @@ class EvolutionPipeline:
                 KbControlStore(engine).set("kb_write_blocked", reason)
                 log.error("🚫 KB 写入已全局阻塞: %s", reason)
                 blocked_written = True
-            except Exception as e:  # noqa: BLE001 —— SQL 不可用时降级文件标记
+            except Exception as e:  # noqa: BLE001 - SQL fallback is fail closed
                 log.warning("kb_write_blocked 写 SQL 失败，降级文件: %s", e)
         if not blocked_written:
             marker = self._state_dir / "kb_write_blocked"
             marker.parent.mkdir(parents=True, exist_ok=True)
             marker.write_text(reason, encoding="utf-8")
         from app.observability.metrics import set_kb_write_blocked
+
         set_kb_write_blocked(True)
 
     def _read_kb_write_blocked(self) -> str:
@@ -368,13 +412,13 @@ class EvolutionPipeline:
         sql_value = ""
         try:
             engine = get_engine()
-        except Exception as e:  # noqa: BLE001 —— 无法确认 SQL，降级文件
+        except Exception as e:  # noqa: BLE001 - SQL fallback is fail closed
             engine = None
             log.warning("读取 kb_write_blocked SQL 引擎失败，降级文件: %s", e)
         if engine is not None:
             try:
                 sql_value = str(KbControlStore(engine).get("kb_write_blocked") or "")
-            except Exception as e:  # noqa: BLE001 —— SQL 读取失败，降级文件
+            except Exception as e:  # noqa: BLE001 - SQL fallback is fail closed
                 log.warning("读取 kb_write_blocked SQL 失败，降级文件: %s", e)
 
         # SQL 中有值时优先返回；文件标记是 SQL 不可用时的持久化降级，
@@ -427,6 +471,7 @@ class EvolutionPipeline:
             journal=self._journal,
             exclude_docs=set(progress),
             backend=backend,
+            lifecycle=self._lifecycle,
         )
         report.revalidated_checked = result["checked"]
         report.revalidated_passed = result["passed"]
@@ -438,7 +483,9 @@ class EvolutionPipeline:
             # 隔离失败文档可能在本批次内切出一个新 generation；该切代属于当前
             # 重接地事务，后续批次应沿用进度，而不是误判成新一轮人工变更。
             current = self._generation_store.active(backend)
-            progress_generation = current.generation_id if current is not None else active.generation_id
+            progress_generation = (
+                current.generation_id if current is not None else active.generation_id
+            )
             self._write_revalidate_progress(progress_generation, processed)
         log.info(
             f"🔁 重接地（人工知识变更触发）: 核对 {result['checked']} / "
@@ -503,7 +550,8 @@ class EvolutionPipeline:
         tmp.write_text(
             json.dumps(
                 {"backend": backend, "generation_id": active.generation_id},
-                ensure_ascii=False, indent=2,
+                ensure_ascii=False,
+                indent=2,
             ),
             encoding="utf-8",
         )
@@ -527,6 +575,7 @@ class EvolutionPipeline:
             index_service=self._index_service,
             generation_store=self._generation_store,
             backend=entry.get("backend") or settings.rag_backend.lower(),
+            lifecycle=self._lifecycle,
         )
         if not result.get("success", False):
             if result.get("blocked"):
@@ -557,12 +606,12 @@ class EvolutionPipeline:
                 )
                 client.delete_collection(index_info["target"])
                 return True
-            except Exception as e:  # noqa: BLE001 —— 其它失败保留 journal
+            except Exception as e:  # noqa: BLE001 - resource cleanup is retried by journal
                 if _resource_not_found(e, "collection"):
                     # 首次清理成功、随后文件回滚失败时，第二次恢复会收到
                     # NotFound；collection 已不存在即是幂等成功。
                     return True
-                return False
+                return _resource_not_found(e, "collection")
         if backend == "es" and index_info.get("target"):
             delete = getattr(self._index_service, "delete_candidate", None)
             if not callable(delete):
@@ -571,7 +620,7 @@ class EvolutionPipeline:
         # 没有候选 target 或未知后端时没有可清理对象；未知 target 不宣称成功。
         return not bool(index_info.get("target"))
 
-    def _run_eval(self) -> Optional[dict]:
+    def _run_eval(self) -> dict | None:
         """跑一遍沙箱评测（活动索引）；返回 evaluator.run_all 完整报告；无 factory 返回 None。"""
         if self._evaluator_factory is None:
             return None
@@ -593,7 +642,9 @@ class EvolutionPipeline:
     # ============================================================
     # 5：规则过滤 + 精确去重
     # ============================================================
-    def _filter(self, turns: list[TurnRecord], report: EvolutionReport) -> list[CandidateQA]:
+    def _filter(
+        self, turns: list[TurnRecord], report: EvolutionReport
+    ) -> list[CandidateQA]:
         candidates: list[CandidateQA] = []
         for turn in turns:
             candidate, reason = build_candidate(turn)
@@ -618,12 +669,14 @@ class EvolutionPipeline:
             kept = []
             for c in candidates:
                 question = c.raw_question or c.question
-                if dedup.pre_dedup(question, retriever, settings.evolve_pre_dedup_threshold):
+                if dedup.pre_dedup(
+                    question, retriever, settings.evolve_pre_dedup_threshold
+                ):
                     report.skipped["duplicate"] = report.skipped.get("duplicate", 0) + 1
                 else:
                     kept.append(c)
             return kept
-        except Exception as e:  # noqa: BLE001 —— embedding 不可用
+        except Exception as e:
             report.failures += 1
             if abort_on_error:
                 raise RuntimeError(
@@ -659,14 +712,22 @@ class EvolutionPipeline:
                 self._per_candidate(report, c, "pending", "judge_failed")
                 continue
             if not decision.worth_saving:
-                report.skipped["judge_rejected"] = report.skipped.get("judge_rejected", 0) + 1
-                self._per_candidate(report, c, "skipped", decision.reason or "worth_saving=false")
+                report.skipped["judge_rejected"] = (
+                    report.skipped.get("judge_rejected", 0) + 1
+                )
+                self._per_candidate(
+                    report, c, "skipped", decision.reason or "worth_saving=false"
+                )
                 continue
             if decision.quality_score < settings.evolve_min_quality:
                 # 独立的质量分闸门：有价值但质量不足 → 不自动发布
-                report.skipped["judge_rejected"] = report.skipped.get("judge_rejected", 0) + 1
+                report.skipped["judge_rejected"] = (
+                    report.skipped.get("judge_rejected", 0) + 1
+                )
                 self._per_candidate(
-                    report, c, "skipped",
+                    report,
+                    c,
+                    "skipped",
                     f"quality={decision.quality_score:.2f}<{settings.evolve_min_quality}",
                 )
                 continue
@@ -682,7 +743,8 @@ class EvolutionPipeline:
                 # 值得保存但缺证据（含 no_human_sources / 断言无支撑 / judge 失败）：
                 # 这正是 pending 人工审核通道的核心用途，不能直接丢弃
                 self._ledger.add_pending(
-                    c, reason=f"ungrounded:{grounding.get('reason', 'grounding_failed')}"
+                    c,
+                    reason=f"ungrounded:{grounding.get('reason', 'grounding_failed')}",
                 )
                 report.pending += 1
                 self._per_candidate(
@@ -694,28 +756,39 @@ class EvolutionPipeline:
         return survivors
 
     @staticmethod
-    def _per_candidate(report: EvolutionReport, c: CandidateQA, status: str, detail: str) -> None:
+    def _per_candidate(
+        report: EvolutionReport, c: CandidateQA, status: str, detail: str
+    ) -> None:
         report.per_candidate.append(
-            {"candidate_id": c.candidate_id, "turn_id": c.turn_id,
-             "status": status, "detail": detail}
+            {
+                "candidate_id": c.candidate_id,
+                "turn_id": c.turn_id,
+                "status": status,
+                "detail": detail,
+            }
         )
 
     # ============================================================
     # 10：最终去重 + 本轮互查
     # ============================================================
-    def _final_dedup(self, survivors, report, abort_on_error: bool) -> list[CandidateQA]:
+    def _final_dedup(
+        self, survivors, report, abort_on_error: bool
+    ) -> list[CandidateQA]:
         if not survivors:
             return survivors
         try:
             retriever = self._retriever_factory()
             kept = []
             for c in survivors:
-                hit, side = dedup.final_dedup(c.question, c.answer, retriever,
-                                              settings.evolve_dedup_threshold)
+                hit, side = dedup.final_dedup(
+                    c.question, c.answer, retriever, settings.evolve_dedup_threshold
+                )
                 if hit is not None:
                     replaces = self._replacement_for(c, hit, side)
                     if replaces is None:
-                        report.skipped["duplicate"] = report.skipped.get("duplicate", 0) + 1
+                        report.skipped["duplicate"] = (
+                            report.skipped.get("duplicate", 0) + 1
+                        )
                         continue
                     c.replaces = replaces
                 kept.append(c)
@@ -723,11 +796,14 @@ class EvolutionPipeline:
                 return kept
             vectors = self._embedder.encode([f"{c.question}\n{c.answer}" for c in kept])
             metas = [self._meta(c) for c in kept]
-            dropped = dedup.in_run_pairwise(vectors, metas,
-                                            threshold=settings.evolve_dedup_threshold)
-            report.skipped["duplicate"] = report.skipped.get("duplicate", 0) + len(dropped)
+            dropped = dedup.in_run_pairwise(
+                vectors, metas, threshold=settings.evolve_dedup_threshold
+            )
+            report.skipped["duplicate"] = report.skipped.get("duplicate", 0) + len(
+                dropped
+            )
             return [c for i, c in enumerate(kept) if i not in dropped]
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             report.failures += 1
             if abort_on_error:
                 raise RuntimeError(
@@ -744,7 +820,7 @@ class EvolutionPipeline:
             "confidence": c.confidence,
         }
 
-    def _replacement_for(self, c: CandidateQA, hit, side: str) -> Optional[str]:
+    def _replacement_for(self, c: CandidateQA, hit, side: str) -> str | None:
         """近重复命中的替换判定（P2-1）。
 
         仅**问题侧**命中可替换——答案侧命中只说明回答模板化（固定话术），
@@ -758,7 +834,7 @@ class EvolutionPipeline:
         path = getattr(getattr(hit, "chunk", None), "source_path", "") or ""
         if not path.startswith("evolved/"):
             return None
-        filename = path[len("evolved/"):]
+        filename = path[len("evolved/") :]
         if c.quality_score < self._evolved_quality(filename):
             return None
         return filename
@@ -816,9 +892,9 @@ class EvolutionPipeline:
             self._per_candidate(report, c, "staged", "")
 
         # P2-1：近重复新答案替换旧 evolved 沉淀（去重阶段已标记 c.replaces）
-        replaced_docs: list[str] = list(dict.fromkeys(
-            c.replaces for c, _ in entries if c.replaces
-        ))
+        replaced_docs: list[str] = list(
+            dict.fromkeys(c.replaces for c, _ in entries if c.replaces)
+        )
 
         backend = settings.rag_backend.lower()
         generation_id = new_generation_id(self._clock)
@@ -846,6 +922,7 @@ class EvolutionPipeline:
         self._journal.write(journal_body)
         self._lock.assert_held()
         from app.observability.metrics import set_evolution_phase
+
         set_evolution_phase(PH_PREPARED)
 
         for _, filename in entries:
@@ -890,21 +967,33 @@ class EvolutionPipeline:
         self._journal.write({**journal_body, "stage": PH_POINTER_UPDATED})
         set_evolution_phase(PH_POINTER_UPDATED)
 
-        # 阶段 5/5：提交 ledger（幂等批量）
+        # 阶段 5/5：替换结算 + 提交 ledger（幂等批量）
         retired: list[tuple[str, str]] = []
         for old in replaced_docs:
+            # 结算按旧文档正本路由（lifecycle）：human 正本 → MySQL
+            # published→superseded；ledger 正本 → batch_cleanup_published。
+            # 旧文档在阶段 1/5 已移 trash，显式带 frontmatter 防止误路由。
+            if self._lifecycle is not None and self._lifecycle.settle_replacement(
+                old, self._new_numeric_cid(entries, old),
+                metadata=self._replaced_doc_meta(old),
+            ):
+                continue
+            # 回退：lifecycle 未注入（极简测试依赖）或未命中正本
             cid = self._cid_for_filename(old)
             if cid:
                 retired.append((old, cid))
         if retired:
             self._ledger.batch_cleanup_published(retired)
-        self._ledger.commit_publish([(c.candidate_id, filename) for c, filename in entries])
+        self._ledger.commit_publish(
+            [(c.candidate_id, filename) for c, filename in entries]
+        )
         self._journal.write({**journal_body, "stage": PH_LEDGER_COMMITTED})
         set_evolution_phase(PH_LEDGER_COMMITTED)
 
         for c, filename in entries:
             report.per_candidate = [
-                p for p in report.per_candidate
+                p
+                for p in report.per_candidate
                 if not (p["candidate_id"] == c.candidate_id and p["status"] == "staged")
             ]
             detail = filename + (f"·replaced:{c.replaces}" if c.replaces else "")
@@ -916,14 +1005,49 @@ class EvolutionPipeline:
         set_evolution_phase("")
         self._finalize(report, turns)
 
-    def _cid_for_filename(self, filename: str) -> Optional[str]:
+    def _cid_for_filename(self, filename: str) -> str | None:
         """ledger.published 反查 candidate_id；不存在返回 None。"""
         return next(
             (cid for cid, f in self._ledger.published().items() if f == filename),
             None,
         )
 
-    def _mark_blocked_pending(self, entries, report: EvolutionReport, detail: dict) -> None:
+    @staticmethod
+    def _new_numeric_cid(entries: list[tuple[CandidateQA, str]], old: str) -> int | None:
+        """被替换旧文档对应新候选的数值 id（MySQL superseded 指向用）。
+
+        机器人候选 id 非数值（跨 LLM 稳定哈希）→ None。
+        """
+        for c, _fname in entries:
+            if c.replaces == old:
+                try:
+                    return int(str(c.candidate_id))
+                except (TypeError, ValueError):
+                    return None
+        return None
+
+    def _replaced_doc_meta(self, old: str) -> dict | None:
+        """被替换旧文档的 frontmatter（evolved/ 已移 trash 时读 trash 副本）。
+
+        旧文档在发布阶段 1/5 就已 unpublish 进 trash，resolve 只看
+        evolved/ 现存文件读不到 frontmatter，会把人工文档误路由到 Ledger；
+        metadata 显式携带 frontmatter 保证正本路由正确（journal 恢复路径
+        同样依赖 trash 副本）。
+        """
+        for base in (self._kb_dir / "evolved", self._state_dir / "trash"):
+            try:
+                meta, _body = parse_frontmatter(
+                    (base / old).read_text(encoding="utf-8")
+                )
+            except (OSError, ValueError):
+                continue
+            if meta:
+                return meta
+        return None
+
+    def _mark_blocked_pending(
+        self, entries, report: EvolutionReport, detail: dict
+    ) -> None:
         """with-eval 阻断 → 候选进 pending（reason=eval_blocked:<主要阻断原因>）。
 
         不 mark processed 的代价是下轮重挖重审（temperature=0 决策确定，结果相同）
@@ -933,8 +1057,7 @@ class EvolutionPipeline:
         reasons = detail.get("reasons") or []
         probes = detail.get("probe_failures") or []
         primary = (
-            reasons[0] if reasons
-            else (f"probe:{probes[0]}" if probes else "blocked")
+            reasons[0] if reasons else (f"probe:{probes[0]}" if probes else "blocked")
         )
         for c, _ in entries:
             self._ledger.add_pending(c, reason=f"eval_blocked:{primary}")
@@ -952,7 +1075,9 @@ class EvolutionPipeline:
     # ============================================================
     # with_eval：staging 评测 + 候选探针
     # ============================================================
-    def _eval_after_and_probe(self, entries, info: GenerationInfo, before_detail: dict) -> dict:
+    def _eval_after_and_probe(
+        self, entries, info: GenerationInfo, before_detail: dict
+    ) -> dict:
         """push staging override → after 评测 + 候选探针 → pop。返回阻断详情。
 
         2.6：候选检索器统一经 index_service.open_retriever 装配——
@@ -971,9 +1096,14 @@ class EvolutionPipeline:
         finally:
             knowledge_tool.pop_retriever_override()
         if after_detail is None:
-            return {"blocked": False, "before": before_detail, "after": None,
-                    "reasons": ["eval_unavailable"], "probe_failures": [],
-                    "probe_records": []}
+            return {
+                "blocked": False,
+                "before": before_detail,
+                "after": None,
+                "reasons": ["eval_unavailable"],
+                "probe_failures": [],
+                "probe_records": [],
+            }
 
         reasons: list[str] = []
         before_by_case = {c["case_id"]: c for c in before_detail["cases"]}
@@ -994,8 +1124,11 @@ class EvolutionPipeline:
         if score_after < score_before - EVAL_SCORE_DROP:
             reasons.append(f"score_drop:{score_before:.3f}->{score_after:.3f}")
 
-        # 候选探针：每条候选的两路问题都在 Top-K 内命中目标文档才放行。
+        # 候选探针：每条候选的两路问题都经统一最终口径（final_search：门控 +
+        # 父块去重 + Top-K）在 Top-K 内命中目标文档才放行。
         # 记录排名与精排分数（rerank 后 hit.score），供阻断报告与人工复核。
+        from app.agent.rag.retriever_factory import final_search
+
         probe_failures: list[str] = []
         probe_records: list[dict] = []
         probe_top_k = 5
@@ -1005,21 +1138,28 @@ class EvolutionPipeline:
                 ("original", c.raw_question or c.question),
                 ("normalized", c.question),
             ):
-                hits = staged_retriever.search(q, top_k=probe_top_k)
+                outcome = final_search(
+                    staged_retriever,
+                    q,
+                    probe_top_k,
+                    min_score=settings.rag_min_relevance_score,
+                )
                 rank = 0
                 score = None
-                for i, h in enumerate(hits, start=1):
+                for i, h in enumerate(outcome.hits, start=1):
                     if h.chunk.source_path == target_path:
                         rank, score = i, float(h.score)
                         break
-                probe_records.append({
-                    "candidate_id": c.candidate_id[:12],
-                    "filename": filename,
-                    "label": label,
-                    "rank": rank,
-                    "rerank_score": round(score, 4) if score is not None else None,
-                    "hit_source_path": target_path if rank else "",
-                })
+                probe_records.append(
+                    {
+                        "candidate_id": c.candidate_id[:12],
+                        "filename": filename,
+                        "label": label,
+                        "rank": rank,
+                        "rerank_score": round(score, 4) if score is not None else None,
+                        "hit_source_path": target_path if rank else "",
+                    }
+                )
                 if rank == 0:
                     probe_failures.append(f"{c.candidate_id[:12]}:{label}:not_in_top")
 
@@ -1036,7 +1176,7 @@ class EvolutionPipeline:
     # ============================================================
     # 回滚
     # ============================================================
-    def _rollback_publish(self, report: Optional[EvolutionReport] = None) -> None:
+    def _rollback_publish(self, report: EvolutionReport | None = None) -> None:
         """异常收尾：2.7 起调用统一恢复决策，不再自行假设「pointer 未切即回滚」。
 
         - revalidate 隔离事务不做回滚（判定已做出，前进式补齐）；
@@ -1059,12 +1199,20 @@ class EvolutionPipeline:
     # ============================================================
     # 人工 approve：走同一发布链路（跳过 Judge，计入 max_per_run）
     # ============================================================
-    def publish_approved(self, candidates: list[CandidateQA]) -> EvolutionReport:
-        """审核通过的候选直接发布：最终去重 → 渲染复扫 → journal → 索引 → 激活。"""
+    def publish_approved(
+        self, candidates: list[CandidateQA], *, lock_held: bool = False
+    ) -> EvolutionReport:
+        """审核通过的候选直接发布：最终去重 → 渲染复扫 → journal → 索引 → 激活。
+
+        lock_held=True：调用方（ReviewService）已持同一写锁，并在锁内完成
+        「读取最终版本 → 去重 → 发布 → 清账」——本方法跳过 acquire/release
+        （file 锁不可重入；mysql/redis 同实例可重入，统一走显式参数）。
+        """
         if not candidates:
             raise ValueError("没有要发布的候选")
         report = EvolutionReport()
-        self._lock.acquire(phase="approve")
+        if not lock_held:
+            self._lock.acquire(phase="approve")
         try:
             self._assert_kb_writes_allowed()
             self._recover_journal(report)
@@ -1072,17 +1220,27 @@ class EvolutionPipeline:
             try:
                 retriever = self._retriever_factory()
                 for c in candidates:
-                    hit, side = dedup.final_dedup(c.question, c.answer, retriever,
-                                                  settings.evolve_dedup_threshold)
+                    hit, side = dedup.final_dedup(
+                        c.question, c.answer, retriever, settings.evolve_dedup_threshold
+                    )
                     if hit is not None:
                         replaces = self._replacement_for(c, hit, side)
                         if replaces is None:
-                            report.skipped["duplicate"] = report.skipped.get("duplicate", 0) + 1
-                            self._per_candidate(report, c, "skipped", "duplicate_on_approve")
+                            report.skipped["duplicate"] = (
+                                report.skipped.get("duplicate", 0) + 1
+                            )
+                            self._per_candidate(
+                                report, c, "skipped", "duplicate_on_approve"
+                            )
+                            # 终结出 pending：审核时发现重复 → rejected（原因持久化）
+                            self._ledger.mark_rejected(
+                                c.candidate_id,
+                                reason="duplicate_on_approve",
+                            )
                             continue
                         c.replaces = replaces
                     kept.append(c)
-            except Exception as e:  # noqa: BLE001 —— 检索不可用不放行
+            except Exception as e:
                 raise RuntimeError(
                     f"approve 发布失败：检索不可用（{type(e).__name__}: {e}）"
                 ) from e
@@ -1090,12 +1248,13 @@ class EvolutionPipeline:
                 self._write_report(report, suffix="-approve")
                 return report
             limited = kept[: settings.evolve_max_per_run]
-            overflow = kept[settings.evolve_max_per_run:]
+            overflow = kept[settings.evolve_max_per_run :]
             for c in overflow:
                 report.pending += 1
                 self._per_candidate(report, c, "pending", "capacity_on_approve")
-            self._publish(limited, turns=[], report=report,
-                          before_detail=None, with_eval=False)
+            self._publish(
+                limited, turns=[], report=report, before_detail=None, with_eval=False
+            )
             return report
         except (EvolutionBlockedError, EvolutionRecoveryPendingError):
             raise
@@ -1106,9 +1265,10 @@ class EvolutionPipeline:
             # approve 切代后同样记录，避免下一次 run 误判为「人工知识变更」
             try:
                 self.record_current_generation()
-            except Exception:  # noqa: BLE001 —— 记录失败不掩盖原始异常/结果
+            except Exception:  # noqa: BLE001 - generation bookkeeping is best effort
                 log.info("⚠️  记录 last_human_generation 失败（不影响本次 approve）")
-            self._lock.release()
+            if not lock_held:
+                self._lock.release()
 
     # ============================================================
     # dry-run：零写入、不取锁、完整报告 + 预计 API 调用数

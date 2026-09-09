@@ -17,6 +17,7 @@ from app.stores.sql.document_store import (
     STATUS_CANCELLED,
     STATUS_DELETING,
     STATUS_DELETED,
+    STATUS_DELETE_QUEUED,
     STATUS_FAILED,
     STATUS_INDEXED,
     STATUS_INDEXING,
@@ -151,6 +152,25 @@ class TestSqlDocumentStore:
         # indexed → deleting → deleted
         v = store.update_status("doc-1", STATUS_INDEXED, STATUS_DELETING, v, require_op="op")
         v = store.update_status("doc-1", STATUS_DELETING, STATUS_DELETED, v, require_op="op")
+        assert store.get("doc-1").status == STATUS_DELETED
+
+    def test_deleting_rolls_back_to_delete_queued(self, engine):
+        """下架遇锁等待回退 delete_queued 重试是设计内路径（indexed →
+        delete_queued → deleting → deleted 状态链，upload_service 依赖）。"""
+        store = SqlDocumentStore(engine)
+        rec = store.create(_record())
+        v = store.update_status("doc-1", STATUS_UPLOADING, STATUS_VALIDATING, rec.version, operation_id="op")
+        v = store.update_status("doc-1", STATUS_VALIDATING, STATUS_INDEXING, v, require_op="op")
+        v = store.update_status("doc-1", STATUS_INDEXING, STATUS_INDEXED, v, require_op="op")
+        v = store.update_status("doc-1", STATUS_INDEXED, STATUS_DELETE_QUEUED, v, require_op="op")
+        v = store.update_status("doc-1", STATUS_DELETE_QUEUED, STATUS_DELETING, v, require_op="op")
+        # 锁等待回退：deleting → delete_queued（重试）
+        v2 = store.update_status("doc-1", STATUS_DELETING, STATUS_DELETE_QUEUED, v, require_op="op")
+        assert v2 == v + 1
+        assert store.get("doc-1").status == STATUS_DELETE_QUEUED
+        # 重试后仍可走到 deleted
+        v3 = store.update_status("doc-1", STATUS_DELETE_QUEUED, STATUS_DELETING, v2, require_op="op")
+        store.update_status("doc-1", STATUS_DELETING, STATUS_DELETED, v3, require_op="op")
         assert store.get("doc-1").status == STATUS_DELETED
 
     def test_system_error_rolls_back_to_uploading(self, engine):

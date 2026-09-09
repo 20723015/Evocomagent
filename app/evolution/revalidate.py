@@ -20,13 +20,13 @@
 from __future__ import annotations
 
 import hashlib
-import json
+import logging
 import os
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from pathlib import Path
-from typing import Optional
 
 from app.agent.rag.loader import parse_frontmatter as parse_doc_frontmatter
+from app.agent.rag.loader import serialize_frontmatter
 from app.config.settings import settings
 from app.evolution.generation import GenerationInfo, new_generation_id
 from app.evolution.models import CandidateQA, SourceRef
@@ -40,13 +40,18 @@ from app.evolution.publish_state import (
 )
 
 EFFECTIVE_DATE_MISSING = ""  # 缺 effective_date 视为最旧（排序靠前）
+_LOG = logging.getLogger(__name__)
 
 
 def _today(clock) -> date:
-    return (clock.now() if clock else datetime.now()).date()
+    return (
+        clock.now()
+        if clock
+        else datetime.now(timezone.utc).astimezone()
+    ).date()
 
 
-def parse_evolved_doc(path) -> Optional[dict]:
+def parse_evolved_doc(path) -> dict | None:
     """按 publisher 模板解析 evolved 文档；不可解析返回 None。
 
     返回 {"filename", "question", "answer", "meta"}：
@@ -73,14 +78,16 @@ def parse_evolved_doc(path) -> Optional[dict]:
     }
 
 
-def refresh_last_validated(path, today: Optional[date] = None) -> None:
+def refresh_last_validated(path, today: date | None = None) -> None:
     """原地刷新 frontmatter 的 last_validated（frontmatter 不进索引，无需重建）。"""
     text = Path(path).read_text(encoding="utf-8")
     meta, body = parse_doc_frontmatter(text)
     if not meta:
         return
-    meta["last_validated"] = (today or date.today()).isoformat()
-    block = "---\n" + "\n".join(f"{k}: {v}" for k, v in meta.items()) + "\n---\n"
+    meta["last_validated"] = (
+        today or datetime.now(timezone.utc).astimezone().date()
+    ).isoformat()
+    block = serialize_frontmatter(meta)
     tmp = Path(path).with_suffix(Path(path).suffix + ".tmp")
     tmp.write_text(block + body, encoding="utf-8")
     os.replace(tmp, path)
@@ -125,7 +132,7 @@ def _resolve_candidate_id(ledger, filename: str) -> str:
     trash_entry = ledger.trash_entry(filename)
     if trash_entry and trash_entry.get("candidate_id"):
         return str(trash_entry["candidate_id"])
-    return hashlib.sha256(f"revalidate:{filename}".encode("utf-8")).hexdigest()
+    return hashlib.sha256(f"revalidate:{filename}".encode()).hexdigest()
 
 
 def _pending_candidate(cid: str, parsed: dict) -> CandidateQA:
@@ -155,7 +162,7 @@ def _write_kb_write_blocked(reason: str, trash_dir) -> None:
             KbControlStore(engine).set("kb_write_blocked", reason)
             written = True
         except Exception:  # noqa: BLE001 —— 降级文件标记
-            pass
+            _LOG.debug("无法写入 kb_write_blocked SQL 标记", exc_info=True)
     if not written:
         marker = Path(trash_dir).parent / "kb_write_blocked"
         marker.parent.mkdir(parents=True, exist_ok=True)
@@ -165,7 +172,7 @@ def _write_kb_write_blocked(reason: str, trash_dir) -> None:
 
         set_kb_write_blocked(True)
     except Exception:  # noqa: BLE001 —— 指标不可用不影响阻塞落盘
-        pass
+        _LOG.debug("无法更新 kb_write_blocked 指标", exc_info=True)
 
 
 def _confirm_revalidate_activation(index_service, backend: str, target: str) -> tuple[bool, str]:
@@ -194,10 +201,11 @@ def revalidate(
     retriever,
     grounding_judge,
     journal=None,
-    max_docs: Optional[int] = None,
-    exclude_docs: Optional[set[str]] = None,
+    max_docs: int | None = None,
+    exclude_docs: set[str] | None = None,
     clock=None,
     backend: str = "",
+    lifecycle=None,
 ) -> dict:
     """存量自进化文档重接地；返回本批结果、已访问文件和剩余数量。
 
@@ -207,6 +215,9 @@ def revalidate(
     - 不通过 → 两遍式隔离：先全部判定（纯读 + 通过者刷 frontmatter），
       再对失败清单以 journal 事务条目开启隔离（移 trash + pending + 清账），
       一次 build+activate 后清除 journal；崩溃由 recover_revalidate 前进式补齐。
+    - 隔离结算按正本路由（010）：lifecycle 协调器注入时，human 文档改写
+      MySQL（候选回 pending_review 重审），自动沉淀维持 ledger 现状；
+      未注入（旧调用方）→ 全部走 ledger。
     - failed/failed_docs 只统计实际移入 trash 的文档（文件已不在 → 整条跳过，
       也不重建索引）。
     """
@@ -248,8 +259,6 @@ def revalidate(
         generation_id = new_generation_id(clock)
         previous = None
         if index_service is not None:
-            from app.evolution.generation import GenerationStore
-
             # 从 index_service 拿不到 store 时 previous_target 留空（旧代未知）
             try:
                 prev = getattr(index_service, "_store", None)
@@ -271,15 +280,31 @@ def revalidate(
                 },
                 "previous_target": previous_target,
             })
+        human_retired: list[str] = []  # human 正本：MySQL 侧结算，不进 ledger
+        ledger_retired: list[tuple[str, str]] = []
         for parsed in to_retire:
             # 先移文件：文件已不在 evolved/（可能已被人工处理）→ 整条跳过
             if publisher.unpublish(parsed["filename"], trash_dir) is None:
                 continue
+            # 按治理正本路由（010）：human 文档改写 MySQL 候选（回 pending_review
+            # 重审 + 重评入队），不进 ledger pending
+            routed = lifecycle is not None and lifecycle.settle_revalidation_failure(
+                parsed["filename"],
+                "revalidation_failed",
+                metadata=parsed.get("meta"),
+            )
+            if routed:
+                human_retired.append(parsed["filename"])
+                continue
             cid = _resolve_candidate_id(ledger, parsed["filename"])
             ledger.add_pending(_pending_candidate(cid, parsed), reason="revalidation_failed")
-            retired.append((parsed["filename"], cid))
+            ledger_retired.append((parsed["filename"], cid))
+        if ledger_retired:
+            ledger.batch_cleanup_published(ledger_retired)
+        retired = [(f, c) for f, c in ledger_retired] + [
+            (f, "mysql") for f in human_retired
+        ]
         if retired:
-            ledger.batch_cleanup_published(retired)
             info = index_service.build(backend, generation_id=generation_id)
             if journal is not None:
                 journal.write({
@@ -328,6 +353,7 @@ def recover_revalidate(
     index_service,
     generation_store=None,
     backend: str = "",
+    lifecycle=None,
 ) -> dict:
     """revalidate 隔离事务的恢复：与 publish 同一张恢复表（2.7）。
 
@@ -336,7 +362,8 @@ def recover_revalidate(
     - ES alias 已切、pointer 未切 → forward：只补 pointer，ledger 无需补；
     - alias 指向非旧代、非候选代 → blocked：写 kb_write_blocked，保留现场；
     - 其余（未激活）→ 前进式完成隔离：仍在 evolved/ 的完成隔离（移 trash +
-      pending + 清账），已在 trash 的只补账；随后一次 build+activate。
+      正本结算），已在 trash 的只补结算；human 只写 MySQL，robot 才写
+      Ledger；随后一次 build+activate。
     返回值带 ``success``；只有明确成功时 pipeline 才能归档 journal。
     """
     kb_dir = Path(kb_dir)
@@ -396,6 +423,7 @@ def recover_revalidate(
 
     # rollback 分支在 revalidate 语义下 = 前进式完成隔离（判定已做出不可回退）
     retired: list[tuple[str, str]] = []
+    ledger_retired: list[tuple[str, str]] = []
     found_any = False
     for name in entry.get("trashed_docs", []):
         evolved_path = kb_dir / "evolved" / name
@@ -406,12 +434,25 @@ def recover_revalidate(
         found_any = True
         parsed = parse_evolved_doc(evolved_path if in_evolved else trash_path)
         publisher.unpublish(name, trash_dir)  # 已在 trash → 返回 None，幂等
+        routed = (
+            lifecycle is not None
+            and parsed is not None
+            and lifecycle.settle_revalidation_failure(
+                name,
+                "revalidation_failed",
+                metadata=parsed.get("meta"),
+            )
+        )
+        if routed:
+            retired.append((name, "mysql"))
+            continue
         cid = _resolve_candidate_id(ledger, name)
         if parsed is not None:
             ledger.add_pending(_pending_candidate(cid, parsed), reason="revalidation_failed")
+        ledger_retired.append((name, cid))
         retired.append((name, cid))
-    if retired:
-        ledger.batch_cleanup_published(retired)
+    if ledger_retired:
+        ledger.batch_cleanup_published(ledger_retired)
     if found_any or retired:
         info = index_service.build(backend)
         index_service.activate(backend, info)

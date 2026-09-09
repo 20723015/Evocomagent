@@ -164,6 +164,13 @@ def candidate_id_for_turn(turn_id: str) -> str:
     return hashlib.sha256(f"turn:v1:{turn_id}".encode("utf-8")).hexdigest()
 
 
+def candidate_id_for_handoff(ticket_id: str) -> str:
+    """人工工单候选的稳定 ID（重放去重锚点：只依赖 ticket_id）。"""
+    return hashlib.sha256(
+        f"handoff:v1:{ticket_id}".encode("utf-8"),
+    ).hexdigest()
+
+
 def legacy_candidate_id(
     session_key: str,
     msg_index: int,

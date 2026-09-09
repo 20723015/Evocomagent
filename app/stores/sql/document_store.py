@@ -1,13 +1,15 @@
 """SqlDocumentStore / KbControlStore：KB 文档上传元数据与全局控制表的 SQL 正本。
 
-状态机（v7 冻结；全部迁移走 CAS：WHERE status + version，处理路径加
-operation_id 三条件；update 同事务刷新 status_changed_at）：
+状态机（v7 冻结 + 异步改造扩展；全部迁移走 CAS：WHERE status + version，
+处理路径加 operation_id 三条件；update 同事务刷新 status_changed_at）：
 
-    uploading → validating → indexing → indexed
+    uploading → queued（异步入队）→ validating → indexing → indexed
+    uploading → validating（同步兼容路径，kb_async 开关关闭时）
     uploading/validating → cancelled（主动取消/会话过期）
     输入错误（hash/magic/解析/消毒/超限）→ failed（终态，无 failed→validating）
-    系统错误（锁冲突/构建异常/提交点前失败）→ 回退 uploading
-    indexed → deleting → deleted；deleting 仅提交点前回滚 indexed
+    系统错误（锁冲突/构建异常/提交点前失败）→ 回退 queued（异步）/uploading（同步）
+    indexed → delete_queued（异步入队）→ deleting → deleted
+    indexed → deleting（同步兼容路径）；deleting 仅提交点前回滚 indexed
 
 异常语义与 SqlSessionStore 一致：IntegrityError → 可重试冲突（409 语义），
 其余 → StorageUnavailableError（503）。
@@ -15,10 +17,8 @@ operation_id 三条件；update 同事务刷新 status_changed_at）：
 
 from __future__ import annotations
 
-import json
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass
 from datetime import datetime
-from typing import Optional
 
 from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
@@ -28,21 +28,34 @@ from app.stores.sql.schema import kb_control, kb_documents
 
 # ---- 状态常量 ----
 STATUS_UPLOADING = "uploading"
+STATUS_QUEUED = "queued"
 STATUS_VALIDATING = "validating"
 STATUS_INDEXING = "indexing"
 STATUS_INDEXED = "indexed"
 STATUS_FAILED = "failed"
 STATUS_CANCELLED = "cancelled"
 STATUS_DELETING = "deleting"
+STATUS_DELETE_QUEUED = "delete_queued"
 STATUS_DELETED = "deleted"
 
 # 合法迁移表（起点 → 可达终点）
 _ALLOWED_TRANSITIONS: dict[str, set[str]] = {
-    STATUS_UPLOADING: {STATUS_VALIDATING, STATUS_FAILED, STATUS_CANCELLED},
-    STATUS_VALIDATING: {STATUS_INDEXING, STATUS_UPLOADING, STATUS_FAILED, STATUS_CANCELLED},
-    STATUS_INDEXING: {STATUS_INDEXED, STATUS_UPLOADING, STATUS_FAILED},
-    STATUS_INDEXED: {STATUS_DELETING},
-    STATUS_DELETING: {STATUS_DELETED, STATUS_INDEXED},
+    STATUS_UPLOADING: {
+        STATUS_QUEUED, STATUS_VALIDATING, STATUS_FAILED, STATUS_CANCELLED,
+    },
+    STATUS_QUEUED: {
+        STATUS_VALIDATING, STATUS_UPLOADING, STATUS_FAILED, STATUS_CANCELLED,
+    },
+    STATUS_VALIDATING: {
+        STATUS_INDEXING, STATUS_QUEUED, STATUS_UPLOADING,
+        STATUS_FAILED, STATUS_CANCELLED,
+    },
+    STATUS_INDEXING: {
+        STATUS_INDEXED, STATUS_QUEUED, STATUS_UPLOADING, STATUS_FAILED,
+    },
+    STATUS_INDEXED: {STATUS_DELETING, STATUS_DELETE_QUEUED},
+    STATUS_DELETE_QUEUED: {STATUS_DELETING, STATUS_INDEXED},
+    STATUS_DELETING: {STATUS_DELETED, STATUS_INDEXED, STATUS_DELETE_QUEUED},
     STATUS_FAILED: set(),
     STATUS_CANCELLED: set(),
     STATUS_DELETED: set(),
@@ -130,18 +143,18 @@ class SqlDocumentStore:
                 if condition is not None:
                     q = q.where(condition)
                 return [dict(r) for r in conn.execute(q).mappings().all()]
-        except Exception as e:  # noqa: BLE001 —— 断连即存储不可用（503 语义）
+        except Exception as e:
             raise StorageUnavailableError(f"SQL 读取失败: {e}") from e
 
-    def get(self, doc_id: str) -> Optional[DocumentRecord]:
+    def get(self, doc_id: str) -> DocumentRecord | None:
         rows = self._fetch_rows(kb_documents.c.doc_id == doc_id, limit=1)
         return _row_to_record(rows[0]) if rows else None
 
-    def get_by_upload_id(self, upload_id: str) -> Optional[DocumentRecord]:
+    def get_by_upload_id(self, upload_id: str) -> DocumentRecord | None:
         rows = self._fetch_rows(kb_documents.c.upload_id == upload_id, limit=1)
         return _row_to_record(rows[0]) if rows else None
 
-    def get_by_storage_key(self, storage_key: str) -> Optional[DocumentRecord]:
+    def get_by_storage_key(self, storage_key: str) -> DocumentRecord | None:
         rows = self._fetch_rows(kb_documents.c.storage_key == storage_key, limit=1)
         return _row_to_record(rows[0]) if rows else None
 
@@ -166,7 +179,7 @@ class SqlDocumentStore:
             return existing
         values = _record_to_db_values(record)
         values.update({
-            "status_changed_at": datetime.now(),
+            "status_changed_at": datetime.now(),  # noqa: DTZ005
             "expires_at": _as_dt(record.expires_at),
         })
         try:
@@ -179,7 +192,7 @@ class SqlDocumentStore:
             raise StorageUnavailableError(
                 f"SQL 写入失败（唯一键冲突且非重复创建）: {e.orig}"
             ) from e
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             raise StorageUnavailableError(f"SQL 写入失败: {e}") from e
         got = self.get_by_upload_id(record.upload_id)
         assert got is not None
@@ -192,7 +205,7 @@ class SqlDocumentStore:
         dst: str,
         expected_version: int,
         *,
-        require_op: Optional[str] = None,
+        require_op: str | None = None,
         **fields,
     ) -> int:
         """CAS 状态迁移：WHERE status=src AND version=expected（+ require_op 三条件）。
@@ -207,7 +220,7 @@ class SqlDocumentStore:
         values = dict(fields)
         values["status"] = dst
         values["version"] = expected_version + 1
-        values["status_changed_at"] = datetime.now()
+        values["status_changed_at"] = datetime.now()  # noqa: DTZ005
         where = [
             kb_documents.c.doc_id == doc_id,
             kb_documents.c.status == src,
@@ -218,14 +231,14 @@ class SqlDocumentStore:
         try:
             with self._engine.begin() as conn:
                 updated = conn.execute(update(kb_documents).where(*where).values(**values))
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             raise StorageUnavailableError(f"SQL 写入失败: {e}") from e
         return expected_version + 1 if updated.rowcount == 1 else -1
 
-    def expire_orphans(self, before: Optional[datetime] = None) -> int:
+    def expire_orphans(self, before: datetime | None = None) -> int:
         """懒清理：expires_at 早于 before 的 uploading 行 → cancelled（不删审计行）。"""
         if before is None:
-            before = datetime.now().replace(microsecond=0)
+            before = datetime.now().replace(microsecond=0)  # noqa: DTZ005
         try:
             with self._engine.begin() as conn:
                 updated = conn.execute(
@@ -239,10 +252,10 @@ class SqlDocumentStore:
                         status=STATUS_CANCELLED,
                         error="上传会话已过期，自动取消",
                         version=kb_documents.c.version + 1,
-                        status_changed_at=datetime.now(),
+                        status_changed_at=datetime.now(),  # noqa: DTZ005
                     )
                 )
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             raise StorageUnavailableError(f"SQL 写入失败: {e}") from e
         return int(updated.rowcount or 0)
 
@@ -251,7 +264,7 @@ class SqlDocumentStore:
         try:
             with self._engine.begin() as conn:
                 conn.execute(kb_documents.delete().where(kb_documents.c.doc_id == doc_id))
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             raise StorageUnavailableError(f"SQL 删除失败: {e}") from e
 
 
@@ -281,7 +294,7 @@ def _record_to_db_values(record: DocumentRecord) -> dict:
     }
 
 
-def _as_dt(value: str) -> Optional[datetime]:
+def _as_dt(value: str) -> datetime | None:
     if not value:
         return None
     try:
@@ -305,7 +318,7 @@ class KbControlStore:
                 row = conn.execute(
                     select(kb_control.c.value).where(kb_control.c.key == key)
                 ).mappings().first()
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             raise StorageUnavailableError(f"SQL 读取失败: {e}") from e
         return str(row["value"]) if row is not None else ""
 
@@ -315,7 +328,7 @@ class KbControlStore:
                 row = conn.execute(
                     select(kb_control.c.version).where(kb_control.c.key == key)
                 ).mappings().first()
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             raise StorageUnavailableError(f"SQL 读取失败: {e}") from e
         return int(row["version"]) if row is not None else 0
 
@@ -337,7 +350,7 @@ class KbControlStore:
                         index_elements=[kb_control.c.key], set_={"value": value},
                     )
                 conn.execute(stmt)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             raise StorageUnavailableError(f"SQL 写入失败: {e}") from e
         return self.version(key)
 
@@ -353,9 +366,9 @@ class KbControlStore:
                     update(kb_control)
                     .where(*where)
                     .values(value=value, version=expected_version + 1,
-                            updated_at=datetime.now())
+                            updated_at=datetime.now())  # noqa: DTZ005
                 )
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             raise StorageUnavailableError(f"SQL 写入失败: {e}") from e
         return updated.rowcount == 1
 
@@ -363,5 +376,5 @@ class KbControlStore:
         try:
             with self._engine.begin() as conn:
                 conn.execute(kb_control.delete().where(kb_control.c.key == key))
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             raise StorageUnavailableError(f"SQL 删除失败: {e}") from e

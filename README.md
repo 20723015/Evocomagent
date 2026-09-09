@@ -169,7 +169,7 @@ ecom-service-agent/
 │   │   │   ├── memory_tool.py     # recall_user_memory：查询用户记忆
 │   │   │   └── skill_tool.py      # load_skill：按需加载技能指令
 │   │   └── rag/                   # RAG 模块
-│   │       ├── chunker.py         # Markdown → Chunk（按二级标题切分，frontmatter 元数据 + .txt 接入）
+│   │       ├── chunker.py         # Markdown → Chunk（按 H1-H6 标题层级递归切分 + 长文本兜底，frontmatter 元数据 + .txt 接入）
 │   │       ├── loader.py          # 文档接入：frontmatter 解析 + 文本规范化（阶段七 7.1）
 │   │       ├── embedder.py        # OpenAI Embeddings 封装
 │   │       ├── retriever.py       # KnowledgeRetriever：query → 向量检索

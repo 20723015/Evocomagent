@@ -2,7 +2,8 @@
 
 配合 7.1-7.4 的检索改造（embedder / 后端切换 / generation 感知单例）使用：
 评估的检索器通过 app.agent.tools.knowledge._get_retriever() 取「线上同款」实例，
-保证指标反映的就是生产链路（而非特制的黄金索引）。
+检索本身统一走 retriever_factory.final_search（3 倍候选 ≤15 → 阈值门控 →
+parent_id 去重 → Top-K），与线上 search_knowledge 完全同口径。
 
 指标定义（同一文档的多个 chunk 按首次出现位置折叠）：
 - recall@k  ：前 k 个命中里覆盖的期望文档数 / 期望文档总数。
@@ -10,6 +11,10 @@
 - nDCG@k    ：binary relevance（命中期望 = 1）的归一化折损累计增益，
               理想列按前 min(k, len(expected)) 位全命中的 DCG 计算。
 - negative rejection：expected=[] 时，经相关度阈值过滤后没有任何候选即为正确拒绝。
+
+评测报告逐例记录：原始候选数、父块折叠后的命中键、被去重的 parent 数。
+口径变化（引入统一 final_search）后，历史阈值与报告不可直接对比，需在
+dev 集重新校准并通过后再冻结 holdout。
 
 评估集格式（retrieval_cases.json）：
     {"cases": [{"id": str, "query": str, "expected": [source_path, ...], "k": 5}]}
@@ -21,8 +26,6 @@ from __future__ import annotations
 import json
 import math
 from pathlib import Path
-
-from app.agent.rag.retriever import filter_hits_by_score
 
 _REQUIRED_CASE_FIELDS = ("id", "query", "expected")
 
@@ -194,9 +197,17 @@ def calibrate_threshold(
 ) -> dict:
     """为当前检索配置选择满足正例召回约束的最高分数阈值。
 
-    校准集必须与正式困难题/负例分离。返回阈值及校准指标；若原始检索或
-    分数分布无法同时满足约束则抛 ValueError，避免提交拍脑袋阈值。
+    校准集必须与正式困难题/负例分离。检索走与线上一致的 final_search
+    统一口径（此处 min_score=None 取全候选，阈值在候选上扫描）；若原始
+    检索或分数分布无法同时满足约束则抛 ValueError，避免提交拍脑袋阈值。
     """
+    from app.agent.rag.retriever import collapse_by_parent, filter_hits_by_score
+    from app.agent.rag.retriever_factory import final_search
+
+    def _final(hits: list, k: int, threshold: float) -> list:
+        """与 final_search 相同的门控→折叠→截断顺序（扫阈值时复用候选）。"""
+        return collapse_by_parent(filter_hits_by_score(hits, threshold), k)
+
     if not positive_cases or not negative_queries:
         raise ValueError("阈值校准需要非空正例和负例")
 
@@ -205,13 +216,13 @@ def calibrate_threshold(
     scores: list[float] = []
     for case in positive_cases:
         k = int(case.get("k") or top_k)
-        hits = retriever.search(case["query"], top_k=k)
-        positive_runs.append((hits, list(case["expected"]), k))
-        scores.extend(hit.score for hit in hits)
+        outcome = final_search(retriever, case["query"], k)
+        positive_runs.append((outcome.raw_hits, list(case["expected"]), k))
+        scores.extend(hit.score for hit in outcome.raw_hits)
     for query in negative_queries:
-        hits = retriever.search(query, top_k=top_k)
-        negative_runs.append(hits)
-        scores.extend(hit.score for hit in hits)
+        outcome = final_search(retriever, query, top_k)
+        negative_runs.append(outcome.raw_hits)
+        scores.extend(hit.score for hit in outcome.raw_hits)
     if not scores:
         raise ValueError("阈值校准未获得任何候选分数")
 
@@ -221,12 +232,12 @@ def calibrate_threshold(
     for threshold in candidates:
         positive_recall = _mean(
             recall_at_k(
-                _unique_keys(filter_hits_by_score(hits, threshold)), expected, k
+                _unique_keys(_final(hits, k, threshold)), expected, k
             )
             for hits, expected, k in positive_runs
         )
         negative_rejection = _mean(
-            not filter_hits_by_score(hits, threshold) for hits in negative_runs
+            not _final(hits, top_k, threshold) for hits in negative_runs
         )
         if positive_recall >= min_positive_recall:
             feasible.append((threshold, positive_recall, negative_rejection))
@@ -257,26 +268,29 @@ def evaluate(
 ) -> dict:
     """逐用例跑检索并聚合 recall@k / MRR / nDCG@k。
 
-    每条用例调 retriever.search(query, top_k=top_k)（hits 为 RetrievedChunk，
-    比对键取 chunk.source_path（空则 chunk.doc））；指标口径 k 取用例自带的
-    "k"（缺省回落 top_k），便于单条用例收紧/放宽判定窗口（如跨文档用例）。
-    返回逐例诊断信息，以及 positive/easy/hard/negative 分层汇总。负例的三个
-    ranking 指标为 None，只进入 rejection_rate，避免与正例平均值混算。
+    每条用例经 retriever_factory.final_search 统一口径检索（3 倍候选 ≤15 →
+    阈值门控 → parent_id 去重 → Top-K），与线上 search_knowledge 完全同源；
+    比对键取 chunk.source_path（空则 chunk.doc），指标口径 k 取用例自带的
+    "k"（缺省回落 top_k）。返回逐例诊断信息（含原始候选数、折叠后命中键、
+    被去重的 parent 数），以及 positive/easy/hard/negative 分层汇总。负例的
+    三个 ranking 指标为 None，只进入 rejection_rate，避免与正例平均值混算。
 
     min_score / min_score_hard：相关度阈值分 easy/hard 两档。hard 用例默认
     使用与线上一致的 ``min_score``；只有调用方显式传入 ``min_score_hard``
     才采用非线上口径。这样评测不会在 hard 集悄悄绕过线上相关度门控。
     """
+    from app.agent.rag.retriever_factory import final_search
+
     results: list[dict] = []
     for case in cases:
         k = int(case.get("k") or top_k)
-        raw_hits = retriever.search(case["query"], top_k=k)
         threshold = (
             min_score_hard if (
                 "hard" in case.get("tags", []) and min_score_hard is not None
             ) else min_score
         )
-        hits = filter_hits_by_score(raw_hits, threshold)
+        outcome = final_search(retriever, case["query"], k, min_score=threshold)
+        hits = outcome.hits
         hit_keys = _unique_keys(hits)
         expected = list(case["expected"])
         is_negative = not expected
@@ -287,7 +301,13 @@ def evaluate(
             "tags": list(case.get("tags", [])),
             "threshold_applied": threshold,
             "hit_keys": hit_keys,
-            "raw_top_score": raw_hits[0].score if raw_hits else None,
+            # 统一口径诊断：原始候选数 / 阈值过滤后候选数 / 折叠后命中键 /
+            # 被去重的 parent 数
+            "raw_candidates": outcome.raw_candidates,
+            "gated_candidates": outcome.gated_candidates,
+            "collapsed_hit_keys": outcome.kept_keys,
+            "collapsed_parents": outcome.collapsed_parents,
+            "raw_top_score": outcome.raw_top_score,
             "accepted_hits": len(hits),
             "negative_rejected": is_negative and not hits,
             "recall_at_k": None if is_negative else recall_at_k(hit_keys, expected, k),

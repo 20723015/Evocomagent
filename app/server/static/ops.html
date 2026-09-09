@@ -20,6 +20,7 @@
     <button class="tab" role="tab" id="tabBtnHandoffs" data-tab="handoffs" aria-selected="true" aria-controls="tab-handoffs" tabindex="0">转人工工单</button>
     <button class="tab" role="tab" id="tabBtnSearch" data-tab="search" aria-selected="false" aria-controls="tab-search" tabindex="-1">对话全文检索</button>
     <button class="tab" role="tab" id="tabBtnUpload" data-tab="upload" aria-selected="false" aria-controls="tab-upload" tabindex="-1">知识库文档</button>
+    <button class="tab" role="tab" id="tabBtnHumanKnowledge" data-tab="human-knowledge" aria-selected="false" aria-controls="tab-human-knowledge" tabindex="-1">人工知识审核</button>
   </div>
 
   <section id="tab-handoffs" role="tabpanel" aria-labelledby="tabBtnHandoffs">
@@ -77,6 +78,23 @@
         <div class="es-hint">上传 md/txt/pdf/docx/html，经版本化重建后进入 Agent 检索（分片断点续传 + 溯源元数据）</div>
       </div>
     </div>
+  </section>
+
+  <section id="tab-human-knowledge" role="tabpanel" aria-labelledby="tabBtnHumanKnowledge" hidden>
+    <div class="toolbar">
+      <label class="sr-only" for="humanKnowledgeStatus">候选状态</label>
+      <select id="humanKnowledgeStatus">
+        <option value="pending_review" selected>待审核</option>
+        <option value="publish_queued">发布中</option>
+        <option value="published">已发布</option>
+        <option value="rejected">已拒绝</option>
+        <option value="superseded">已过期</option>
+      </select>
+      <button id="refreshHumanKnowledge" class="btn btn-outline">刷新</button>
+      <button id="publishHumanKnowledge" class="btn btn-primary" disabled>批准并发布所选</button>
+      <span id="humanKnowledgeCount" class="hint"></span>
+    </div>
+    <div class="ticket-list" id="humanKnowledgeBox"></div>
   </section>
 </div>
 

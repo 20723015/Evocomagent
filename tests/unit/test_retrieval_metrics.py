@@ -279,7 +279,7 @@ def test_evaluate_negative_cases_use_filtered_empty_results():
 def test_hard_cases_default_to_the_online_threshold():
     """未显式覆盖 hard 阈值时，hard 不得绕过线上相关度过滤。"""
     class ScoredRetriever:
-        def search(self, query, top_k=5):
+        def search(self, query, top_k=5, timeout=None):
             return [RetrievedChunk(
                 chunk=Chunk(
                     chunk_id="hard", doc="退换货政策", section="s", text="t",
@@ -323,7 +323,7 @@ def test_retrieval_manifest_contains_dataset_hash_and_thresholds(tmp_path, reset
 
 def test_calibrate_threshold_keeps_positive_and_rejects_negative():
     class ScoredRetriever:
-        def search(self, query, top_k=5):
+        def search(self, query, top_k=5, timeout=None):
             score = 0.9 if query == "answerable" else 0.2
             doc = "退换货政策.md" if query == "answerable" else "配送说明.md"
             return [RetrievedChunk(

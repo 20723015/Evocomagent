@@ -70,9 +70,20 @@ def test_index_key_structure_and_aria():
     with _client() as client:
         html = client.get("/").text
     for dom_id in [
-        "sidebar", "sidebarMask", "sessionList", "userIdInput",
-        "healthDot", "healthText", "chatTitle", "btnReset",
-        "chat", "inner", "input", "send", "btnNew", "srStatus",
+        "sidebar",
+        "sidebarMask",
+        "sessionList",
+        "userIdInput",
+        "healthDot",
+        "healthText",
+        "chatTitle",
+        "btnReset",
+        "chat",
+        "inner",
+        "input",
+        "send",
+        "btnNew",
+        "srStatus",
     ]:
         assert f'id="{dom_id}"' in html, f"index 缺少 #{dom_id}"
     # 可访问性:输入框标签、消息区语义、状态播报、侧栏抽屉开关
@@ -89,17 +100,33 @@ def test_ops_tabs_and_forms_structure():
     with _client() as client:
         html = client.get("/ops.html").text
     for dom_id in [
-        "opsUser", "statusFilter", "refreshTickets", "ticketBox",
-        "searchQ", "searchSession", "searchLimit", "doSearch",
-        "searchBox", "srStatus",
-        "tabBtnUpload", "kbFile", "kbUploadBtn", "kbProgress", "kbDocs",
+        "opsUser",
+        "statusFilter",
+        "refreshTickets",
+        "ticketBox",
+        "searchQ",
+        "searchSession",
+        "searchLimit",
+        "doSearch",
+        "searchBox",
+        "srStatus",
+        "tabBtnUpload",
+        "kbFile",
+        "kbUploadBtn",
+        "kbProgress",
+        "kbDocs",
+        "tabBtnHumanKnowledge",
+        "humanKnowledgeStatus",
+        "refreshHumanKnowledge",
+        "publishHumanKnowledge",
+        "humanKnowledgeBox",
     ]:
         assert f'id="{dom_id}"' in html, f"ops 缺少 #{dom_id}"
     # 标签语义:tablist / tab + aria-selected + tabpanel + roving tabindex
     assert 'role="tablist"' in html
-    assert html.count('role="tab"') == 3
+    assert html.count('role="tab"') == 4
     assert 'aria-selected="true"' in html
-    assert html.count('role="tabpanel"') == 3
+    assert html.count('role="tabpanel"') == 4
     assert 'tabindex="0"' in html and 'tabindex="-1"' in html
     # 表单控件均有可访问名称(sr-only label 或 aria-label)
     assert 'for="searchQ"' in html

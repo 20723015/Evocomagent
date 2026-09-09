@@ -16,6 +16,7 @@
 import hmac
 import json
 import sys
+from collections.abc import Mapping
 from pathlib import Path
 from typing import Optional
 
@@ -23,6 +24,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from mcp.server.fastmcp import Context, FastMCP
+from mcp.types import CallToolResult, TextContent
 
 from app.agent.context import ToolContext
 from app.agent.tools.order import query_order as _query_order
@@ -49,7 +51,7 @@ def _actor_ctx(ctx: Context) -> ToolContext:
 
     request_context = ctx.request_context if ctx is not None else None
     meta = request_context.meta if request_context is not None else None
-    raw = getattr(meta, "actor", None) if meta is not None else None
+    raw = _meta_value(meta, "actor")
     if not raw:
         raise ValueError("缺少 actor token：敏感工具要求短期用户身份（orders:read/refund:write）")
     try:
@@ -74,7 +76,7 @@ def _actor_ctx_refund(ctx: Context) -> ToolContext:
 
     request_context = ctx.request_context if ctx is not None else None
     meta = request_context.meta if request_context is not None else None
-    raw = getattr(meta, "actor", None) if meta is not None else None
+    raw = _meta_value(meta, "actor")
     if not raw:
         raise ValueError("缺少 actor token：退款是敏感写操作（要求 refund:write）")
     try:
@@ -86,6 +88,35 @@ def _actor_ctx_refund(ctx: Context) -> ToolContext:
         user_id=str(claims.get("sub", "")),
         session_id=str(claims.get("session_id", "") or ""),
     )
+
+
+def _meta_value(meta, key: str):
+    """兼容 MCP SDK 的 dict/Mapping 与测试中的属性式 meta。"""
+    if meta is None:
+        return None
+    if isinstance(meta, Mapping):
+        return meta.get(key)
+    return getattr(meta, key, None)
+
+
+def _refund_internal_args(ctx: Context) -> dict:
+    """读取退款确认内部参数（meta 通道），绝不扩展工具公开 schema。"""
+    request_context = ctx.request_context if ctx is not None else None
+    meta = request_context.meta if request_context is not None else None
+    raw = _meta_value(meta, "internal_args")
+    if raw is None:
+        return {}
+    if not isinstance(raw, Mapping):
+        raise ValueError("退款确认内部参数格式无效")
+    allowed = {"confirmation_token", "idempotency_key", "refund_id"}
+    out: dict = {}
+    for key, value in raw.items():
+        if key not in allowed:
+            continue
+        if not isinstance(value, str) or len(value) > 512:
+            raise ValueError("退款确认内部参数格式无效")
+        out[key] = value
+    return out
 
 
 @mcp.tool()
@@ -112,11 +143,47 @@ def query_logistics(order_id: str, ctx: Context) -> str:
 
 
 @mcp.tool()
-def apply_refund(order_id: str, reason: str, ctx: Context) -> str:
+def apply_refund(order_id: str, reason: str, ctx: Context):
     """为指定订单申请退款。注意：这是一个敏感操作，调用前应先与用户确认"""
     user_ctx = _actor_ctx_refund(ctx)
-    result = _apply_refund(order_id, reason, user_ctx)
-    return json.dumps(result, ensure_ascii=False)
+    # confirmation_token/refund_id 只由服务端从 meta 内部通道读取，保持
+    # MCP 公开 schema 仍只有 order_id/reason。
+    internal = _refund_internal_args(ctx)
+    result = _apply_refund(
+        order_id, reason, user_ctx,
+        confirmation_token=internal.get("confirmation_token"),
+        idempotency_key=internal.get("idempotency_key"),
+        refund_id=internal.get("refund_id"),
+    )
+    text = json.dumps(result, ensure_ascii=False)
+    if result.get("status") != "pending_confirmation":
+        return text
+
+    # 首段凭证只放 MCP 响应 _meta，不进正文。生产通常由共享 Redis 直接
+    # 提供同一注册表；本地双进程模式由 ToolManager 消费该 meta 后同步。
+    # 直接 MCP 调用方只会在显式读取协议 meta 时接触此内部字段。
+    from app.agent.refund_gate import get_session_pending
+    from app.agent.tools.refund import _confirmation_store
+
+    pending = get_session_pending(
+        _confirmation_store(), user_ctx.user_id, user_ctx.session_id,
+    )
+    matched = next(
+        (item for item in pending if item.refund_id == result.get("refund_id")),
+        None,
+    )
+    if matched is None or not matched.token:
+        return text
+    return CallToolResult(
+        content=[TextContent(type="text", text=text)],
+        _meta={"refund_confirmation": {
+            "refund_id": matched.refund_id,
+            "order_id": matched.order_id,
+            "reason": matched.reason,
+            "confirmation_token": matched.token,
+            "expires_in_seconds": settings.refund_confirm_ttl_seconds,
+        }},
+    )
 
 
 @mcp.tool()

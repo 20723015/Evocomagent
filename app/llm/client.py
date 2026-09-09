@@ -17,7 +17,7 @@ from __future__ import annotations
 import random
 import threading
 import time
-from typing import Callable, Optional
+from collections.abc import Callable
 
 from openai import (
     APIConnectionError,
@@ -71,11 +71,11 @@ class ResilientLLM:
         client,
         model: str,
         *,
-        fallback_model: Optional[str] = None,
-        max_retries: Optional[int] = None,
-        max_concurrent: Optional[int] = None,
-        timeout_seconds: Optional[float] = None,
-        semaphore: Optional[threading.BoundedSemaphore] = None,
+        fallback_model: str | None = None,
+        max_retries: int | None = None,
+        max_concurrent: int | None = None,
+        timeout_seconds: float | None = None,
+        semaphore: threading.BoundedSemaphore | None = None,
     ):
         self._client = client
         self._model = model
@@ -120,7 +120,7 @@ class ResilientLLM:
                 )
             try:
                 attempt = 0
-                last_exc: Optional[Exception] = None
+                last_exc: Exception | None = None
                 while attempt <= self._retries:
                     # 剩余预算放不下一次完整调用 → 不再发起（评审二轮 B3）。
                     # 内部 deadline 与 turn deadline 双夹逼：两者任一耗尽即停
@@ -230,9 +230,9 @@ class ResilientLLM:
         usage = getattr(response, "usage", None)
         prompt_tokens = getattr(usage, "prompt_tokens", 0) or 0
         completion_tokens = getattr(usage, "completion_tokens", 0) or 0
-        total = getattr(usage, "total_tokens", 0) or 0
-        metrics.record_tokens("prompt", purpose, prompt_tokens, model)
-        metrics.record_tokens("completion", purpose, completion_tokens, model)
+        # 阶段G：真实 usage 拆分方向计费（不再 70/30 估算）+ 调用次数指标
+        metrics.record_llm_usage(model, purpose, prompt_tokens, completion_tokens)
+        metrics.record_llm_call_count(purpose)
         tracing.record_llm_call(model, purpose, latency_ms, prompt_tokens, completion_tokens)
 
 

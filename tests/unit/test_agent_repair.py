@@ -35,27 +35,31 @@ from app.evaluation import metrics as eval_metrics
 
 
 # ============================================================
-# 辅助阶段容错（STM/摘要/LTM 预算耗尽不清回复）
+# 辅助阶段容错（摘要压缩预算耗尽不清回复）
 # ============================================================
 def test_auxiliary_phases_budget_exhausted_preserve_reply(reset_settings, tmp_path):
     from app.agent.chat import EcomAgent
-    from tests.unit.conftest import FakeChatClient, sample_response
+    from tests.unit.conftest import FakeChatClient
 
-    client = FakeChatClient()
+    client = FakeChatClient().enqueue_final_response("这是客服回复内容。")
     agent = EcomAgent(session_path=str(tmp_path / "s.json"), client=client)
-    agent._react_loop = lambda state, budget: "这是客服回复内容。"
-    agent._extract_structured_response = lambda text: sample_response(
-        reply="这是客服回复内容。"
-    )
 
     def boom(*a, **k):
         raise LLMBudgetExhausted("budget")
 
-    agent.memory_manager.update_short_term = boom
-    agent.memory_manager.consolidate_to_long_term = boom
-    agent._compress_history = boom
-    agent.history_threshold = 1   # 一轮即触发压缩
-    agent._consolidate_every = 1  # 一轮即触发增量巩固
+    # 历史压缩（辅助 LLM）预算耗尽 → 不毁掉已生成回复、会话仍保存
+    agent.context_builder._window = 300  # 极小水位：一轮即触发压缩
+    agent.summary = "既有摘要"
+    for msg in range(12):
+        agent.raw_messages.append({"role": "user", "content": f"历史问题 {msg}"})
+        agent.raw_messages.append(
+            {"role": "assistant", "content": f"历史回复 {msg}"}
+        )
+    agent._consolidated_len = 0
+    import app.agent.summarizer as summarizer_mod
+
+    # 直接让 compress 用到的 summarize 抛预算错误（仓库层捕获并跳过）
+    agent.compress_history_by_tokens = boom  # type: ignore[method-assign]
 
     result = agent.chat("问一句")
     assert result.reply == "这是客服回复内容。"  # 回复未被辅助任务毁掉
@@ -154,7 +158,7 @@ def test_executor_fixed_pool_bounded_and_close_idempotent():
             self.done = threading.Event()
             self.calls = []
 
-        def execute_tool(self, name, arguments, ctx=None, timeout=None):
+        def execute_tool(self, name, arguments, ctx=None, timeout=None, internal_args=None):
             self.calls.append(name)
             self.done.wait(timeout=3)  # 模拟长只读工具（等放行）
             return '{"ok": true}'
@@ -198,7 +202,7 @@ def test_write_barrier_not_started_when_budget_expired():
         def __init__(self):
             self.write_started = []
 
-        def execute_tool(self, name, arguments, ctx=None, timeout=None):
+        def execute_tool(self, name, arguments, ctx=None, timeout=None, internal_args=None):
             if name == "query_order":
                 time.sleep(0.4)  # 读段很慢，预算在段内耗尽
             if name == "apply_refund":
@@ -225,7 +229,7 @@ def test_write_timeout_indeterminate_and_no_auto_retry(reset_settings, tmp_path)
     executor = ToolBatchExecutor(parallelism=2, max_concurrent=16)
 
     class SlowWriteManager:
-        def execute_tool(self, name, arguments, ctx=None, timeout=None):
+        def execute_tool(self, name, arguments, ctx=None, timeout=None, internal_args=None):
             if name == "apply_refund":
                 time.sleep(0.5)  # 超过 0.2s 写超时
             return '{"ok": "refunded"}'
@@ -248,21 +252,96 @@ def test_write_timeout_indeterminate_and_no_auto_retry(reset_settings, tmp_path)
     retry = executor.execute(calls, state, None, SlowWriteManager(), budget=budget)
     assert "重复调用被拦截" in retry[0].result
 
-    # Agent 收尾：requires_human + 压置信 + handoff 对账信息
+    # Agent 收尾（新架构）：indeterminate 经 AgentTurnContext → TurnFinalizer
+    # 强制转人工 + 可靠度压到 0.2 档 + 对账清单写入 agent
     from app.agent.chat import EcomAgent
+    from app.agent.turn_context import AgentTurnContext as _TurnCtx
     from app.handoff.board import build_handoff_ticket
-    from tests.unit.conftest import FakeChatClient, sample_response
+    from tests.unit.conftest import FakeChatClient
 
     agent = EcomAgent(session_path=str(tmp_path / "a.json"), client=FakeChatClient())
-    result = sample_response(requires_human=False, confidence=0.9)
-    agent._apply_indeterminate(result, state)
+    ctx = _TurnCtx(user_input="退款查证", budget=TurnBudget.start(30))
+    ctx.extra_indeterminate = list(state.indeterminate_writes)
+    ctx.write_ops.refund.indeterminate = list(state.indeterminate_writes)
+    finalizer = agent._finalizer
+    result = finalizer._build_response(ctx)
+    result.reply = "您的退款已成功办理。"
+    result.confidence = 0.0
+    finalizer._apply_write_op_state(ctx, result)
     assert result.requires_human is True
-    assert result.confidence == pytest.approx(0.5)
-    assert agent._indeterminate_writes == state.indeterminate_writes
+    # 无 committed 证据的成功宣称被改写（阶段C：禁止声称退款成功）
+    assert "尚未确认退款完成" in result.reply
+    assert ctx.indeterminate_writes == state.indeterminate_writes
 
+    agent._indeterminate_writes = list(ctx.indeterminate_writes or state.indeterminate_writes)
     ticket = build_handoff_ticket(agent, result)
     on_rec = [a for a in ticket.suggested_actions if "KEY-1" in a and "O1" in a]
     assert on_rec and "退款对账" in on_rec[0] or any("对账" in a for a in ticket.suggested_actions)
+
+
+def test_write_timeout_confirm_segment_key_from_internal_args(reset_settings):
+    """confirm 段写超时：幂等键必须取 internal_args（服务端注入通道）。
+
+    模型参数面不含保留字段（registry 拒收），arguments 兜底恒空 →
+    对账记录幂等键为空=对账失效；合并 internal_args 后键=refund_id。
+    """
+    settings.tool_write_timeout_seconds = 0.2
+    executor = ToolBatchExecutor(parallelism=2, max_concurrent=16)
+
+    class SlowWriteManager:
+        def execute_tool(self, name, arguments, ctx=None, timeout=None, internal_args=None):
+            if name == "apply_refund":
+                time.sleep(0.5)  # 超过 0.2s 写超时
+            return '{"ok": "refunded"}'
+
+    state = ToolTurnState()
+    state.refund_confirm = {
+        "action": "confirm", "token": "tok-1",
+        "refund_id": "REF-9", "order_id": "O1", "reason": "x",
+    }
+    budget = TurnBudget(deadline=time.monotonic() + 5.0)
+    calls = [{
+        "id": "c1", "name": "apply_refund",
+        "arguments": '{"order_id": "O1", "reason": "x"}',
+    }]
+    outcomes = executor.execute(calls, state, None, SlowWriteManager(), budget=budget)
+    payload = json.loads(outcomes[0].result)
+    assert payload["status"] == "indeterminate"
+    # 模型参数面保持干净，注入只在 internal_args
+    assert outcomes[0].arguments == {"order_id": "O1", "reason": "x"}
+    assert state.indeterminate_writes == [{
+        "tool": "apply_refund", "order_id": "O1", "idempotency_key": "REF-9",
+    }]
+
+
+def test_trace_entry_merges_internal_args_into_write_ops():
+    """结果回填必须合并 internal_args 再 observe：tokens_issued 正常回收、
+    indeterminate 条目幂等键非空（跨轮 confirm 时 record 兜底也为空）。"""
+    from app.agent.react_runner import ReactRunner
+    from app.agent.tools.batch_executor import ToolOutcome
+    from app.agent.turn_context import AgentTurnContext
+
+    runner = ReactRunner(agent=None)
+    ctx = AgentTurnContext(user_input="确认退款", budget=TurnBudget.start(30))
+    outcome = ToolOutcome(
+        call_id="c1", name="apply_refund",
+        arguments={"order_id": "O1", "reason": "x"},
+        result=json.dumps({"status": "indeterminate", "error": "REFUND_WRITE_TIMEOUT"}),
+        sequence=1,
+        internal_args={
+            "confirmation_token": "tok-1",
+            "idempotency_key": "REF-9",
+            "refund_id": "REF-9",
+        },
+    )
+    tracker = ctx.write_ops.refund
+    tracker.tokens_issued.add("tok-1")  # 签发段在先：待回收凭证
+    runner._trace_entry(ctx, outcome)
+    # 合并后 observe 拿到 confirmation_token → 一次性凭证回收
+    assert "tok-1" not in tracker.tokens_issued
+    # 合并后 indeterminate 条目幂等键非空（不合并时 record 兜底为空）
+    assert tracker.indeterminate[0]["idempotency_key"] == "REF-9"
+    assert tracker.indeterminate[0]["order_id"] == "O1"
 
 
 # ============================================================
@@ -402,7 +481,12 @@ def test_token_set_no_cross_separator_bigrams():
     assert "果i" not in tokens3 and "s香" not in tokens3  # 不跨 ASCII 段
 
 
-def test_top8_all_identity_still_guarantees_preference():
+def test_top8_all_identity_no_unconditional_injection():
+    """阶段F：身份/偏好不再无条件保底注入无关请求（相关性阈值）。
+
+    query 与全部事实无词面相关 → 不注入；query 与 preference 相关时
+    该事实可入选（不再被 identity 挤占）。
+    """
     from app.agent.memory.long_term import LongTermMemory
 
     now = datetime.now(timezone.utc)
@@ -416,10 +500,18 @@ def test_top8_all_identity_still_guarantees_preference():
     ltm = LongTermMemory(user_id="u1", memory_dir=".")
     ltm.facts = facts
 
-    selected = ltm.select_facts_for_prompt("订单咨询热点", max_facts=8, now_utc=now)
-    assert len(selected) == 8
-    categories = {f.category for f in selected}
-    assert "identity" in categories and "preference" in categories  # 两类保底同时在场
+    # 无关请求：一律不注入（无保底）
+    selected = ltm.select_facts_for_prompt(
+        "完全无关的查询内容", max_facts=8, now_utc=now,
+    )
+    assert selected == []
+
+    # 相关请求：相关事实注入，且 identity 挤不进无关名额
+    selected2 = ltm.select_facts_for_prompt(
+        "空运发货", max_facts=8, now_utc=now,
+    )
+    contents = {f.content for f in selected2}
+    assert "偏好空运发货" in contents
 
 
 # ============================================================

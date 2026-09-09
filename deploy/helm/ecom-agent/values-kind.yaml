@@ -56,6 +56,12 @@ env:
   # ---- 商家网关（fake commerce 服务契约测试）----
   COMMERCE_BACKEND: http
   COMMERCE_BASE_URL: "http://commerce:8080"
+  # ---- 多实例异步建库（kind 验收：异步语义默认开启；生产两阶段上线用
+  #      kb_control.kb_async_enabled 共享开关）----
+  KB_ASYNC_API: "true"
+  # ---- 人工客服问答沉淀（kind 验收：候选采集开启；SELF_EVOLVE_ENABLED 仍管发布）----
+  HUMAN_QA_EVOLUTION_ENABLED: "true"
+  HUMAN_CONVERSATION_RETENTION_DAYS: "180"
 
 # kind：由 Chart 创建含确定性假密钥的 Secret（无真实外部凭证）
 secret:
@@ -73,6 +79,17 @@ secret:
     MINIO_SECRET_KEY: "minioadmin"
     MYSQL_PASSWORD: "ecom"
 
+# kind 验收显式启动两个异步 Worker；单节点/RWO 场景使用软反亲和，
+# 避免 local-path PVC 约束导致副本 Pending。
+kbWorker:
+  enabled: true
+  replicaCount: 2
+  podAntiAffinity:
+    required: false
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1
+
 kbSharedVolume:
   enabled: true
   storageClass: standard
@@ -83,6 +100,11 @@ kbSharedVolume:
 
 evolutionJob:
   enabled: false   # kind 验收不开自动发布（SELF_EVOLVE_ENABLED=false 语义）
+
+humanEvalCron:
+  enabled: true
+humanPublishWorker:
+  enabled: true    # kind 采集开启时同步消费人工候选队列；只进 pending，不自动发布
 
 migration:
   enabled: true

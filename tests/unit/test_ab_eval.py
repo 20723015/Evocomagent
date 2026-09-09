@@ -202,13 +202,18 @@ def test_ab_config_apply_globals(monkeypatch, reset_settings):
 
 
 def test_ab_configs_frozen_shape():
+    # min_score 为 dev 校准后冻结的检索阈值（run_ab_eval 顶部常量），属配置指纹的一部分
     assert BASELINE_CFG.to_dict() == {
         "hybrid": False, "rerank": "none",
         "tool_guard_enabled": False, "guardrails_enabled": False,
+        "min_score": BASELINE_CFG.min_score,
         "enforce_order_ownership": True,
     }
     assert CANDIDATE_CFG.to_dict() == {
         "hybrid": True, "rerank": "bge-reranker-v2-m3",
         "tool_guard_enabled": True, "guardrails_enabled": True,
+        "min_score": CANDIDATE_CFG.min_score,
         "enforce_order_ownership": True,
     }
+    assert BASELINE_CFG.min_score is not None
+    assert CANDIDATE_CFG.min_score is not None

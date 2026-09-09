@@ -7,28 +7,21 @@
 
 from __future__ import annotations
 
-import re
 from datetime import date, datetime
 from pathlib import Path
 from typing import Optional
 
 
 def parse_frontmatter(text: str) -> dict:
-    """极简 frontmatter 解析（key: value，与 skills loader 思路一致）。
+    """frontmatter 解析（统一正本委托 loader；本模块只保留 dict 视图）。
 
-    publisher 输出：provenance/owner；人工文档可含 effective_date/version。
+    publisher 输出：provenance/owner；人工文档可含 effective_date/source_kind。
+    JSON 引号标量由统一解析端解码（submitted_by 等不携带字面引号）。
     """
-    match = re.match(r"^---\s*\n(.*?)\n---", text, re.DOTALL)
-    if not match:
-        return {}
-    out: dict = {}
-    for line in match.group(1).splitlines():
-        if ":" in line and not line.startswith(" "):
-            key, _, value = line.partition(":")
-            value = value.strip().strip("'\"")
-            if value:
-                out[key.strip()] = value
-    return out
+    from app.agent.rag.loader import parse_frontmatter as _unified_parse
+
+    meta, _body = _unified_parse(text)
+    return {k: v for k, v in meta.items() if v}
 
 
 def _parse_date(value: str) -> Optional[date]:

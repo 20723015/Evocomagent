@@ -113,8 +113,10 @@ class LocalFileSessionStore:
                 time.sleep(0.02)
 
     def save(self, user_id: str, session_id: str, state: SessionState,
-             new_messages: Optional[list[dict]] = None) -> SessionState:
-        # 整包覆写实现：new_messages 忽略（阶段八 SQL store 用行式追加）
+             new_messages: Optional[list[dict]] = None,
+             enqueue_memory_job: bool = False) -> SessionState:
+        # 整包覆写实现：new_messages 忽略（阶段八 SQL store 用行式追加）；
+        # enqueue_memory_job 仅 SQL 实现消费（同事务入队 memory job），此处忽略
         path = self.path_for(user_id, session_id)
         path.parent.mkdir(parents=True, exist_ok=True)
         lock_path = self._acquire_write_lock(path)
@@ -177,8 +179,9 @@ class RedisSessionStore:
         return _parse_payload(data, session_id)
 
     def save(self, user_id: str, session_id: str, state: SessionState,
-             new_messages: Optional[list[dict]] = None) -> SessionState:
-        # 整包覆写实现：new_messages 忽略（阶段八 SQL store 用行式追加）
+             new_messages: Optional[list[dict]] = None,
+             enqueue_memory_job: bool = False) -> SessionState:
+        # 整包覆写实现：new_messages/enqueue_memory_job 忽略（SQL store 专用）
         key = self.key(user_id, session_id)
         redis = self._redis
         payload = _payload_of(state)

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import threading
-from typing import Optional
 
 from app.config.settings import settings
 from app.stores.sql.schema import metadata
@@ -32,7 +31,8 @@ def _build(url: str):
     from sqlalchemy import create_engine
 
     engine = create_engine(
-        url, pool_pre_ping=True,
+        url,
+        pool_pre_ping=True,
         # sqlite 文件库需要检查线程复用（服务在多个线程里存取）
         connect_args={"check_same_thread": False} if url.startswith("sqlite") else {},
     )
@@ -46,8 +46,8 @@ def _build(url: str):
     return engine
 
 
-# 期望的 schema 版本（= deploy/sql 最高迁移编号，2.9 冻结）
-EXPECTED_SCHEMA_VERSION = 4
+# 期望的 schema 版本（= deploy/sql 最高迁移编号；009=human_knowledge_hardening）
+EXPECTED_SCHEMA_VERSION = 10
 
 
 def _verify_schema_version(engine) -> None:
@@ -65,9 +65,11 @@ def _verify_schema_version(engine) -> None:
                 "生产数据库缺少 schema_migrations 表：请先执行 "
                 "`python -m app.scripts.migrate_db`（或 Helm migration Job）"
             )
-        rows = engine.connect().execute(
-            text("SELECT MAX(version) FROM schema_migrations")
-        ).scalar()
+        rows = (
+            engine.connect()
+            .execute(text("SELECT MAX(version) FROM schema_migrations"))
+            .scalar()
+        )
         latest = int(rows or 0)
         if latest < EXPECTED_SCHEMA_VERSION:
             raise RuntimeError(
@@ -76,7 +78,7 @@ def _verify_schema_version(engine) -> None:
             )
     except RuntimeError:
         raise
-    except Exception as e:  # noqa: BLE001 —— 读不了版本 = 无法确认 → fail-closed
+    except Exception as e:
         raise RuntimeError(f"数据库 schema 版本校验失败（拒绝启动）: {e}") from e
 
 
@@ -89,14 +91,14 @@ def _ensure_upgrades(engine) -> None:
         changed = False
         with engine.begin() as conn:
             if inspector.has_table("sessions"):
-                session_columns = {
-                    c["name"] for c in inspector.get_columns("sessions")
-                }
+                session_columns = {c["name"] for c in inspector.get_columns("sessions")}
                 if "consolidated_len" not in session_columns:
-                    conn.execute(text(
-                        "ALTER TABLE sessions ADD COLUMN consolidated_len "
-                        "INT NOT NULL DEFAULT 0"
-                    ))
+                    conn.execute(
+                        text(
+                            "ALTER TABLE sessions ADD COLUMN consolidated_len "
+                            "INT NOT NULL DEFAULT 0"
+                        )
+                    )
                     changed = True
 
             if inspector.has_table("memory_facts"):
@@ -116,9 +118,9 @@ def _ensure_upgrades(engine) -> None:
                 }
                 for name, ddl in additions.items():
                     if name not in fact_columns:
-                        conn.execute(text(
-                            f"ALTER TABLE memory_facts ADD COLUMN {name} {ddl}"
-                        ))
+                        conn.execute(
+                            text(f"ALTER TABLE memory_facts ADD COLUMN {name} {ddl}")
+                        )
                         changed = True
 
             if inspector.has_table("interaction_summaries"):
@@ -126,10 +128,12 @@ def _ensure_upgrades(engine) -> None:
                     c["name"] for c in inspector.get_columns("interaction_summaries")
                 }
                 if "source_session" not in summary_columns:
-                    conn.execute(text(
-                        "ALTER TABLE interaction_summaries ADD COLUMN "
-                        "source_session VARCHAR(64) NOT NULL DEFAULT ''"
-                    ))
+                    conn.execute(
+                        text(
+                            "ALTER TABLE interaction_summaries ADD COLUMN "
+                            "source_session VARCHAR(64) NOT NULL DEFAULT ''"
+                        )
+                    )
                     changed = True
         if not changed:
             return

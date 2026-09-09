@@ -1,0 +1,51 @@
+{
+  "protocol": "retrieval-eval-v1",
+  "frozen": true,
+  "dataset": {
+    "path": "E:\\ea\\tmp\\wt-a7c9749\\app\\evaluation\\retrieval_cases.json",
+    "sha256": "ec4a977e82ca9eff0adac55b77d43f45c7c43c793316272e7ae5034f72b9c949",
+    "num_cases": 535
+  },
+  "top_k": 5,
+  "variant": "hybrid-rerank",
+  "retrieval": {
+    "backend": "es",
+    "embedding_model": "bge-m3",
+    "embedding_provider": "sophnet",
+    "embedding_endpoint": "https://www.sophnet.com/api/open-apis/projects/74tM3K15eJPqCtrzJcIms3/easyllms/embeddings",
+    "embedding_endpoint_sha256": "c9c53f58a0118fa5e69d36aa4f43164ba50ef4ac44b3a8b1c9a83e26520a2dee",
+    "openai_base_url": "https://www.sophnet.com/api/open-apis/v1",
+    "openai_base_url_sha256": "c789a3f0c021b2246f04d5a0318a7f937d4ac44b580b136caeb31b6387a58c37",
+    "hybrid": true,
+    "hybrid_recall_k": 60,
+    "rerank": "bge-reranker-v2-m3",
+    "rerank_endpoint": "http://127.0.0.1:8001",
+    "rerank_endpoint_sha256": "d412c05c8726a92259f446e3c79ffc81dfc27b2841cdf18a825c44fab8b71241",
+    "rerank_model": "",
+    "min_relevance_score": null,
+    "kb_index_path": "app/sessions/kb_index.json",
+    "chroma_persist_dir": "app/sessions/chroma"
+  },
+  "thresholds": {
+    "min_positive_recall": 0.95,
+    "min_easy_recall": 0.98,
+    "min_hard_recall": 0.8,
+    "min_mrr": 0.9,
+    "min_ndcg": 0.9,
+    "min_negative_rejection": 0.9,
+    "applied_min_score": 0.052327625,
+    "applied_min_score_hard": 0.052327625,
+    "hard_threshold_overridden": false,
+    "hard_threshold_policy": "same_as_min_score",
+    "online_threshold_match": false,
+    "online_min_score": null
+  },
+  "git": {
+    "commit": "a7c974901c2f245901fe8772aed4c4c954a393d3"
+  },
+  "runtime": {
+    "python": "3.12.2",
+    "deps_sha256": "31df2f407ef46e90887c67e331148e86c1a64662310752a049f0fff81ef78f36"
+  },
+  "config_hash": "6e4e06919796fe3dc1c5c3ff9977f5fe34f409c34f921c022f9283037983fb44"
+}

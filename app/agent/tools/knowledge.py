@@ -18,23 +18,23 @@ search_knowledge 面向非结构化文本（退换货政策、配送说明、FAQ
 """
 
 from __future__ import annotations
+
 from app.observability.logging import get_logger
+
 log = get_logger("app.agent.tools.knowledge")
 
 
 from pathlib import Path
-from typing import Optional
 
 from app.agent.context import ToolContext
-from app.config.settings import settings
 from app.agent.rag.backends import create_backend
-from app.agent.rag.embedder import create_embedder
+from app.agent.rag.chunker import chunk_body
 from app.agent.rag.retriever import KnowledgeRetriever
-from app.agent.rag.retriever import filter_hits_by_score
+from app.config.settings import settings
 from app.evolution.generation import GenerationStore
 
-_retriever: Optional[KnowledgeRetriever] = None
-_retriever_generation_id: Optional[str] = None  # 当前单例对应的 generation
+_retriever: KnowledgeRetriever | None = None
+_retriever_generation_id: str | None = None  # 当前单例对应的 generation
 _override_stack: list[KnowledgeRetriever] = []  # with-eval staging override
 
 
@@ -121,7 +121,7 @@ def _get_retriever() -> KnowledgeRetriever:
 
     try:
         retriever = _make_retriever()
-    except Exception as e:  # noqa: BLE001 —— 重建失败：保留 last-known-good
+    except Exception as e:
         if _retriever is not None:
             log.info(f"⚠️  检索器重建失败，沿用现有实例（{type(e).__name__}: {e}）")
             return _retriever
@@ -156,26 +156,61 @@ def pop_retriever_override() -> None:
 # ============================================================
 # 工具入口
 # ============================================================
+MAX_SUBQUERIES = 3  # 阶段D：最多三个子查询
+
+
+def _parent_window(c) -> tuple[str, str]:
+    """父块窗口优先；父块不含命中子块正文时回退子块（旧索引/构建异常兜底）。"""
+
+    body = chunk_body(c.text)
+    if c.parent_text and body and body in c.parent_text:
+        return c.parent_text, "parent"
+    return c.text, "self"
+
+
+def _item_from_hit(hit, query: str, raw_score: float | None = None):
+    from app.agent.rag.evidence import EvidenceItem
+
+    c = hit.chunk
+    context_text, context_type = _parent_window(c)
+    return EvidenceItem(
+        doc=c.doc,
+        section=c.section or "",
+        heading_path=c.heading_path or "",
+        chunk_id=c.chunk_id,
+        parent_id=c.parent_id or "",
+        query=query,
+        score=hit.score if raw_score is None else float(raw_score),
+        text=context_text,
+        matched_text=c.text,
+        source_path=c.source_path or c.doc,
+        context_type=context_type,
+    )
+
+
 def search_knowledge(
-    query: str = "", top_k: int = 3, ctx: Optional[ToolContext] = None,
-    timeout: Optional[float] = None,
+    query: str = "", top_k: int = 3, ctx: ToolContext | None = None,
+    timeout: float | None = None, queries: list[str] | None = None,
 ) -> dict:
     """检索退换货政策、配送说明、会员权益、FAQ 等知识库内容。
+
+    阶段D：新增可选 `queries`（最多 3 个子查询，保持原 `query` 参数兼容）——
+    比较、组合条件、跨文档问题由 Agent 一次提交多个子查询；检索层并行召回，
+    RRF 合并、父块去重、reranker 精排（retriever 配置照常生效）。返回结果
+    保持原字段，另附 subqueries 与 evidence 诊断字段。
 
     Returns:
         {
           "success": bool,
-          "backend": "numpy" | "chroma",
-          "query": str,
-          "results": [
-            {"doc": "...", "section": "...", "score": 0.83, "text": "...",
-             "source_path": "..."},
-            ...
-          ],
+          "backend": "numpy" | "chroma" | "es",
+          "query": str, "subqueries": [...],
+          "results": [ ...原字段..., ],
+          "evidence": {"top1_score": ..., "top1_gap": ..., "n_items": ...},
           "error": "..."  # 仅失败时存在
         }
     """
-    if not query or not query.strip():
+    subqueries = _normalize_subqueries(query, queries)
+    if not subqueries:
         return {"success": False, "error": "query 不能为空", "query": query, "results": []}
 
     try:
@@ -198,31 +233,107 @@ def search_knowledge(
         }
 
     top_k = max(1, min(int(top_k or 3), 5))
-    # 修复计划：remaining 透传——Embedder/远端 reranker/ES 全部受轮次预算约束
-    hits = retriever.search(query, top_k=top_k, timeout=timeout)
-    hits = filter_hits_by_score(hits, settings.rag_min_relevance_score)
-
-    results = [
-        {
-            "doc": h.chunk.doc,
-            "section": h.chunk.section,
-            "score": round(h.score, 4),
-            "text": h.chunk.text,
-            "source_path": h.chunk.source_path or h.chunk.doc,
-            "provenance": h.chunk.provenance or "",
+    # 统一最终检索口径（与评测/校准/探针同一条 final_search）；多子查询并行
+    # 召回后 RRF 合并再父块去重（阶段D）
+    try:
+        pack = _multi_query_search(retriever, subqueries, top_k, timeout)
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"知识库检索失败: {type(e).__name__}",
+            "backend": settings.rag_backend,
+            "query": query,
+            "results": [],
         }
-        for h in hits
-    ]
+
+    results = pack.to_results()
+
     # 3.5 检索侧：KB 块（尤其 evolved/ 沉淀）视为不可信数据 →
     # 来源围栏包裹 + 注入语句标注 tainted 拦截
     if settings.retrieval_fence_enabled:
         from app.security.guardrails import search_result_fence_check
 
         results = search_result_fence_check(results)
+        # 同步 tainted 标注回证据包（污染片段不进证据/来源）
+        by_key = {}
+        for item in pack.items:
+            by_key[(item.doc, item.matched_text)] = item
+        for r in results:
+            item = by_key.get((r.get("doc"), r.get("matched_text")))
+            if item is not None and r.get("tainted"):
+                item.tainted = True
+                item.text = r.get("text", item.text)
+
+    from app.observability.metrics import record_rag_retrieve
+
+    record_rag_retrieve(pack.diagnostics())
 
     return {
         "success": True,
         "backend": settings.rag_backend,
         "query": query,
+        "subqueries": pack.subqueries,
         "results": results,
+        "evidence": pack.diagnostics(),
     }
+
+
+def _normalize_subqueries(query: str, queries: list[str] | None) -> list[str]:
+    """子查询规整：query 必居首；queries 去重去空、最多 MAX_SUBQUERIES 个。"""
+    out: list[str] = []
+    if query and query.strip():
+        out.append(query.strip())
+    for item in queries or []:
+        text = str(item or "").strip()
+        if text and text not in out:
+            out.append(text)
+        if len(out) >= MAX_SUBQUERIES:
+            break
+    return out[:MAX_SUBQUERIES]
+
+
+def _dedup_by_parent(items, top_k: int):
+    """EvidenceItem 父块去重：同一 parent_id 只保留首见（排序已就绪），截 top_k。"""
+    out: list = []
+    seen: set[str] = set()
+    for item in items:
+        if item.parent_id:
+            if item.parent_id in seen:
+                continue
+            seen.add(item.parent_id)
+        out.append(item)
+        if len(out) >= top_k:
+            break
+    return out
+
+
+def _multi_query_search(retriever, subqueries: list[str], top_k: int,
+                        timeout: float | None):
+    """多子查询并行召回 → RRF 合并 → 阈值门控 → 父块去重 → Top-K。"""
+    from concurrent.futures import ThreadPoolExecutor
+
+    from app.agent.rag.evidence import EvidencePack, rrf_merge
+    from app.agent.rag.retriever import filter_hits_by_score
+
+    recall = min(top_k * 3, 15)
+    min_score = settings.rag_min_relevance_score
+
+    def _one(subquery: str):
+        raw = retriever.search(subquery, top_k=recall, timeout=timeout)
+        gated = filter_hits_by_score(raw, min_score)
+        return [_item_from_hit(hit, subquery) for hit in gated]
+
+    if len(subqueries) == 1:
+        items = _one(subqueries[0])
+        kept = _dedup_by_parent(items, top_k)
+    else:
+        workers = min(len(subqueries), 3)
+        with ThreadPoolExecutor(max_workers=workers,
+                                thread_name_prefix="rag-multi") as pool:
+            ranked_lists = list(pool.map(_one, subqueries))
+        # RRF 融合（天然父块去重）后截取 top_k
+        kept = _dedup_by_parent(
+            rrf_merge(ranked_lists, top_n=top_k * 2), top_k,
+        )
+
+    return EvidencePack(query=subqueries[0], subqueries=list(subqueries), items=kept)

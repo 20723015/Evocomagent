@@ -60,7 +60,7 @@ class RecordingToolManager:
 
     tool_definitions: list = []  # SubAgent.handle 会读取（fake 传空即可）
 
-    def execute_tool(self, name, arguments, ctx=None, timeout=None):
+    def execute_tool(self, name, arguments, ctx=None, timeout=None, internal_args=None):
         with self._lock:
             self._active += 1
             self.peak = max(self.peak, self._active)
@@ -197,7 +197,7 @@ def test_executor_readonly_timeout_discards_result():
     executor = ToolBatchExecutor(parallelism=2, max_concurrent=16)
 
     class SlowManager:
-        def execute_tool(self, name, arguments, ctx=None, timeout=None):
+        def execute_tool(self, name, arguments, ctx=None, timeout=None, internal_args=None):
             time.sleep(0.5)  # 慢于 budget
             return '{"ok": "late"}'
 
@@ -428,7 +428,8 @@ def _ltm_with_facts(facts: list[MemoryFact]) -> LongTermMemory:
     return ltm
 
 
-def test_select_facts_strict_cap_and_guarantees():
+def test_select_facts_relevance_threshold_and_cap():
+    """阶段F：注入有相关性阈值与上限，身份/偏好不再无条件保底。"""
     now = datetime.now(timezone.utc)
     facts = [
         MemoryFact(content=f"订单咨询信息 {i}", category="other",
@@ -443,22 +444,19 @@ def test_select_facts_strict_cap_and_guarantees():
 
     selected = ltm.select_facts_for_prompt("订单咨询信息", max_facts=8, now_utc=now)
     assert len(selected) == 8  # 严格 ≤8
-    assert any(f.category == "identity" for f in selected)  # 保底
-    assert any(f.category == "preference" for f in selected)
+    assert all("订单咨询信息" in f.content for f in selected)  # 只注入相关事实
 
-    # 8 条全为高相关 other + 一个掉出 top-8 的 identity → 保底挤入、总数仍 8
-    hot = [
-        MemoryFact(content="今天订单咨询信息", category="other",
-                   created_at=(now - timedelta(days=1)).isoformat())
-    ] * 8
-    cold_identity = MemoryFact(content="用户自称老客户", category="identity",
-                               created_at=(now - timedelta(days=100)).isoformat())
-    ltm2 = _ltm_with_facts(hot + [cold_identity])
-    selected2 = ltm2.select_facts_for_prompt("今天订单咨询信息", max_facts=20, now_utc=now)
-    assert len(selected2) == 9  # 20 上限下无淘汰，保底直接补入
-    selected3 = ltm2.select_facts_for_prompt("今天订单咨询信息", max_facts=8, now_utc=now)
-    assert len(selected3) == 8
-    assert any(f.content == "用户自称老客户" for f in selected3)
+    # 无关 query：身份/偏好不再保底注入（空集合）
+    selected_none = ltm.select_facts_for_prompt(
+        "毫不相干的查询内容", max_facts=8, now_utc=now,
+    )
+    assert selected_none == []
+
+    # 相关的 preference 可以入选
+    selected_pref = ltm.select_facts_for_prompt(
+        "顺丰快递", max_facts=8, now_utc=now,
+    )
+    assert any(f.content == "偏好顺丰快递" for f in selected_pref)
 
 
 def test_build_prompt_section_summaries_still_three():
@@ -518,38 +516,35 @@ def test_chat_budget_exhausted_returns_deterministic_fallback(reset_settings, tm
     settings.turn_budget_seconds = -5  # 立即耗尽
     client = FakeChatClient()
     agent = EcomAgent(session_path=str(tmp_path / "s.json"), client=client)
+    agent.memory_manager.memory_enabled = False
     result = agent.chat("查询订单")
 
     assert result.requires_human is True
     assert result.intent.value == "other"
-    assert result.confidence == 0.0
-    assert client.calls == []  # 全程零 LLM 调用
-    # 会话已保存（含 fallback 回复）
+    assert result.confidence == 0.0  # 预算耗尽 → 可靠度 0.0
+    assert client.calls == []  # 全程零 LLM 调用（ReAct 前预算检查 + 零 LLM fallback）
+    # 会话已保存（含 fallback 回复；单条 assistant 消息折叠格式）
     saved = json.loads((tmp_path / "s.json").read_text(encoding="utf-8"))
     assert saved["messages"][-1]["role"] == "assistant"
+    assert saved["messages"][-1].get("metadata", {}).get("schema") == 2
 
 
-def test_close_binds_budget_and_resets(reset_settings, tmp_path):
+def test_close_makes_no_llm_calls_and_releases_resources(reset_settings, tmp_path):
+    """阶段F：close() 只释放本地资源，不再调用 LLM（巩固交异步 memory job）。"""
     from app.agent.chat import EcomAgent
     from tests.unit.conftest import FakeChatClient
 
-    agent = EcomAgent(session_path=str(tmp_path / "s.json"),
-                      client=FakeChatClient())
-    expired = TurnBudget(deadline=time.monotonic() - 10)
-    agent._turn_budget = expired
-    seen: dict = {}
+    client = FakeChatClient()
+    agent = EcomAgent(session_path=str(tmp_path / "s.json"), client=client)
+    agent.memory_manager.consolidate_to_long_term = (
+        lambda *a, **k: (_ for _ in ()).throw(AssertionError("close 不得调 LLM 巩固"))
+    )
+    agent.close()  # 不抛异常、零 LLM
+    assert client.calls == []
 
-    def fake_consolidate(messages, summary):
-        seen["budget"] = current_budget()
-        from app.agent.turn_budget import LLMBudgetExhausted
-        if seen["budget"].expired():
-            raise LLMBudgetExhausted("close 同受预算")
-
-    agent.memory_manager.consolidate_to_long_term = fake_consolidate
-    agent.close()  # 不抛异常：预算耗尽 → 巩固跳过
-
-    assert seen["budget"] is expired  # close 线程显式绑定的正是本轮预算
-    assert current_budget() is None  # finally reset
+    # 自建执行器关闭 + 幂等
+    agent.close()
+    assert agent.tool_executor.closed is True
 
 
 # ============================================================

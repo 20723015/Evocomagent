@@ -130,17 +130,12 @@ def test_ecom_agent_mount_records_turn(monkeypatch, tmp_state_dir, tmp_path,
     s.evolve_turns_dir = str(tmp_state_dir["turns"])
     session_path = str(tmp_path / "session.json")
 
-    class OfflineAgent(EcomAgent):
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-            self._react_loop = lambda state, budget: "这是客服回复内容。"
-            self._extract_structured_response = lambda text: sample_response(
-                reply="这是客服回复内容。"
-            )
+    from tests.unit.conftest import FakeChatClient
 
-    agent = OfflineAgent(session_path=session_path)
-    agent.memory_manager.update_short_term = lambda *a, **k: None
-    agent.history_threshold = 1000  # 不触发压缩
+    client = FakeChatClient().enqueue_final_response("这是客服回复内容。")
+    agent = EcomAgent(session_path=session_path, client=client)
+    agent.memory_manager.memory_enabled = False
+    agent.context_builder._window = 8192  # 不触发压缩
     resp = agent.chat("七天无理由退货可以吗？")
 
     assert agent.session_id
@@ -192,21 +187,20 @@ def test_compress_history_does_not_lose_candidates(monkeypatch, tmp_state_dir,
 
     s.evolve_capture_enabled = True
     s.evolve_turns_dir = str(tmp_state_dir["turns"])
-    # chat.py 里是 `from app.agent.summarizer import summarize`，要 patch 它的引用
-    monkeypatch.setattr("app.agent.chat.summarize",
+    monkeypatch.setattr("app.agent.summarizer.summarize",
                         lambda **kw: "历史摘要（已压缩）")
 
-    class OfflineAgent(EcomAgent):
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-            self._react_loop = lambda state, budget: "这是客服回复内容。"
-            self._extract_structured_response = lambda text: sample_response(
-                reply="这是客服回复内容。"
-            )
+    from tests.unit.conftest import FakeChatClient
 
-    agent = OfflineAgent(session_path=str(tmp_path / "session.json"))
-    agent.memory_manager.update_short_term = lambda *a, **k: None
-    agent.history_threshold = 3  # 两轮后（4 条消息）触发压缩
+    client = FakeChatClient()
+    for _ in range(2):
+        client.enqueue_final_response("这是客服回复内容。")
+    agent = EcomAgent(session_path=str(tmp_path / "session.json"), client=client)
+    agent.memory_manager.memory_enabled = False
+    agent.context_builder._window = 300  # 极小水位：预填历史即超 dialog 份额
+    for i in range(60):
+        agent.raw_messages.append({"role": "user", "content": f"历史问题 {i}"})
+        agent.raw_messages.append({"role": "assistant", "content": "历史回复"})
     for _ in range(2):
         agent.chat("问一句")
     assert agent.summary == "历史摘要（已压缩）"
@@ -224,16 +218,11 @@ def test_recorder_failure_does_not_break_chat(monkeypatch, tmp_state_dir,
     blocker.write_text("x", encoding="utf-8")
     s.evolve_turns_dir = str(blocker / "turns")
 
-    class OfflineAgent(EcomAgent):
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-            self._react_loop = lambda state, budget: "这是客服回复内容。"
-            self._extract_structured_response = lambda text: sample_response(
-                reply="这是客服回复内容。"
-            )
+    from tests.unit.conftest import FakeChatClient
 
-    agent = OfflineAgent(session_path=str(tmp_path / "session.json"))
-    agent.memory_manager.update_short_term = lambda *a, **k: None
-    agent.history_threshold = 1000
+    client = FakeChatClient().enqueue_final_response("这是客服回复内容。")
+    agent = EcomAgent(session_path=str(tmp_path / "session.json"), client=client)
+    agent.memory_manager.memory_enabled = False
+    agent.context_builder._window = 8192
     resp = agent.chat("问一句")
     assert resp.reply == "这是客服回复内容。"

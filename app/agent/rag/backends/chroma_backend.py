@@ -80,15 +80,26 @@ class ChromaBackend(VectorBackend):
             },
         )
 
-        self._collection.add(
-            ids=[c.chunk_id for c in chunks],
-            embeddings=vectors,
-            documents=[c.text for c in chunks],
-            metadatas=[
-                {"doc": c.doc, "section": c.section, "chunk_id": c.chunk_id}
-                for c in chunks
-            ],
-        )
+        # 空 chunks（allow_empty 下架终态）跳过 add：chroma 空 add 抛
+        # ValueError；空 collection 查询返回空，元数据（embedding_model）照常持久化
+        if chunks:
+            self._collection.add(
+                ids=[c.chunk_id for c in chunks],
+                embeddings=vectors,
+                documents=[c.text for c in chunks],
+                metadatas=[
+                    {
+                        "doc": c.doc, "section": c.section, "chunk_id": c.chunk_id,
+                        "source_path": c.source_path or "",
+                        "provenance": c.provenance or "",
+                        "owner": c.owner or "",
+                        "parent_text": c.parent_text or "",
+                        "heading_path": c.heading_path or "",
+                        "parent_id": c.parent_id or "",
+                    }
+                    for c in chunks
+                ],
+            )
 
         self._embedding_model = embedding_model
         self._size_cache = len(chunks)
@@ -110,11 +121,18 @@ class ChromaBackend(VectorBackend):
 
         out: list[RetrievedChunk] = []
         for cid, doc_text, meta, dist in zip(ids, documents, metadatas, distances):
+            meta = meta or {}
             chunk = Chunk(
                 chunk_id=meta.get("chunk_id", cid),
                 doc=meta.get("doc", ""),
                 section=meta.get("section", ""),
                 text=doc_text,
+                source_path=meta.get("source_path", ""),
+                provenance=meta.get("provenance", ""),
+                owner=meta.get("owner", ""),
+                parent_text=meta.get("parent_text", ""),
+                heading_path=meta.get("heading_path", ""),
+                parent_id=meta.get("parent_id", ""),
             )
             score = 1.0 - float(dist)  # cosine distance → similarity
             out.append(RetrievedChunk(chunk=chunk, score=score))
@@ -156,9 +174,9 @@ class ChromaBackend(VectorBackend):
     def chunks(self) -> list[Chunk]:
         """返回当前已加载的全部 chunk（混合检索 BM25 建索引用）。
 
-        collection 已加载时用 collection.get() 重建 Chunk 列表；
-        只回填 metadata 里实际存过的字段（chunk_id/doc/section/text/source_path 五
-        个字段，source_path 未随 upsert 持久化时为空串），未加载时返回 []。
+        collection 已加载时用 collection.get() 重建 Chunk 列表；只回填
+        metadata 里实际存过的字段（旧 collection 未持久化的新字段为空串），
+        未加载时返回 []。
         """
         if self._collection is None:
             return []
@@ -178,6 +196,11 @@ class ChromaBackend(VectorBackend):
                     section=meta.get("section", ""),
                     text=doc_text or "",
                     source_path=meta.get("source_path", ""),
+                    provenance=meta.get("provenance", ""),
+                    owner=meta.get("owner", ""),
+                    parent_text=meta.get("parent_text", ""),
+                    heading_path=meta.get("heading_path", ""),
+                    parent_id=meta.get("parent_id", ""),
                 )
             )
         return out

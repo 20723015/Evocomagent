@@ -1654,6 +1654,10 @@ RETRIEVAL_EXPECTED_OVERRIDES = {
 
 # 人工编写的困难正例：不直接复述文档标题或原句。
 RETRIEVAL_HARD = [
+    # 阶段D：自进化文档覆盖（2026-09-05 数据集修正；依据见 retrieval_cases.json _change_log）
+    ("evolved_slo_01", "钻石会员专属客服的响应时效SLO是多少", ["evolved/20260901-938835580ee4-钻石会员专属客服的响应时效SLO是多少.md"], ["easy", "direct"]),
+    # 010 人工链路发布（2026-09-08 真实环境验收；依据 docs/evidence/human-knowledge-lifecycle-eval.md）
+    ("evolved_measure_install_01", "全屋定制什么时候上门量尺？多久能安装？", ["evolved/20260908-human-1-全屋定制衣柜的下单后流程和时间节点是怎样的.md"], ["easy", "direct"]),
     ("hard_noisy_01", "衣服就套着试了下，牌子盒子都在，七天内能不要嘛", ["退换货政策.md"], ["hard", "noisy"]),
     ("hard_noisy_02", "新江那边寄过来还得补邮费不", ["配送说明.md"], ["hard", "noisy"]),
     ("hard_noisy_03", "会员积份攒着会不会做废", ["会员权益.md"], ["hard", "noisy"]),

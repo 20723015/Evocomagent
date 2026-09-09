@@ -12,6 +12,9 @@ env:
   MODEL_NAME: gpt-4o-mini
   MEMORY_ENABLED: "true"
   RAG_BACKEND: numpy
+  # 人工客服问答沉淀（首次部署保持 false；开启后只采集显式勾选的工单）
+  HUMAN_QA_EVOLUTION_ENABLED: "false"
+  HUMAN_CONVERSATION_RETENTION_DAYS: "180"
   # ---- 状态外置（阶段二）----
   SESSION_STORE_BACKEND: redis
   REDIS_URL: redis://redis-master:6379/0
@@ -55,6 +58,36 @@ podDisruptionBudget:
 # SIGTERM：uvicorn 优雅退出（drain 在途请求并持久化）；给足等待时间
 terminationGracePeriodSeconds: 45
 
+# KB Index Worker（多实例异步建库改造）：独立 Deployment，无 Service；
+# Web Pod 不启动 Worker（进程门禁 KB_WORKER_ENABLED）。副本数只提高容灾与
+# 解析并行度——索引提交由 kb_write 锁 + 任务租约全局串行。
+# 启用异步 API：两阶段上线的第二步，置 kb_control.kb_async_enabled=1。
+kbWorker:
+  # 默认 Chart 不假设存在 MySQL/RWX；生产与 kind values 显式开启。
+  enabled: false
+  replicaCount: 2
+  terminationGracePeriodSeconds: 120  # ≥ KB_JOB_LEASE_SECONDS（宽限收尾/租约接管）
+  podAntiAffinity:
+    # 单节点 kind 设为 false；生产设为 true，强制副本跨 hostname。
+    required: false
+  podDisruptionBudget:
+    enabled: false
+    minAvailable: 1
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: "2"
+      memory: 2Gi
+  env:
+    KB_WORKER_ENABLED: "1"
+    KB_WORKER_CONCURRENCY: "1"
+    KB_JOB_POLL_SECONDS: "2"
+    KB_JOB_HEARTBEAT_SECONDS: "30"
+    KB_JOB_LEASE_SECONDS: "120"
+    KB_WORKER_GRACE_SECONDS: "120"
+
 # 4.1：RWX 共享卷——知识源/staging/journal/trash 统一挂载（多 Pod 原子 rename 前提）
 kbSharedVolume:
   enabled: false
@@ -73,6 +106,33 @@ evolutionJob:
   dryRun: true             # 4.1：默认安全预览；正式发布显式 false + args
   args: ["--with-eval"]
 
+# 人工客服知识链路（迁移008）：每日评审 Cron + 批量发布 Worker。默认关闭。
+humanEvalCron:
+  enabled: false
+  schedule: "0 2 * * *"
+  timeZone: "Asia/Shanghai"
+  image: ""
+
+humanPublishWorker:
+  enabled: false
+  replicaCount: 2
+  terminationGracePeriodSeconds: 60
+  podAntiAffinity:
+    required: false
+  podDisruptionBudget:
+    enabled: false
+    minAvailable: 1
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: "2"
+      memory: 2Gi
+
+# 夜间人工候选 LLM 评审 CronJob（价值打分 + 检索新颖性；结论为建议，
+# 发布仍由审核台人工批准）：默认关闭；开启需 HUMAN_QA_EVOLUTION_ENABLED=true
+# + Redis + 共享卷 + OPENAI_API_KEY（渲染校验 fail-fast）。
 # 2.9 数据库迁移 Job（pre-install/pre-upgrade hook；成功后 Deployment 才滚动）
 migration:
   enabled: true

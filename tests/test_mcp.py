@@ -24,6 +24,8 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from app.mcp_client import MCPClient  # noqa: E402
+from app.mcp_client.actor import SCOPE_ORDERS_READ, issue_actor_token  # noqa: E402
+from app.agent.context import ToolContext  # noqa: E402
 from app.agent.tools.manager import ToolManager  # noqa: E402
 from app.agent.chat import EcomAgent  # noqa: E402
 from app.schemas.response import CustomerServiceResponse, IntentType  # noqa: E402
@@ -31,7 +33,10 @@ from app.schemas.response import CustomerServiceResponse, IntentType  # noqa: E4
 MCP_URL = "http://127.0.0.1:9123/mcp"
 TEST_SESSION = str(ROOT / "app" / "sessions" / "test_mcp_session.json")
 
-EXPECTED_TOOLS = {"query_order", "query_product", "query_logistics", "apply_refund"}
+EXPECTED_TOOLS = {
+    "query_order", "query_product", "query_logistics", "apply_refund",
+    "search_knowledge",
+}
 
 
 def _ok(msg: str):
@@ -63,8 +68,8 @@ def test_mcp_connection():
     client = MCPClient(MCP_URL)
     try:
         tools = client.connect()
-        if len(tools) != 4:
-            _fail(f"期望 4 个工具，实际发现 {len(tools)} 个")
+        if len(tools) != len(EXPECTED_TOOLS):
+            _fail(f"期望 {len(EXPECTED_TOOLS)} 个工具，实际发现 {len(tools)} 个")
         tool_names = {t["function"]["name"] for t in tools}
         if tool_names != EXPECTED_TOOLS:
             _fail(f"工具名称不匹配: {tool_names}")
@@ -105,7 +110,11 @@ def test_mcp_tool_call():
         client.connect()
 
         import json
-        result = client.call_tool("query_order", {"order_id": "ORD-20240115-001"})
+        actor = issue_actor_token("u1", TEST_SESSION, (SCOPE_ORDERS_READ,))
+        result = client.call_tool(
+            "query_order", {"order_id": "ORD-20240115-001"},
+            actor_token=actor,
+        )
         data = json.loads(result)
         if not data.get("success"):
             _fail(f"查询订单失败: {data}")
@@ -129,12 +138,16 @@ def test_tool_manager_mcp():
     manager = ToolManager(use_mcp=True, mcp_server_url=MCP_URL)
     try:
         defs = manager.tool_definitions
-        if len(defs) != 4:
-            _fail(f"期望 4 个工具定义，实际 {len(defs)}")
+        names = {item["function"]["name"] for item in defs}
+        if not EXPECTED_TOOLS.issubset(names):
+            _fail(f"MCP 工具集合不完整: {names}")
         _ok(f"ToolManager 加载了 {len(defs)} 个工具")
 
         import json
-        result = manager.execute_tool("query_logistics", {"order_id": "ORD-20240115-001"})
+        result = manager.execute_tool(
+            "query_logistics", {"order_id": "ORD-20240115-001"},
+            ToolContext(user_id="u1", session_id=TEST_SESSION),
+        )
         data = json.loads(result)
         if not data.get("success"):
             _fail(f"物流查询失败: {data}")
@@ -149,9 +162,10 @@ def test_tool_manager_local():
     manager = ToolManager(use_mcp=False)
     try:
         defs = manager.tool_definitions
-        if len(defs) != 4:
-            _fail(f"期望 4 个工具定义，实际 {len(defs)}")
-        _ok("本地模式加载 4 个工具")
+        names = {item["function"]["name"] for item in defs}
+        if not EXPECTED_TOOLS.issubset(names):
+            _fail(f"本地工具集合不完整: {names}")
+        _ok(f"本地模式加载 {len(defs)} 个工具")
 
         import json
         result = manager.execute_tool("query_order", {"order_id": "ORD-20240115-001"})

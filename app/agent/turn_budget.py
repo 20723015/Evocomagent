@@ -18,7 +18,6 @@ from __future__ import annotations
 import time
 from contextvars import ContextVar, Token
 from dataclasses import dataclass
-from typing import Optional
 
 
 class LLMBudgetExhausted(RuntimeError):
@@ -32,7 +31,7 @@ class TurnBudget:
     deadline: float
 
     @classmethod
-    def start(cls, seconds: float) -> "TurnBudget":
+    def start(cls, seconds: float) -> TurnBudget:
         return cls(deadline=time.monotonic() + max(seconds, 0.0))
 
     def remaining(self) -> float:
@@ -49,22 +48,22 @@ class TurnBudget:
         return self.remaining()
 
 
-_CURRENT: ContextVar[Optional[TurnBudget]] = ContextVar("turn_budget", default=None)
+_CURRENT: ContextVar[TurnBudget | None] = ContextVar("turn_budget", default=None)
 
 
-def bind_budget(budget: Optional[TurnBudget]) -> Optional[Token]:
+def bind_budget(budget: TurnBudget | None) -> Token | None:
     """当前线程/上下文绑定轮次预算；返回 token 供 finally reset。"""
     if budget is None:
         return None
     return _CURRENT.set(budget)
 
 
-def reset_budget(token: Optional[Token]) -> None:
+def reset_budget(token: Token | None) -> None:
     if token is not None:
         _CURRENT.reset(token)
 
 
-def current_budget() -> Optional[TurnBudget]:
+def current_budget() -> TurnBudget | None:
     return _CURRENT.get()
 
 

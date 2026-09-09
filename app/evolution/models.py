@@ -69,6 +69,14 @@ class CandidateQA:
     quality_score: float = 0.0
     # P2-1：最终去重命中 evolved/ 旧沉淀且质量分更高 → 发布时替换的旧文件名（空=不替换）
     replaces: str = ""
+    # 人工知识支路（人工客服问答沉淀）：source_kind=human_handoff 的候选不经
+    # Judge，发布 frontmatter 与 robot 路径分叉（owner=ops / submitted_by /
+    # reviewed=true / grounded_on=人工证据路径）。knowledge_basis 仅供审核，
+    # 绝不进入正文与 frontmatter 之外的任何位置。
+    source_kind: str = "turn"  # turn | human_handoff
+    submitted_by: str = ""  # 提交客服（ops principal；审计）
+    knowledge_basis: str = ""  # 知识依据（政策/业务确认），仅供审核展示
+    evidence_paths: list[str] = field(default_factory=list)  # 证据路径（grounded_on）
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -107,6 +115,8 @@ class EvolutionReport:
     revalidated_failed: int = 0  # 重接地失败（隔离到 pending）的文档数
     revalidated_remaining: int = 0  # 当前 generation 尚待后续批次核对的文档数
     replaced: int = 0  # 本轮发布的近重复新答案替换掉的旧 evolved 文档数
+    human_imported: int = 0  # 人工工单候选导入 pending 数（human_handoff 支路）
+    human_rejected: int = 0  # 人工候选被过滤拒绝数（PII/注入/长度/字段缺失）
     per_candidate: list[dict] = field(default_factory=list)
 
     def to_dict(self) -> dict:

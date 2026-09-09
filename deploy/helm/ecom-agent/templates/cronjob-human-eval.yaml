@@ -1,0 +1,58 @@
+{{- if .Values.humanEvalCron.enabled }}
+# 人工客服知识评审 Cron（迁移008）：每日 02:00 Asia/Shanghai 增量领取未评审会话。
+# 校验 fail-fast：功能开关 / Redis / 共享卷未配置 → 渲染即失败。
+{{- $flag := "" }}
+{{- if hasKey .Values.env "HUMAN_QA_EVOLUTION_ENABLED" }}
+{{- $flag = lower (toString (index .Values.env "HUMAN_QA_EVOLUTION_ENABLED")) }}
+{{- end }}
+{{- if ne $flag "true" }}
+{{- fail (printf "humanEvalCron.enabled=true 要求 env.HUMAN_QA_EVOLUTION_ENABLED 为 true（当前 %q）" $flag) }}
+{{- end }}
+{{- if not (hasKey .Values.env "REDIS_URL") }}
+{{- fail "humanEvalCron.enabled=true 要求 env.REDIS_URL（generation 指针共享）" }}
+{{- end }}
+{{- if not .Values.kbSharedVolume.enabled }}
+{{- fail "humanEvalCron.enabled=true 要求 kbSharedVolume.enabled=true（staging/journal 同卷）" }}
+{{- end }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ .Release.Name }}-human-eval
+  labels:
+    app: ecom-agent
+    app.kubernetes.io/version: {{ .Values.image.tag | quote }}
+spec:
+  schedule: {{ .Values.humanEvalCron.schedule | quote }}
+  timeZone: {{ .Values.humanEvalCron.timeZone | quote }}
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      ttlSecondsAfterFinished: 604800
+      template:
+        spec:
+          restartPolicy: OnFailure
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10001
+            fsGroup: 10001
+          containers:
+            - name: human-eval
+              image: "{{ .Values.humanEvalCron.image | default (printf "%s:%s" .Values.image.repository .Values.image.tag) }}"
+              command: ["python", "-m", "app.scripts.run_evolution"]
+              args: ["--human-eval"]
+              env:
+                {{- range $k, $v := .Values.env }}
+                - name: {{ $k }}
+                  value: {{ $v | quote }}
+                {{- end }}
+              envFrom:
+                - secretRef:
+                    name: {{ .Values.envFromSecret }}
+              volumeMounts:
+                - name: kb-shared
+                  mountPath: {{ .Values.kbSharedVolume.mountPath }}
+          volumes:
+            - name: kb-shared
+              persistentVolumeClaim:
+                claimName: {{ .Release.Name }}-kb-shared
+{{- end }}

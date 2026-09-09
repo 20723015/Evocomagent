@@ -7,6 +7,8 @@ execute_sql 在测试里用记录型替身，不真正执行 DDL。
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 from sqlalchemy import create_engine, text
 
@@ -38,6 +40,16 @@ def test_migration_files_sorted_and_filtered(tmp_path):
     assert [v for v, _ in files] == [1, 4]
 
 
+def test_repository_schema_gate_matches_highest_migration():
+    """生产 gate 必须覆盖 007 任务表迁移，且 error 保持 NOT NULL。"""
+    sql_dir = Path(__file__).parents[2] / "deploy" / "sql"
+    files = migration_files(sql_dir)
+    assert files
+    assert max(v for v, _ in files) == EXPECTED_SCHEMA_VERSION == 10
+    ddl = (sql_dir / "007_kb_index_jobs.sql").read_text(encoding="utf-8")
+    assert "error              TEXT         NOT NULL" in ddl
+
+
 def test_run_migrations_applies_in_order_then_idempotent(tmp_path):
     sql_dir = _fake_sql_dir(tmp_path)
     engine = create_engine("sqlite:///:memory:")
@@ -46,7 +58,8 @@ def test_run_migrations_applies_in_order_then_idempotent(tmp_path):
     with engine.connect() as conn:
         result = run_migrations(
             lambda sql: executed.append(sql[:30]),
-            sql_dir, conn=conn,
+            sql_dir,
+            conn=conn,
         )
         assert result["applied"] == [1, 2, 3, 4]
         assert result["skipped"] == []
@@ -55,7 +68,8 @@ def test_run_migrations_applies_in_order_then_idempotent(tmp_path):
         # 重复运行：全部跳过（幂等）
         result2 = run_migrations(
             lambda sql: executed.append(sql[:30]),
-            sql_dir, conn=conn,
+            sql_dir,
+            conn=conn,
         )
         assert result2["applied"] == []
         assert result2["skipped"] == [1, 2, 3, 4]
@@ -75,7 +89,8 @@ def test_run_migrations_partial_apply(tmp_path):
         executed = []
         result = run_migrations(
             lambda sql: executed.append(sql),
-            sql_dir, conn=conn,
+            sql_dir,
+            conn=conn,
         )
         assert result["applied"] == [4]
         assert result["skipped"] == [1, 2, 3]
@@ -118,13 +133,15 @@ def test_prod_verify_fails_without_schema_migrations(tmp_path):
 def test_prod_verify_fails_when_schema_behind(tmp_path):
     engine = create_engine(f"sqlite:///{tmp_path / 'old.sqlite'}")
     with engine.begin() as conn:
-        conn.execute(text(
-            f"CREATE TABLE schema_migrations (version INT PRIMARY KEY, "
-            f"checksum VARCHAR(64), applied_at DATETIME DEFAULT CURRENT_TIMESTAMP)"
-        ))
-        conn.execute(text(
-            "INSERT INTO schema_migrations (version, checksum) VALUES (2, 'x')"
-        ))
+        conn.execute(
+            text(
+                "CREATE TABLE schema_migrations (version INT PRIMARY KEY, "
+                "checksum VARCHAR(64), applied_at DATETIME DEFAULT CURRENT_TIMESTAMP)"
+            )
+        )
+        conn.execute(
+            text("INSERT INTO schema_migrations (version, checksum) VALUES (6, 'x')")
+        )
     with pytest.raises(RuntimeError, match=f"{EXPECTED_SCHEMA_VERSION}"):
         _verify_schema_version(engine)
 
@@ -132,14 +149,18 @@ def test_prod_verify_fails_when_schema_behind(tmp_path):
 def test_prod_verify_passes_when_schema_current(tmp_path):
     engine = create_engine(f"sqlite:///{tmp_path / 'current.sqlite'}")
     with engine.begin() as conn:
-        conn.execute(text(
-            "CREATE TABLE schema_migrations (version INT PRIMARY KEY, "
-            "checksum VARCHAR(64), applied_at DATETIME DEFAULT CURRENT_TIMESTAMP)"
-        ))
-        conn.execute(text(
-            "INSERT INTO schema_migrations (version, checksum) "
-            f"VALUES ({EXPECTED_SCHEMA_VERSION}, 'x')"
-        ))
+        conn.execute(
+            text(
+                "CREATE TABLE schema_migrations (version INT PRIMARY KEY, "
+                "checksum VARCHAR(64), applied_at DATETIME DEFAULT CURRENT_TIMESTAMP)"
+            )
+        )
+        conn.execute(
+            text(
+                "INSERT INTO schema_migrations (version, checksum) "
+                f"VALUES ({EXPECTED_SCHEMA_VERSION}, 'x')"
+            )
+        )
     # 版本达标 → 不抛错
     _verify_schema_version(engine)
 
@@ -151,14 +172,18 @@ def test_prod_engine_skips_auto_ddl(tmp_path, monkeypatch, reset_settings):
     monkeypatch.setattr(settings, "app_env", "prod")
     engine = create_engine(f"sqlite:///{tmp_path / 'prod.sqlite'}")
     with engine.begin() as conn:
-        conn.execute(text(
-            "CREATE TABLE schema_migrations (version INT PRIMARY KEY, "
-            "checksum VARCHAR(64), applied_at DATETIME DEFAULT CURRENT_TIMESTAMP)"
-        ))
-        conn.execute(text(
-            "INSERT INTO schema_migrations (version, checksum) "
-            f"VALUES ({EXPECTED_SCHEMA_VERSION}, 'x')"
-        ))
+        conn.execute(
+            text(
+                "CREATE TABLE schema_migrations (version INT PRIMARY KEY, "
+                "checksum VARCHAR(64), applied_at DATETIME DEFAULT CURRENT_TIMESTAMP)"
+            )
+        )
+        conn.execute(
+            text(
+                "INSERT INTO schema_migrations (version, checksum) "
+                f"VALUES ({EXPECTED_SCHEMA_VERSION}, 'x')"
+            )
+        )
     # 直接调 _build：应只校验、不建业务表
     from app.stores.sql import engine as engine_mod
 

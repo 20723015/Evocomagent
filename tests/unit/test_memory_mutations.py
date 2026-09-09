@@ -61,7 +61,7 @@ def test_single_value_upsert_versions_old_fact_and_prompt_uses_latest_only():
 
     ltm = LongTermMemory()
     ltm.facts = records
-    prompt = ltm.build_prompt_section("想买衣服")
+    prompt = ltm.build_prompt_section("喜欢什么颜色")
     assert "蓝色" in prompt
     assert "红色" not in prompt
 

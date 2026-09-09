@@ -149,30 +149,27 @@ def test_agent_scope_blocks_chitchat(reset_settings, tmp_path):
 
 
 def test_agent_scope_business_passes(reset_settings, tmp_path):
-    """开关开启：业务问题照常走主流程（规则命中，零额外 LLM）。"""
+    """开关开启：业务问题照常走主流程（scope 规则放行 → final_response 终答）。"""
     settings.business_only_scope = True
-    client = FakeChatClient()
+    client = FakeChatClient().enqueue_final_response(
+        "这是客服回复内容。", intent="order_query",
+    )
     agent = EcomAgent(
         session_path=str(tmp_path / "s.json"),
         client=client,
         memory_enabled=False,
     )
-    agent._react_loop = lambda state, budget: "这是客服回复内容。"
-    agent._extract_structured_response = lambda text: sample_response(
-        reply="这是客服回复内容。",
-    )
     result = agent.chat("我的订单到了吗")
     assert result.reply == "这是客服回复内容。"
-    assert client.calls == []  # 规则命中 → 零 LLM
+    # scope 规则快路径零 LLM；主体流程 1 次（final_response 终答，无二次提取）
+    assert [kind for kind, _ in client.calls] == ["chat"]
 
 
 def test_agent_scope_off_regression(reset_settings, tmp_path):
     """开关关闭：真实主流程与原提示词保持不变，不触发 scope 判定。"""
     settings.business_only_scope = False
-    client = (
-        FakeChatClient()
-        .enqueue_chat("这是正常闲聊回复。")
-        .enqueue_parse(sample_response(reply="这是正常闲聊回复。"))
+    client = FakeChatClient().enqueue_final_response(
+        "这是正常闲聊回复。", intent="greeting",
     )
     agent = EcomAgent(
         session_path=str(tmp_path / "s.json"),
@@ -181,7 +178,8 @@ def test_agent_scope_off_regression(reset_settings, tmp_path):
     )
     result = agent.chat("今天天气怎么样")
     assert result.reply == "这是正常闲聊回复。"
-    assert [kind for kind, _ in client.calls] == ["chat", "parse"]
+    # final_response 终答协议，无二次结构化提取调用
+    assert [kind for kind, _ in client.calls] == ["chat"]
     system_prompt = client.calls[0][1]["messages"][0]["content"]
     assert "非业务内容处理" not in system_prompt
     assert SCOPE_BLOCK_REPLY not in system_prompt

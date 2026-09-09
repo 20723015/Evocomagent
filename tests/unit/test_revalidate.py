@@ -2,12 +2,16 @@
 
 from __future__ import annotations
 
-import json
+from datetime import date, datetime, timezone
 
 import pytest
 
 from app.config.settings import settings
-from app.evolution.revalidate import parse_evolved_doc, refresh_last_validated, revalidate
+from app.evolution.revalidate import (
+    parse_evolved_doc,
+    refresh_last_validated,
+    revalidate,
+)
 
 
 def _write_evolved(kb, filename="20260801-abc-问答.md", question="退款多久到账？",
@@ -57,8 +61,6 @@ def test_parse_evolved_doc_template(tmp_path):
 
 
 def test_refresh_last_validated_preserves_body(tmp_path):
-    from datetime import date
-
     kb = tmp_path / "kb"
     _write_evolved(kb)
     target = kb / "evolved" / "20260801-abc-问答.md"
@@ -68,6 +70,31 @@ def test_refresh_last_validated_preserves_body(tmp_path):
     assert parsed["meta"]["quality_score"] == "0.9"  # 其余字段保持
     assert parsed["question"] == "退款多久到账？"
     assert "# 自进化知识" not in parsed["answer"]  # 正文本体不受影响
+
+
+def test_refresh_last_validated_roundtrips_quoted_multiline_frontmatter(tmp_path):
+    """刷新不得把特殊字符/换行元数据变成多行或 YAML 注入。"""
+    from app.agent.rag.loader import serialize_frontmatter
+
+    target = tmp_path / "special.md"
+    metadata = {
+        "provenance": 'turn: "人工"\n第二行 # not a field',
+        "owner": "ops: qa # reviewer",
+        "grounded_on": "policy.md, faq.md",
+        "last_validated": "2026-08-01",
+    }
+    body = "\n# 自进化知识\n\n## 特殊问题？\n\n回答含冒号: 和 # 号。\n"
+    target.write_text(serialize_frontmatter(metadata) + body, encoding="utf-8")
+
+    refresh_last_validated(target, today=date(2026, 9, 1))
+    parsed = parse_evolved_doc(target)
+
+    assert parsed is not None
+    assert parsed["meta"]["provenance"] == metadata["provenance"]
+    assert parsed["meta"]["owner"] == metadata["owner"]
+    assert parsed["meta"]["grounded_on"] == metadata["grounded_on"]
+    assert parsed["meta"]["last_validated"] == "2026-09-01"
+    assert parsed["answer"] == "回答含冒号: 和 # 号。"
 
 
 # ============================================================
@@ -99,11 +126,11 @@ def test_revalidate_pass_refreshes_last_validated_no_rebuild(tmp_path):
     assert result["failed"] == 0
     assert result["rebuilt"] is False
     # last_validated 已刷新（当天）
-    from datetime import date
-
     target = svc["kb_dir"] / "evolved" / "20260801-abc-问答.md"
     meta = parse_evolved_doc(target)["meta"]
-    assert meta["last_validated"] == date.today().isoformat()
+    assert meta["last_validated"] == (
+        datetime.now(timezone.utc).astimezone().date().isoformat()
+    )
     # 索引未重建：active generation 不变、文档仍在 kb
     assert svc["pipeline"]._generation_store.active("numpy").generation_id == info.generation_id
     assert target.exists()
@@ -114,7 +141,6 @@ def test_revalidate_pass_refreshes_last_validated_no_rebuild(tmp_path):
 # ============================================================
 def test_revalidate_fail_quarantines_and_rebuilds(tmp_path):
     from conftest import FakeEmbedder
-
     from test_pipeline import make_services
 
     svc = make_services(tmp_path)
@@ -343,6 +369,122 @@ def _write_revalidate_journal(svc, generation_id="g-crashed"):
             "target": svc["index_service"].target_for("numpy", generation_id),
         },
     })
+
+
+def _human_lifecycle(svc, filename="20260801-abc-问答.md"):
+    """构造一条已发布人工候选及其生命周期协调器。"""
+    from sqlalchemy import create_engine
+    from sqlalchemy.pool import StaticPool
+
+    from app.evolution.human_store import HumanKnowledgeStore
+    from app.evolution.lifecycle import KnowledgeLifecycleCoordinator
+    from app.stores.sql.schema import human_knowledge_candidates, metadata
+
+    engine = create_engine(
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    metadata.create_all(engine)
+    with engine.begin() as conn:
+        inserted = conn.execute(
+            human_knowledge_candidates.insert().values(
+                conversation_id=1,
+                status="published",
+                question="退款多久到账？",
+                answer="一般 3 个工作日内原路退回，请留意到账通知。",
+                evidence_message_ids="[]",
+                classification="new",
+                published_filename=filename,
+            )
+        )
+    candidate_id = int(inserted.inserted_primary_key[0])
+    store = HumanKnowledgeStore(engine)
+    lifecycle = KnowledgeLifecycleCoordinator(
+        store,
+        svc["ledger"],
+        kb_dir=svc["kb_dir"],
+    )
+    return store, lifecycle, candidate_id
+
+
+def _candidate_jobs(store, candidate_id):
+    from sqlalchemy import select
+
+    from app.stores.sql.schema import human_evaluation_jobs
+
+    with store._engine.connect() as conn:
+        return conn.execute(
+            select(human_evaluation_jobs).where(
+                human_evaluation_jobs.c.candidate_id == candidate_id
+            )
+        ).mappings().all()
+
+
+def test_revalidate_human_document_routes_to_mysql_not_ledger(tmp_path):
+    """正常隔离：human 正本回 MySQL 待重审，不能污染旧 Ledger。"""
+    from conftest import FakeBackend, FakeEmbedder, FakeRetriever
+    from test_pipeline import make_services
+
+    svc = make_services(tmp_path)
+    store, lifecycle, candidate_id = _human_lifecycle(svc)
+    _write_evolved(
+        svc["kb_dir"],
+        candidate_id=f"human-{candidate_id}",
+        source_kind="human_conversation",
+    )
+
+    result = revalidate(
+        kb_dir=svc["kb_dir"],
+        trash_dir=svc["state_dir"] / "trash",
+        ledger=svc["ledger"],
+        publisher=svc["publisher"],
+        index_service=svc["index_service"],
+        retriever=FakeRetriever(FakeEmbedder(), FakeBackend()),
+        grounding_judge=StubGrounding(grounded=False),
+        journal=svc["journal"],
+        lifecycle=lifecycle,
+    )
+
+    assert result["failed"] == 1
+    assert store.get_candidate(candidate_id)["status"] == "pending_review"
+    assert [job["status"] for job in _candidate_jobs(store, candidate_id)] == ["queued"]
+    assert svc["ledger"].list_pending(aging_days=999) == []
+    assert svc["ledger"].published() == {}
+
+
+def test_pipeline_recovery_human_document_routes_to_mysql_not_ledger(tmp_path):
+    """移入 trash 后崩溃：pipeline 恢复仍凭快照路由 MySQL，不误写 Ledger。"""
+    import os
+
+    from test_pipeline import make_services
+
+    filename = "20260801-abc-问答.md"
+    svc = make_services(tmp_path)
+    store, lifecycle, candidate_id = _human_lifecycle(svc, filename)
+    _write_evolved(
+        svc["kb_dir"],
+        filename=filename,
+        candidate_id=f"human-{candidate_id}",
+        source_kind="human_conversation",
+    )
+    info = svc["index_service"].build("numpy")
+    svc["index_service"].activate("numpy", info)
+    trash = svc["state_dir"] / "trash"
+    trash.mkdir(parents=True, exist_ok=True)
+    os.replace(svc["kb_dir"] / "evolved" / filename, trash / filename)
+    _write_revalidate_journal(svc)
+    svc["pipeline"]._lifecycle = lifecycle
+
+    result = svc["pipeline"]._recover_revalidate(svc["journal"].read())
+
+    assert result["success"] is True
+    assert result["retired"] == [(filename, "mysql")]
+    assert store.get_candidate(candidate_id)["status"] == "pending_review"
+    assert [job["status"] for job in _candidate_jobs(store, candidate_id)] == ["queued"]
+    assert svc["ledger"].list_pending(aging_days=999) == []
+    assert svc["ledger"].published() == {}
+    assert svc["journal"].read() is None
 
 
 def test_revalidate_journal_cleared_after_quarantine(tmp_path):

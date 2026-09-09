@@ -244,8 +244,8 @@ def test_chroma_backend_chunks(tmp_path, chromadb_usable):
         assert got[c.chunk_id].doc == c.doc
         assert got[c.chunk_id].section == c.section
         assert got[c.chunk_id].text == c.text
-        # source_path 未随 upsert 持久化 → 重建时为空串（metadata 里有的才填）
-        assert got[c.chunk_id].source_path == ""
+        # 元数据随 upsert 持久化 → 重建时完整回填（旧 collection 缺失的字段为空串）
+        assert got[c.chunk_id].source_path == c.source_path
 
     # collection 未加载 → 返回 []
     assert ChromaBackend(tmp_path / "chroma").chunks() == []

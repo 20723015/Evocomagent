@@ -110,7 +110,7 @@ def verify_citations(reply: str, sources: set[str]) -> dict:
     return {"cited": cited, "matched": matched, "missing": missing}
 
 
-def apply_citation_policy(result, sources: set[str]) -> Optional[dict]:
+def apply_citation_policy(result, sources: set[str]) -> dict | None:
     """Agent 内部分级处置（改造三；单/多 Agent 同约定）。
 
     - 无引用（纯闲聊/纯工具数据）→ 放行；

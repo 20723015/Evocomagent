@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import ClassVar
+
 import fakeredis
 import pytest
 
@@ -55,7 +57,7 @@ def test_build_ticket_from_agent_like_object():
         user_id = "u1"
         session_id = "s1"
         summary = "摘要"
-        raw_messages = [
+        raw_messages: ClassVar[list[dict[str, str]]] = [
             {"role": "user", "content": "我要投诉"},
             {"role": "assistant", "content": "..."},
         ]
@@ -72,8 +74,9 @@ def test_build_ticket_from_agent_like_object():
 
 def test_handoff_create_resolve_endpoints(monkeypatch):
     from fastapi.testclient import TestClient
-    import app.server.main as main_mod
     from test_server_api import _FakeComponents, _ScriptedAgent
+
+    import app.server.main as main_mod
 
     monkeypatch.setattr(main_mod, "build_pod_components", lambda: _FakeComponents())
     monkeypatch.setattr(
@@ -97,10 +100,11 @@ def test_handoff_create_resolve_endpoints(monkeypatch):
 
 
 def test_chat_requires_human_creates_handoff_ticket(monkeypatch):
-    from fastapi.testclient import TestClient
-    import app.server.main as main_mod
-    from test_server_api import _FakeComponents, _ScriptedAgent
     from conftest import sample_response
+    from fastapi.testclient import TestClient
+    from test_server_api import _FakeComponents, _ScriptedAgent
+
+    import app.server.main as main_mod
 
     class _HumanAgent(_ScriptedAgent):
         def chat(self, message: str):
@@ -206,6 +210,7 @@ def _review_login(client, monkeypatch, token="admin-token-0123456789abcdef"):
 def test_review_webapp_fail_closed_without_token(monkeypatch):
     """安全修复 P1：REVIEW_ADMIN_TOKEN 未配置 → 整站 503（公开写入口关闭）。"""
     from fastapi.testclient import TestClient
+
     from app.config.settings import settings
     from app.review import webapp as wmod
 
@@ -219,6 +224,7 @@ def test_review_webapp_fail_closed_without_token(monkeypatch):
 
 def test_review_webapp_requires_login(monkeypatch):
     from fastapi.testclient import TestClient
+
     from app.config.settings import settings
     from app.review import webapp as wmod
 
@@ -231,38 +237,63 @@ def test_review_webapp_requires_login(monkeypatch):
 
 
 def test_review_webapp_approve_reject(monkeypatch):
+    """审核后台走 ReviewService（不再借道 CLI 返回码）；结构化状态返回。"""
     from fastapi.testclient import TestClient
-    import app.scripts.run_evolution as evo
+
     from app.review import webapp as wmod
 
-    actions = []
+    calls = []
 
-    def fake_main(argv=None, services=None):
-        actions.append(list(argv))
-        return 0
+    class _StubService:
+        def approve(self, cid, revision):
+            calls.append(("approve", cid, revision))
+            if cid == "cid-dup":
+                return {"status": "duplicate_rejected",
+                        "detail": "审核时发现重复，候选已终结（rejected）"}
+            return {"status": "published", "filename": "x.md"}
 
-    monkeypatch.setattr(evo, "main", fake_main)
-    monkeypatch.setattr(wmod, "_pending_entries", lambda: [])
+        def reject(self, cid, revision=None):
+            calls.append(("reject", cid, revision))
+            return {"status": "rejected"}
+
+        def edit(self, cid, question, answer, revision):
+            calls.append(("edit", cid, revision))
+            return {"status": "edited", "revision": revision + 1}
+
+    monkeypatch.setattr(wmod, "_pending_entries", list)
+    monkeypatch.setattr(wmod, "_review_service", lambda: _StubService())
     with TestClient(wmod.create_review_app()) as client:
         csrf = _review_login(client, monkeypatch)
         assert client.get("/").status_code == 200
         # 缺 CSRF token 的 POST 一律 403（跨站表单防护）
         resp = client.post("/approve/cid-1")
         assert resp.status_code == 403
-        resp = client.post("/approve/cid-1", data={"csrf": csrf})
+        resp = client.post("/approve/cid-1", data={"csrf": csrf,
+                                                   "expected_revision": "0"})
         assert resp.status_code == 200
         assert resp.json()["published"] is True
-        assert actions == [["--approve", "cid-1"]]
+        resp = client.post("/approve/cid-dup", data={"csrf": csrf,
+                                                     "expected_revision": "0"})
+        assert resp.status_code == 200
+        assert resp.json()["published"] is False  # 重复绝不虚报发布成功
         resp = client.post("/reject/cid-2", data={"csrf": csrf})
         assert resp.status_code == 200
-        assert actions[-1] == ["--reject", "cid-2"]
+        assert resp.json()["rejected"] is True
+        # 编辑成功 → 303 回列表页
+        resp = client.post("/edit/cid-1", data={"csrf": csrf,
+                                                "expected_revision": "2",
+                                                "question": "q2", "answer": "a2"},
+                           follow_redirects=False)
+        assert resp.status_code == 303  # 编辑成功 → 重定向回列表页
         # CSRF token 错误 → 403
         assert client.post("/reject/cid-3", data={"csrf": "forged"}).status_code == 403
+        assert calls[0] == ("approve", "cid-1", 0)
 
 
 def test_review_webapp_xss_escaped(monkeypatch):
     """安全修复 P1：候选问题/答案（来自用户对话）必须 HTML 转义。"""
     from fastapi.testclient import TestClient
+
     from app.review import webapp as wmod
 
     payload = "<script>alert(1)</script>"

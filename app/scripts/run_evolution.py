@@ -24,31 +24,167 @@ main(argv, services=None) 支持依赖注入（CI 用 Fake services 跑 dry-run�
 """
 
 import argparse
+import os
 import sys
+from datetime import datetime, timedelta
 from pathlib import Path
+
 from app.observability.logging import get_logger
+
 log = get_logger("app.scripts.run_evolution")
 
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(ROOT))
 
-from app.config.settings import settings  # noqa: E402
-from app.evolution.lock import CrossHostLockError, LockHeldError  # noqa: E402
+from app.config.settings import settings
+from app.evolution.lock import CrossHostLockError, LockHeldError
 
 
 # ============================================================
 # 默认服务装配（真实依赖）
 # ============================================================
+def _build_human_services() -> dict:
+    """装配人工知识链路（--human-eval / --human-publish-worker / --migrate-human-ledger）。
+
+    - 评审需要 LLM（抽取/更新判定）与语义去重服务（纯向量双侧 top-1），不需要
+      publisher/journal（评审不占 KB 写锁）；
+    - 发布需要 index_service/publisher/journal/lock/control/dedup_service/fence
+      （一个批次一个 staging generation，原子切代）；
+    - SemanticDedupService 同时注入 RagScorer 与发布 Worker——构造期强制注入，
+      发布路径不可能再跳过去重；
+    - 开关关闭时调用方（main）已在初始化前 fail-fast，不会走到这里。
+    """
+    from openai import OpenAI
+
+    from app.agent.rag.embedder import create_embedder
+    from app.agent.rag.parsers import chunk_kb_dir
+    from app.evolution.fence import ConversationFence
+    from app.evolution.generation import GenerationStore
+    from app.evolution.human_store import HumanKnowledgeStore
+    from app.evolution.index_service import IndexBuildService
+    from app.evolution.ledger import Ledger
+    from app.evolution.lifecycle import KnowledgeLifecycleCoordinator
+    from app.evolution.lock import Journal
+    from app.evolution.publisher import Publisher
+    from app.evolution.semantic_dedup import SemanticDedupService
+    from app.stores.kb_write_lock import get_kb_write_lock
+    from app.stores.redis_client import get_redis
+    from app.stores.sql.document_store import KbControlStore
+    from app.stores.sql.engine import get_engine
+
+    engine = get_engine()
+    if engine is None:
+        raise RuntimeError("人工知识链路需要 MySQL（DB_URL 未配置）")
+    redis = get_redis()
+    root = ROOT
+    gen_store = GenerationStore(
+        root / settings.kb_generation_path,
+        redis_client=redis,
+        strict_shared=redis is not None,
+    )
+    embedder = create_embedder()
+    index_service = IndexBuildService(
+        embedder=embedder,
+        kb_dir=root / settings.kb_dir,
+        generation_store=gen_store,
+        chunker=chunk_kb_dir,
+        strict_build=True,
+    )
+    client = OpenAI(
+        api_key=settings.openai_api_key,
+        base_url=settings.openai_base_url,
+    )
+    from app.evolution.human_evaluator import (
+        HumanConversationExtractor,
+        RagScorer,
+    )
+
+    dedup_service = SemanticDedupService(index_service, gen_store, embedder)
+    store = HumanKnowledgeStore(engine)
+    ledger = Ledger(root / settings.evolve_state_dir)
+    return {
+        "engine": engine,
+        "store": store,
+        "extractor": HumanConversationExtractor(client, settings.model_name),
+        "embedder": embedder,
+        "scorer": RagScorer(dedup_service),
+        "dedup_service": dedup_service,
+        "fence": ConversationFence(
+            engine,
+            timeout_seconds=settings.human_fence_publish_timeout_seconds,
+        ),
+        "lifecycle": KnowledgeLifecycleCoordinator(
+            store,
+            ledger,
+            kb_dir=root / settings.kb_dir,
+        ),
+        "generation_store": gen_store,
+        "index_service": index_service,
+        "publisher": Publisher(
+            kb_dir=root / settings.kb_dir,
+            staging_dir=root / settings.evolve_state_dir / "staging",
+        ),
+        "journal": Journal(root / settings.evolve_state_dir / "journal.json"),
+        "lock": get_kb_write_lock(engine=engine, redis=redis, ttl_seconds=None),
+        "control": KbControlStore(engine),
+        "kb_dir": root / settings.kb_dir,
+        "state_dir": root / settings.evolve_state_dir,
+        "ledger": ledger,
+    }
+
+
+def _pending_entries_read_only(ledger, aging_days: int) -> list[tuple[str, dict]]:
+    """读取 pending 并在副本上计算 aging，不触发 ledger 写盘。
+
+    ``Ledger.list_pending`` 为兼容旧 CLI 会把 aging 标记持久化；审核
+    列表是纯 GET，使用新鲜实例的内存快照并只修改返回副本，避免无锁
+    GET 用陈旧实例把别的审核实例更新覆盖回磁盘。
+    """
+    data = getattr(ledger, "_data", None)
+    pending = data.get("pending") if isinstance(data, dict) else None
+    if isinstance(pending, dict):
+        now_fn = getattr(ledger, "_now", None)
+        try:
+            now = (
+                now_fn() if callable(now_fn) else datetime.now()  # noqa: DTZ005 - Ledger uses local naive time
+            )
+        except (AttributeError, TypeError, ValueError):
+            now = datetime.now()  # noqa: DTZ005 - Ledger uses local naive time
+        result: list[tuple[str, dict]] = []
+        for cid, raw in pending.items():
+            entry = dict(raw)
+            if entry.get("status") == "pending":
+                try:
+                    created = datetime.fromisoformat(str(entry.get("created_at", "")))
+                except (TypeError, ValueError):
+                    created = None
+                if created is not None:
+                    try:
+                        aged = (now - created).days >= aging_days
+                    except TypeError:
+                        aged = False
+                    if aged:
+                        entry["status"] = "aging"
+            result.append((cid, entry))
+        return result
+
+    # 依赖注入下兼容只提供 list_pending 的旧 fake；真实 Ledger 始终走上面
+    # 的纯读路径。
+    return list(ledger.list_pending(aging_days))
+
+
 def _build_services() -> dict:
     from openai import OpenAI
 
     from app.agent.rag.embedder import create_embedder
     from app.agent.rag.parsers import chunk_kb_dir
     from app.evolution.generation import GenerationStore
+    from app.evolution.human_store import HumanKnowledgeStore
     from app.evolution.index_service import IndexBuildService
     from app.evolution.judges import GroundingJudge, ValueJudge
     from app.evolution.ledger import Ledger
+    from app.evolution.lifecycle import KnowledgeLifecycleCoordinator
     from app.evolution.lock import Journal
     from app.evolution.pipeline import EvolutionPipeline
     from app.evolution.publisher import Publisher
@@ -70,7 +206,8 @@ def _build_services() -> dict:
     engine = get_engine()
     strict_shared = redis is not None
     generation_store = GenerationStore(
-        ROOT / settings.kb_generation_path, redis_client=redis,
+        ROOT / settings.kb_generation_path,
+        redis_client=redis,
         strict_shared=strict_shared,
     )
     index_service = IndexBuildService(
@@ -89,6 +226,13 @@ def _build_services() -> dict:
         kb_dir=ROOT / settings.kb_dir,
         staging_dir=ROOT / settings.evolve_state_dir / "staging",
     )
+    lifecycle = None
+    if engine is not None:
+        lifecycle = KnowledgeLifecycleCoordinator(
+            HumanKnowledgeStore(engine),
+            ledger,
+            kb_dir=ROOT / settings.kb_dir,
+        )
 
     def retriever_factory():
         from app.agent.tools import knowledge as knowledge_tool
@@ -137,15 +281,18 @@ def _build_services() -> dict:
         session_paths=[ROOT / settings.session_path],
         evaluator_factory=evaluator_factory,
         eval_cases=eval_cases(),
+        lifecycle=lifecycle,
     )
     return {
         "pipeline": pipeline,
         "ledger": ledger,
         "lock": lock,
+        "redis": redis,
         "journal": journal,
         "publisher": publisher,
         "index_service": index_service,
         "generation_store": generation_store,
+        "lifecycle": lifecycle,
         "retriever_factory": retriever_factory,
         "grounding_judge": GroundingJudge(client, settings.model_name),
         "kb_dir": ROOT / settings.kb_dir,
@@ -160,20 +307,28 @@ def _build_services() -> dict:
 def _print_report(report, prefix: str = "  ") -> None:
     s = report.skipped
     log.info(f"{prefix}挖掘 turn 数        : {report.mined}")
+    log.info(
+        f"{prefix}人工候选            : 导入 {getattr(report, 'human_imported', 0)} / "
+        f"拒绝 {getattr(report, 'human_rejected', 0)}（人工工单支路）"
+    )
     log.info(f"{prefix}规则过滤后候选      : {report.pre_deduped}")
     log.info(f"{prefix}进入 Judge 的候选   : {report.judged}")
     log.info(f"{prefix}Judge API 调用      : {report.api_calls}")
-    log.info(f"{prefix}跳过明细            : "
-          f"低置信 {s.get('low_confidence', 0)} / 转人工 {s.get('requires_human', 0)} / "
-          f"无来源 {s.get('no_sources', 0)} / 过短 {s.get('short', 0)} / "
-          f"敏感 {s.get('sensitive', 0)} / 重复 {s.get('duplicate', 0)} / "
-          f"Judge 拒 {s.get('judge_rejected', 0)}")
+    log.info(
+        f"{prefix}跳过明细            : "
+        f"低置信 {s.get('low_confidence', 0)} / 转人工 {s.get('requires_human', 0)} / "
+        f"无来源 {s.get('no_sources', 0)} / 过短 {s.get('short', 0)} / "
+        f"敏感 {s.get('sensitive', 0)} / 重复 {s.get('duplicate', 0)} / "
+        f"Judge 拒 {s.get('judge_rejected', 0)}"
+    )
     log.info(f"{prefix}pending（待审核）    : {report.pending}")
     log.info(f"{prefix}发布文档数          : {report.sedimented}")
     if report.revalidated_checked:
-        log.info(f"{prefix}重接地核对          : {report.revalidated_checked}"
-                 f"（通过 {report.revalidated_passed} / 隔离 {report.revalidated_failed} / "
-                 f"剩余 {report.revalidated_remaining}）")
+        log.info(
+            f"{prefix}重接地核对          : {report.revalidated_checked}"
+            f"（通过 {report.revalidated_passed} / 隔离 {report.revalidated_failed} / "
+            f"剩余 {report.revalidated_remaining}）"
+        )
     if report.failures:
         log.info(f"{prefix}⚠️  异常次数: {report.failures}")
 
@@ -184,19 +339,34 @@ def _print_eval_detail(detail: dict) -> None:
     bs = before.get("summary", {})
     as_ = after.get("summary", {})
     log.info("\n  评测对比（before → after）")
-    log.info(f"    通过率    : {bs.get('pass_rate', 0) * 100:.0f}% → {as_.get('pass_rate', 0) * 100:.0f}%")
-    log.info(f"    结果得分  : {bs.get('avg_result_score')} → {as_.get('avg_result_score')}")
+    log.info(
+        f"    通过率    : {bs.get('pass_rate', 0) * 100:.0f}% → {as_.get('pass_rate', 0) * 100:.0f}%"
+    )
+    log.info(
+        f"    结果得分  : {bs.get('avg_result_score')} → {as_.get('avg_result_score')}"
+    )
     log.info(f"    阻断原因  : {detail.get('reasons') or '无'}")
     log.info(f"    探针失败  : {detail.get('probe_failures') or '无'}")
     for case in (after or {}).get("cases", []):
         before_case = next(
-            (c for c in (before or {}).get("cases", []) if c["case_id"] == case["case_id"]),
+            (
+                c
+                for c in (before or {}).get("cases", [])
+                if c["case_id"] == case["case_id"]
+            ),
             None,
         )
         flag = "❌" if not case.get("passed") else "✓"
-        b_pass = "✓" if before_case and before_case.get("passed") else "✗" if before_case else "?"
-        log.info(f"    {case['case_id']:<22} {b_pass} → {flag}  "
-              f"{case.get('error') or ''}")
+        b_pass = (
+            "✓"
+            if before_case and before_case.get("passed")
+            else "✗"
+            if before_case
+            else "?"
+        )
+        log.info(
+            f"    {case['case_id']:<22} {b_pass} → {flag}  {case.get('error') or ''}"
+        )
 
 
 # ============================================================
@@ -205,8 +375,10 @@ def _print_eval_detail(detail: dict) -> None:
 def _gate() -> bool:
     if settings.self_evolve_enabled:
         return True
-    log.info("❌ SELF_EVOLVE_ENABLED=false：写操作被安全开关拒绝。"
-          "设置环境变量 SELF_EVOLVE_ENABLED=true 后再试。")
+    log.info(
+        "❌ SELF_EVOLVE_ENABLED=false：写操作被安全开关拒绝。"
+        "设置环境变量 SELF_EVOLVE_ENABLED=true 后再试。"
+    )
     return False
 
 
@@ -215,8 +387,8 @@ def _sync_turns(svc: dict) -> int:
 
     fail-closed：S3 不可用时拒绝空跑（同步失败说明本次必然挖不到任何 turn）。
     """
-    from app.stores.object_store import ObjectStoreUnavailable
     from app.evolution.turn_sync import build_turns_archive, sync_turns_from_archive
+    from app.stores.object_store import ObjectStoreUnavailable
 
     try:
         store = build_turns_archive()
@@ -255,7 +427,9 @@ def _cmd_run(svc: dict, dry_run: bool, with_eval: bool) -> int:
     _print_report(report)
     detail = getattr(pipeline, "eval_detail", None)
     if detail and detail.get("blocked"):
-        log.info("\n  ❌ with-eval 阻断：staging 已清理，generation 未切换（旧索引可用）")
+        log.info(
+            "\n  ❌ with-eval 阻断：staging 已清理，generation 未切换（旧索引可用）"
+        )
         _print_eval_detail(detail)
         return 2
     if detail:
@@ -266,15 +440,22 @@ def _cmd_run(svc: dict, dry_run: bool, with_eval: bool) -> int:
 
 def _cmd_list_pending(svc: dict) -> int:
     ledger = svc["ledger"]
-    entries = ledger.list_pending(settings.evolve_pending_aging_days)
+    entries = _pending_entries_read_only(
+        ledger,
+        settings.evolve_pending_aging_days,
+    )
     if not entries:
         log.info("  pending 为空。")
         return 0
-    log.info(f"  pending 共 {len(entries)} 条（超过 {settings.evolve_pending_aging_days} 天标记 aging）：")
+    log.info(
+        f"  pending 共 {len(entries)} 条（超过 {settings.evolve_pending_aging_days} 天标记 aging）："
+    )
     for cid, entry in entries:
         status = entry.get("status", "pending")
         log.info(f"    [{status}] {cid}  {entry.get('question', '')[:40]}")
-        log.info(f"            原因: {entry.get('reason', '')}  创建: {entry.get('created_at', '')}  trusted: {entry.get('human_trusted', False)}")
+        log.info(
+            f"            原因: {entry.get('reason', '')}  创建: {entry.get('created_at', '')}  trusted: {entry.get('human_trusted', False)}"
+        )
     return 0
 
 
@@ -302,6 +483,178 @@ def _cmd_approve(svc: dict, cids: list[str]) -> int:
     log.info("  approve 发布报告")
     log.info("=" * 60)
     _print_report(report)
+    return 0
+
+
+def _cmd_human_eval(svc: dict, *, max_jobs: int = 200) -> int:
+    """每日评审 Cron（run_evolution --human-eval；humanEvalCron 02:00 调用）。
+
+    - 领取未处理会话/编辑后候选（SKIP LOCKED + lease token，多实例安全）；
+    - LLM 抽取 + RAG 双侧评分 + 分类；失败不写完成，固定退避自动重试；
+    - 评审不占 KB 写锁；只处理 ended_at < 当日 00:00 的会话（迟到数据补收）；
+    - 顺带执行脱敏会话保留期清理（180 天）与队列指标上报。
+    """
+    from app.evolution.human_evaluator import HumanKnowledgeEvaluator
+    from app.observability.metrics import set_human_eval_stats
+
+    store = svc["store"]
+    evaluator = HumanKnowledgeEvaluator(
+        store,
+        svc["extractor"],
+        svc["scorer"],
+        worker_id=f"humaneval-{os.getpid()}",
+        generation_store=svc["generation_store"],
+    )
+    processed = 0
+    while processed < max_jobs:
+        before = processed
+        if evaluator.process_once():
+            processed += 1
+        if processed == before:
+            break
+    stats = store.stats()
+    set_human_eval_stats(stats)
+    removed = store.cleanup_expired_conversations(
+        days=settings.human_conversation_retention_days,
+    )
+    log.info(
+        "  人工知识评审完成: processed=%s stats=%s expired_removed=%s",
+        processed,
+        stats,
+        removed,
+    )
+    return 0
+
+
+def _cmd_human_publish_worker(
+    svc: dict, *, poll_seconds: int = 10, max_batches: int = 0
+) -> int:
+    """人工批量发布 Worker（run_evolution --human-publish-worker；Deployment 常驻）。
+
+    - 多实例租约领取批次；一个批次只构建一个 staging generation；
+    - 全局 KB 写锁内发布，Journal 相位表崩溃恢复（回滚/前进）；
+    - 失败批次回 queued 重试，不要求再次人工批准。
+    """
+    import time
+
+    from app.evolution.human_publish import HumanBatchPublisher
+    from app.observability.metrics import set_human_eval_stats
+
+    publisher = HumanBatchPublisher(
+        svc["store"],
+        index_service=svc["index_service"],
+        generation_store=svc["generation_store"],
+        publisher=svc["publisher"],
+        journal=svc["journal"],
+        lock=svc["lock"],
+        control_store=svc["control"],
+        kb_dir=svc["kb_dir"],
+        worker_id=f"humanpub-{os.getpid()}",
+        dedup_service=svc["dedup_service"],
+        fence=svc.get("fence"),
+        lifecycle=svc.get("lifecycle"),
+    )
+    log.info("human_publish_worker started pid=%s poll=%ss", os.getpid(), poll_seconds)
+    handled = 0
+    while True:
+        try:
+            if publisher.process_once():
+                handled += 1
+                continue  # 有批次处理完立即看下一个
+            set_human_eval_stats(svc["store"].stats())
+        except KeyboardInterrupt:
+            return 0
+        except Exception as e:  # noqa: BLE001 - long-running worker boundary
+            log.warning("human_publish_worker loop error: %s", type(e).__name__)
+        if max_batches and handled >= max_batches:
+            return 0
+        time.sleep(poll_seconds)
+
+
+def _cmd_human_eval_worker(
+    svc: dict, *, poll_seconds: int = 30, max_jobs: int = 0
+) -> int:
+    """常驻人工评审 Worker（run_evolution --human-eval-worker；Deployment 可选）。
+
+    - 循环领取评审任务（SKIP LOCKED + lease token，多实例安全）；
+    - 空闲时按 queued/retry_wait 的最小 next_run_at 决定睡眠时长（最多
+      poll_seconds），不再依赖外部 Cron 触发；
+    - 单次 --human-eval 命令与部署调度保持不动（两种模式可并存）。
+    """
+    import time
+
+    from app.evolution.human_evaluator import HumanKnowledgeEvaluator
+
+    store = svc["store"]
+    evaluator = HumanKnowledgeEvaluator(
+        store,
+        svc["extractor"],
+        svc["scorer"],
+        worker_id=f"humaneval-{os.getpid()}",
+        generation_store=svc["generation_store"],
+    )
+    log.info("human_eval_worker started pid=%s poll=%ss", os.getpid(), poll_seconds)
+    processed = 0
+    while True:
+        try:
+            if evaluator.process_once():
+                processed += 1
+                continue
+        except KeyboardInterrupt:
+            return 0
+        delay = min(
+            float(store.next_evaluation_delay(poll_seconds=poll_seconds)),
+            float(poll_seconds),
+        )
+        if max_jobs and processed >= max_jobs:
+            return 0
+        time.sleep(delay)
+
+
+def _cmd_migrate_human_ledger(svc: dict) -> int:
+    """一次性幂等迁移：Ledger 中 human_handoff 人工 pending → MySQL 候选。
+
+    - 以 (source="ledger-migration", external_conversation_id=候选ID, v1)
+      建合成会话正本；候选按 (conversation_id, question) 幂等去重；
+    - 迁移成功的 ledger 条目记 manual_review_reject（reason=migrated_to_mysql）
+      ——不丢审计（MySQL 侧保有全部字段）。
+    """
+    from app.evolution.human_store import HumanKnowledgeStore
+
+    if not settings.human_qa_evolution_enabled:
+        log.error("❌ HUMAN_QA_EVOLUTION_ENABLED=false：迁移被拒绝")
+        return 2
+    store = HumanKnowledgeStore(svc["engine"])
+    ledger = svc["ledger"]
+    migrated = skipped = 0
+    for cid, entry in ledger.list_pending(settings.evolve_pending_aging_days):
+        if entry.get("source_kind") != "human_handoff":
+            continue
+        conv, _outcome = store.ingest_conversation(
+            source="ledger-migration",
+            external_conversation_id=f"ledger-{cid}",
+            source_version=1,
+            agent_id="",
+            started_at=None,
+            ended_at=datetime.now() - timedelta(days=1),  # noqa: DTZ005
+            messages=[],
+            enqueue_evaluation=False,
+        )
+        candidate_id = store.migrate_candidate(
+            conversation_id=conv["id"],
+            question=entry.get("question", ""),
+            answer=entry.get("answer", ""),
+            value_score=float(entry.get("quality_score") or 1.0),
+            submitted_by=entry.get("submitted_by", ""),
+        )
+        if candidate_id is None:
+            skipped += 1
+        else:
+            migrated += 1
+        ledger.mark_rejected(cid, reason="migrated_to_mysql")
+    log.info(
+        "  Ledger 人工 pending 迁移完成: migrated=%s skipped=%s", migrated, skipped
+    )
     return 0
 
 
@@ -343,10 +696,12 @@ def _cmd_unpublish(svc: dict, cid: str) -> int:
         # 重建索引（新 generation 不含该文档）→ 运行中 Agent 热刷新
         from app.agent.rag.embedder import create_embedder
 
-        embedder = create_embedder()
+        create_embedder()
         info = index_service.build(settings.rag_backend)
         index_service.activate(settings.rag_backend, info)
-        log.info(f"  🔄 索引已重建并切换 generation={info.generation_id}（旧代保留可回滚）")
+        log.info(
+            f"  🔄 索引已重建并切换 generation={info.generation_id}（旧代保留可回滚）"
+        )
         log.info(f"  📄 文档保留在 trash/{filename}，可手动恢复")
     finally:
         lock.release()
@@ -385,8 +740,10 @@ def _cmd_prune_turns(svc: dict, older_than_days: int) -> int:
         removed_ids.append(turn.turn_id)
     # processed 随保留期自然限界：文件已删，游标条目同步收缩
     pruned = ledger.drop_processed(removed_ids) if removed_ids else 0
-    log.info(f"  🧹 已清理 {removed} 个超期 turn 文件（{older_than_days} 天前，"
-             f"已处理且无 pending 关联），processed 游标同步收缩 {pruned} 条")
+    log.info(
+        f"  🧹 已清理 {removed} 个超期 turn 文件（{older_than_days} 天前，"
+        f"已处理且无 pending 关联），processed 游标同步收缩 {pruned} 条"
+    )
     return 0
 
 
@@ -394,9 +751,20 @@ def _cmd_prune_pending(svc: dict) -> int:
     if not _gate():
         return 1
     ledger = svc["ledger"]
-    removed = ledger.prune_pending(only_aging=True)
-    log.info(f"  🧹 已清理 {removed} 条 aging pending")
-    return 0
+    lock = svc.get("lock")
+    if lock is None:
+        log.info("  ❌ pending 清理锁不可用，拒绝写入。")
+        return 1
+    lock.acquire(phase="prune-pending")
+    try:
+        ledger.reload()
+        # list_pending 的 aging 标记是写操作；在统一锁内完成，再清理。
+        ledger.list_pending(settings.evolve_pending_aging_days)
+        removed = ledger.prune_pending(only_aging=True)
+        log.info(f"  🧹 已清理 {removed} 条 aging pending")
+        return 0
+    finally:
+        lock.release()
 
 
 def _cmd_revalidate(svc: dict) -> int:
@@ -417,7 +785,7 @@ def _cmd_revalidate(svc: dict) -> int:
         # 先补齐上次中断的隔离事务（journal phase=revalidate → 前进式恢复）
         entry = svc["journal"].read()
         if entry and entry.get("phase") == "revalidate":
-            recover_revalidate(
+            recovered = recover_revalidate(
                 entry,
                 kb_dir=kb_dir,
                 trash_dir=state_dir / "trash",
@@ -425,14 +793,23 @@ def _cmd_revalidate(svc: dict) -> int:
                 publisher=svc["publisher"],
                 index_service=svc["index_service"],
                 generation_store=generation_store,
+                lifecycle=svc.get("lifecycle") or pipeline._lifecycle,
             )
+            if not recovered.get("success", False):
+                raise RuntimeError(
+                    recovered.get("reason")
+                    or "重接地恢复未完成，journal 已保留"
+                )
             svc["journal"].archive()
             log.info("  🔁 已恢复上次中断的重接地隔离事务")
         backend = settings.rag_backend.lower()
-        active = generation_store.active(backend) if generation_store is not None else None
+        active = (
+            generation_store.active(backend) if generation_store is not None else None
+        )
         progress = (
             pipeline._read_revalidate_progress(active.generation_id)
-            if active is not None else []
+            if active is not None
+            else []
         )
         result = revalidate(
             kb_dir=kb_dir,
@@ -445,11 +822,16 @@ def _cmd_revalidate(svc: dict) -> int:
             journal=svc["journal"],
             exclude_docs=set(progress),
             backend=backend,
+            lifecycle=svc.get("lifecycle") or pipeline._lifecycle,
         )
         processed = set(progress)
         processed.update(result["processed_docs"])
         if result["has_more"]:
-            current = generation_store.active(backend) if generation_store is not None else active
+            current = (
+                generation_store.active(backend)
+                if generation_store is not None
+                else active
+            )
             progress_generation = current.generation_id if current is not None else ""
             pipeline._write_revalidate_progress(progress_generation, processed)
         else:
@@ -457,9 +839,11 @@ def _cmd_revalidate(svc: dict) -> int:
             pipeline.record_current_generation()
     finally:
         lock.release()
-    log.info(f"  重接地核对 : {result['checked']} 篇"
-             f"（通过 {result['passed']} / 隔离 {result['failed']} / 扫描 {result['scanned']} / "
-             f"剩余 {result['remaining']}）")
+    log.info(
+        f"  重接地核对 : {result['checked']} 篇"
+        f"（通过 {result['passed']} / 隔离 {result['failed']} / 扫描 {result['scanned']} / "
+        f"剩余 {result['remaining']}）"
+    )
     if result["rebuilt"]:
         for fname in result["failed_docs"]:
             log.info(f"    🗑️  {fname} → trash + pending（revalidation_failed）")
@@ -480,28 +864,83 @@ def _cmd_force_unlock(svc: dict) -> int:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="第10期 QA 自动沉淀 CLI")
     parser.add_argument("--dry-run", action="store_true", help="预览：零写入、不取锁")
-    parser.add_argument("--with-eval", action="store_true", help="正式运行前跑沙箱评测+探针")
-    parser.add_argument("--list-pending", action="store_true", help="列出 pending（超龄标 aging）")
+    parser.add_argument(
+        "--with-eval", action="store_true", help="正式运行前跑沙箱评测+探针"
+    )
+    parser.add_argument(
+        "--list-pending", action="store_true", help="列出 pending（超龄标 aging）"
+    )
     parser.add_argument("--approve", nargs="+", metavar="CID", help="人工通过并发布")
     parser.add_argument("--reject", nargs="+", metavar="CID", help="人工拒绝并永久跳过")
-    parser.add_argument("--unpublish", metavar="CID", help="下架已发布文档（移 trash + 重建索引）")
+    parser.add_argument(
+        "--unpublish", metavar="CID", help="下架已发布文档（移 trash + 重建索引）"
+    )
     parser.add_argument("--prune-turns", action="store_true", help="清理超期 turn 记录")
-    parser.add_argument("--prune-pending", action="store_true", help="清理 aging pending")
-    parser.add_argument("--revalidate", action="store_true",
-                        help="强制重接地存量自进化文档（仍受 EVOLVE_MAX_REGROUND_PER_RUN 上限约束）")
+    parser.add_argument(
+        "--prune-pending", action="store_true", help="清理 aging pending"
+    )
+    parser.add_argument(
+        "--revalidate",
+        action="store_true",
+        help="强制重接地存量自进化文档（仍受 EVOLVE_MAX_REGROUND_PER_RUN 上限约束）",
+    )
     parser.add_argument("--force-unlock", action="store_true", help="强制删除运行锁")
-    parser.add_argument("--older-than", type=int, default=None,
-                        help="prune 时删除超过 N 天的记录")
+    parser.add_argument(
+        "--human-eval",
+        action="store_true",
+        help="人工会话知识评审 Cron（LLM 抽取+RAG 评分+分类；不占 KB 写锁）",
+    )
+    parser.add_argument(
+        "--human-publish-worker",
+        action="store_true",
+        help="人工批量发布 Worker（租约领取批次，一个批次一个 generation）",
+    )
+    parser.add_argument(
+        "--human-eval-worker",
+        action="store_true",
+        help="常驻人工评审 Worker（空闲按最近 next_run_at 睡眠；多实例安全）",
+    )
+    parser.add_argument(
+        "--migrate-human-ledger",
+        action="store_true",
+        help="一次性幂等迁移：Ledger 人工 pending → MySQL 候选",
+    )
+    parser.add_argument(
+        "--older-than", type=int, default=None, help="prune 时删除超过 N 天的记录"
+    )
     return parser
 
 
 def main(argv=None, services=None) -> int:
     args = build_parser().parse_args(argv)
-    svc = services if services is not None else _build_services()
+    human_cmd = (
+        args.human_eval
+        or args.human_eval_worker
+        or args.human_publish_worker
+        or args.migrate_human_ledger
+    )
+    if services is not None:
+        svc = services
+    elif human_cmd and not settings.human_qa_evolution_enabled:
+        # 开关关闭时无需初始化任何真实依赖，尤其不能触发 OpenAI/embedder。
+        log.error("❌ HUMAN_QA_EVOLUTION_ENABLED=false：人工知识链路被拒绝")
+        return 2
+    elif human_cmd:
+        svc = _build_human_services()
+    else:
+        svc = _build_services()
 
     try:
         if args.force_unlock:
             return _cmd_force_unlock(svc)
+        if args.human_eval:
+            return _cmd_human_eval(svc)
+        if args.human_eval_worker:
+            return _cmd_human_eval_worker(svc)
+        if args.human_publish_worker:
+            return _cmd_human_publish_worker(svc)
+        if args.migrate_human_ledger:
+            return _cmd_migrate_human_ledger(svc)
         if args.list_pending:
             return _cmd_list_pending(svc)
         if args.approve:

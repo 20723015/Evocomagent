@@ -58,6 +58,8 @@ def extract_short_term_facts(
     existing_text = _render_existing(existing_facts)
     prompt = STM_EXTRACTION_PROMPT.format(existing_facts=existing_text)
 
+    from app.config.settings import settings
+
     response = client.chat.completions.create(
         model=model,
         temperature=0.0,
@@ -65,6 +67,7 @@ def extract_short_term_facts(
             {"role": "system", "content": prompt},
             {"role": "user", "content": transcript},
         ],
+        max_tokens=settings.llm_max_tokens,
     )
     raw = response.choices[0].message.content.strip()
     return _parse_mutations(raw, _user_evidence(recent_messages))
@@ -92,6 +95,8 @@ def extract_long_term_facts(
     existing_text = _render_existing(existing_facts)
     prompt = LTM_EXTRACTION_PROMPT.format(existing_ltm=existing_text)
 
+    from app.config.settings import settings
+
     response = client.chat.completions.create(
         model=model,
         temperature=0.0,
@@ -99,6 +104,7 @@ def extract_long_term_facts(
             {"role": "system", "content": prompt},
             {"role": "user", "content": "\n\n".join(parts)},
         ],
+        max_tokens=settings.llm_max_tokens,
     )
     raw = response.choices[0].message.content.strip()
 

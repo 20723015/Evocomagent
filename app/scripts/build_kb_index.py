@@ -76,10 +76,18 @@ def main():
 
     try:
         embedder = create_embedder()
+        # 指针必须经 Redis 共享（strict_shared）：否则多 Pod 下本工具只写
+        # 本地文件、线上检索器读 Redis 旧代——检索器将解析到已删除的索引
+        # （2026-09 实测：手工构建后 535 题评测报 index_not_found）。
+        _redis = get_redis()
         service = IndexBuildService(
             embedder=embedder,
             kb_dir=kb_dir,
-            generation_store=GenerationStore(ROOT / settings.kb_generation_path),
+            generation_store=GenerationStore(
+                ROOT / settings.kb_generation_path,
+                redis_client=_redis,
+                strict_shared=_redis is not None,
+            ),
             # 7.1：多格式接入（md/txt/pdf/docx/html，含 parent-child 装配）
             chunker=chunk_kb_dir,
             # v7：手工全量构建会切 alias → strict（坏文件中止，不静默丢知识）

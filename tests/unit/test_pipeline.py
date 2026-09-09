@@ -90,6 +90,7 @@ def make_services(tmp_path, clock=None, **overrides):
         clock=clock,
         evaluator_factory=overrides.get("evaluator_factory"),
         eval_cases=overrides.get("eval_cases") or [],
+        lifecycle=overrides.get("lifecycle"),
     )
     return {
         "pipeline": pipeline,
@@ -598,6 +599,73 @@ def test_replacement_answer_side_hit_not_replaced(tmp_path, evolve_on):
     assert report.replaced == 0
     assert (svc["kb_dir"] / "evolved" / "old.md").exists()  # 旧文档未被替换
     assert not (svc["state_dir"] / "trash" / "old.md").exists()
+
+
+def test_replacement_of_published_human_candidate_settles_mysql(tmp_path, evolve_on):
+    """机器人候选替换已发布的人工候选 → MySQL 行终态 superseded。
+
+    回归点：替换结算曾只清 Ledger——人工正本在 MySQL 的 published 行
+    指向已删文件成僵死态；settle_replacement 按旧文档 frontmatter
+    （发布时旧档已移 trash，从 trash 副本读）路由到 MySQL 结算。
+    """
+    from sqlalchemy import create_engine, text
+    from sqlalchemy.pool import StaticPool
+
+    from app.evolution.human_store import CAND_PUBLISHED, CAND_SUPERSEDED
+    from app.evolution.human_store import HumanKnowledgeStore
+    from app.evolution.lifecycle import KnowledgeLifecycleCoordinator
+    from app.stores.sql.schema import metadata
+
+    engine = create_engine(
+        "sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool,
+    )
+    metadata.create_all(engine)
+    store = HumanKnowledgeStore(engine, lease_seconds=1800)
+    with engine.begin() as conn:
+        conn.execute(text(
+            "INSERT INTO human_knowledge_candidates "
+            "(id, conversation_id, status, question, answer, published_filename, "
+            " reject_reason, evidence_message_ids, value_reason, rag_hit_path, "
+            " rag_hit_kind, classification, score_stale, revision, eval_model, "
+            " eval_prompt_version, eval_embedding_version, eval_kb_generation, "
+            " lifecycle_revision, published_generation, retire_reason, evidence_state) "
+            "VALUES (7, 1, :status, :q, :a, 'old.md', "
+            " '', '[]', '', '', "
+            " '', '', 0, 0, '', "
+            " '', '', '', "
+            " 0, '', '', 'legacy_evidence_missing')"
+        ), {"status": CAND_PUBLISHED, "q": OLD_Q, "a": OLD_A})
+
+    backend = FakeBackend()
+    svc = make_services(
+        tmp_path,
+        value_judge=StubValueJudge(_replacement_judge),
+        retriever_factory=lambda: FakeRetriever(FakeEmbedder(), backend),
+    )
+    # make_services 先建 pipeline 后才有 ledger：直接注入协调器（与生产装配一致）
+    svc["pipeline"]._lifecycle = KnowledgeLifecycleCoordinator(
+        store, svc["ledger"], kb_dir=svc["kb_dir"],
+    )
+    _seed_old_doc(svc, quality="0.80")
+    # 旧文档是人工候选发布的：frontmatter 带 candidate_id=human-7
+    (svc["kb_dir"] / "evolved" / "old.md").write_text(
+        "---\nprovenance: human-7\nowner: system\ncandidate_id: human-7\n"
+        "effective_date: 2026-08-01\nquality_score: 0.80\n"
+        "last_validated: 2026-08-01\n---\n"
+        f"# 自进化知识\n\n## {OLD_Q}\n\n{OLD_A}\n", encoding="utf-8")
+    _seed_dedup_backend(backend)
+    write_turn(svc["turns_dir"], "t1", question="今天有什么优惠活动", reply=NEW_A)
+
+    report = svc["pipeline"].run()
+    assert report.replaced == 1
+    # 旧文档已移 trash、新文档已发布（替换确实发生）
+    assert (svc["state_dir"] / "trash" / "old.md").exists()
+    assert not (svc["kb_dir"] / "evolved" / "old.md").exists()
+    # MySQL 正本结算：published → superseded（不再是 published 僵死态）
+    row = store.get_candidate(7)
+    assert row["status"] == CAND_SUPERSEDED
+    # 机器人候选 id 非数值 → replaced_by 记 0（结算语义仍成立）
+    assert int(row["replaced_by_candidate_id"] or 0) == 0
 
 
 def test_failed_run_still_records_generation(tmp_path, reset_settings, monkeypatch):

@@ -56,6 +56,36 @@ class ESBackend(VectorBackend):
         return meta.get(_EMBEDDING_MODEL_KEY, "")
 
     # ---------- 构建 / 激活 ----------
+    @staticmethod
+    def _mapping(embedding_model: str, dim: int) -> dict:
+        """KB 索引 mapping（upsert / ensure_empty 共用）。"""
+        return {
+            "_meta": {_EMBEDDING_MODEL_KEY: embedding_model},
+            "properties": {
+                "chunk_id": {"type": "keyword"},
+                "doc": {"type": "keyword"},
+                "section": {"type": "text"},
+                "text": {"type": "text", "analyzer": "standard"},
+                "source_path": {"type": "keyword"},
+                "provenance": {"type": "keyword"},
+                "owner": {"type": "keyword"},
+                "parent_text": {"type": "text"},
+                "heading_path": {"type": "keyword"},
+                "parent_id": {"type": "keyword"},
+                "vector": {"type": "dense_vector", "dims": dim,
+                           "index": True, "similarity": "cosine"},
+            },
+        }
+
+    def _index_settings(self) -> dict:
+        return {"number_of_shards": 1, "number_of_replicas": 0}
+
+    def _target_index(self) -> str:
+        """显式 index_name → 构造时 index_name → 自造（generation target）。"""
+        return self._index or (
+            f"{self._alias[:-len(_KB_ALIAS_SUFFIX)]}-kb-{uuid.uuid4().hex[:8]}"
+        )
+
     def upsert(self, chunks: list[Chunk], vectors: list[list[float]],
                embedding_model: str, index_name: str = "") -> str:
         """全量重建：创建新索引并写入（不切 alias——验证通过后由 activate() 切）。"""
@@ -63,28 +93,12 @@ class ESBackend(VectorBackend):
             raise ValueError(f"chunks 与 vectors 长度不一致: {len(chunks)} vs {len(vectors)}")
         dim = len(vectors[0]) if vectors else 0
         # 优先显式 index_name，其次构造时 index_name（generation target），最后自造
-        index = index_name or self._index or (
-            f"{self._alias[:-len(_KB_ALIAS_SUFFIX)]}-kb-{uuid.uuid4().hex[:8]}"
-        )
+        index = index_name or self._target_index()
 
         self._es.indices.create(
             index=index,
-            settings={"number_of_shards": 1, "number_of_replicas": 0},
-            mappings={
-                "_meta": {_EMBEDDING_MODEL_KEY: embedding_model},
-                "properties": {
-                    "chunk_id": {"type": "keyword"},
-                    "doc": {"type": "keyword"},
-                    "section": {"type": "text"},
-                    "text": {"type": "text", "analyzer": "standard"},
-                    "source_path": {"type": "keyword"},
-                    "provenance": {"type": "keyword"},
-                    "owner": {"type": "keyword"},
-                    "parent_text": {"type": "text"},
-                    "vector": {"type": "dense_vector", "dims": dim,
-                               "index": True, "similarity": "cosine"},
-                },
-            },
+            settings=self._index_settings(),
+            mappings=self._mapping(embedding_model, dim),
         )
         actions = []
         for c, v in zip(chunks, vectors):
@@ -94,11 +108,29 @@ class ESBackend(VectorBackend):
                 "text": c.text, "source_path": c.source_path or "",
                 "provenance": c.provenance or "", "owner": c.owner or "",
                 "parent_text": c.parent_text or "",
+                "heading_path": c.heading_path or "",
+                "parent_id": c.parent_id or "",
                 "vector": list(v),
             })
         # 分批 bulk（每批 200 文档）
         for i in range(0, len(actions), 400):
             self._es.bulk(operations=actions[i:i + 400], index=index, refresh=False)
+        self._es.indices.refresh(index=index)
+        self._index = index
+        self._embedding_model = embedding_model
+        return index
+
+    def ensure_empty(self, embedding_model: str, dims: int) -> str:
+        """空索引（allow_empty 下架终态）：只建 mapping 不写 bulk。
+
+        dense_vector dims=0 非法，必须用 embedder 的维度常量建空 mapping。
+        """
+        index = self._target_index()
+        self._es.indices.create(
+            index=index,
+            settings=self._index_settings(),
+            mappings=self._mapping(embedding_model, dims),
+        )
         self._es.indices.refresh(index=index)
         self._index = index
         self._embedding_model = embedding_model
@@ -148,7 +180,8 @@ class ESBackend(VectorBackend):
             rank={"rrf": {"window_size": recall_k, "rank_constant": 60}},
             size=recall_k,
             source=["chunk_id", "doc", "section", "text", "source_path",
-                    "provenance", "owner", "parent_text"],
+                    "provenance", "owner", "parent_text", "heading_path",
+                    "parent_id"],
             **query_kwargs,
         )
         return self._hits_to_results(resp)
@@ -167,7 +200,8 @@ class ESBackend(VectorBackend):
             },
             size=top_k,
             source=["chunk_id", "doc", "section", "text", "source_path",
-                    "provenance", "owner", "parent_text"],
+                    "provenance", "owner", "parent_text", "heading_path",
+                    "parent_id"],
             **query_kwargs,
         )
         return self._hits_to_results(resp)
@@ -187,6 +221,8 @@ class ESBackend(VectorBackend):
                     text=src.get("text", ""), source_path=src.get("source_path", ""),
                     provenance=src.get("provenance", ""), owner=src.get("owner", ""),
                     parent_text=src.get("parent_text", ""),
+                    heading_path=src.get("heading_path", ""),
+                    parent_id=src.get("parent_id", ""),
                 ),
                 score=float(raw_score) if raw_score is not None else 0.0,
             ))
@@ -213,6 +249,8 @@ class ESBackend(VectorBackend):
                     text=src.get("text", ""), source_path=src.get("source_path", ""),
                     provenance=src.get("provenance", ""), owner=src.get("owner", ""),
                     parent_text=src.get("parent_text", ""),
+                    heading_path=src.get("heading_path", ""),
+                    parent_id=src.get("parent_id", ""),
                 ))
             after = hits[-1].get("sort", [None])[0]
             if after is None or len(hits) < 500:

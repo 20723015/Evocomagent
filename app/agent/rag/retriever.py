@@ -16,7 +16,8 @@ from typing import Optional
 from app.agent.rag.backends.base import RetrievedChunk, VectorBackend
 from app.agent.rag.embedder import Embedder
 
-__all__ = ["KnowledgeRetriever", "RetrievedChunk", "filter_hits_by_score"]
+__all__ = ["KnowledgeRetriever", "RetrievedChunk", "collapse_by_parent",
+           "filter_hits_by_score"]
 
 
 def filter_hits_by_score(
@@ -30,6 +31,29 @@ def filter_hits_by_score(
     if min_score is None:
         return list(hits)
     return [hit for hit in hits if hit.score >= min_score]
+
+
+def collapse_by_parent(
+    hits: list[RetrievedChunk], top_k: int,
+) -> list[RetrievedChunk]:
+    """父子块去重：同一 parent_id 只保留排序最高的首见命中，截取 top_k。
+
+    召回与精排都发生在子块粒度；这里在最终输出前去重，避免同一章节的
+    多个子块占满 Top-K。旧索引的 chunk 无 parent_id（空串）→ 视为各自
+    独立，行为与旧版本一致。
+    """
+    out: list[RetrievedChunk] = []
+    seen: set[str] = set()
+    for hit in hits:
+        pid = hit.chunk.parent_id
+        if pid:
+            if pid in seen:
+                continue
+            seen.add(pid)
+        out.append(hit)
+        if len(out) >= top_k:
+            break
+    return out
 
 
 class KnowledgeRetriever:

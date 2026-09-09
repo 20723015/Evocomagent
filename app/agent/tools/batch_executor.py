@@ -35,9 +35,10 @@ from __future__ import annotations
 import json
 import threading
 import time
-from concurrent.futures import Future, ThreadPoolExecutor, TimeoutError as FutureTimeout
+from collections.abc import Callable
+from concurrent.futures import Future, ThreadPoolExecutor
+from concurrent.futures import TimeoutError as FutureTimeout
 from dataclasses import dataclass, field
-from typing import Callable, Optional
 
 from app.config.settings import settings
 from app.observability.logging import get_logger
@@ -56,6 +57,11 @@ PARALLEL_SAFE: frozenset[str] = frozenset({
 })
 
 WRITE_TOOLS: frozenset[str] = frozenset({"apply_refund"})
+
+# 阶段C：注册了状态机的写工具集合（新写工具必须注册，否则执行前被拦截）
+_WRITE_STATE_MACHINE_TOOLS: frozenset[str] = frozenset({
+    "apply_refund",
+})
 
 DUP_CALL_ERROR = "重复调用被拦截：请换参数或基于已有结果回答（同一调用本轮已执行过）"
 BUDGET_SKIP_ERROR = "本轮预算已耗尽，工具调用被跳过"
@@ -83,18 +89,21 @@ class ToolOutcome:
     result: str  # JSON 字符串（含错误 JSON）
     sequence: int
     skipped: bool = False  # True = 未真正执行（解析失败/重复拦截/预算跳过/超时弃等/indeterminate）
+    internal_args: dict | None = None  # Review 修复：仅执行器可写的内部参数通道（确认凭证注入）
 
 
 @dataclass
 class ToolTurnState:
     """请求级轮次状态：每轮 chat() 新建，绝不进 pod 单例。"""
 
-    event_callback: Optional[Callable[[str, dict], None]] = None
-    on_outcomes: Optional[Callable[[list[ToolOutcome]], None]] = None
+    event_callback: Callable[[str, dict], None] | None = None
+    on_outcomes: Callable[[list[ToolOutcome]], None] | None = None
     sources: set[str] = field(default_factory=set)  # 改造三：本轮检索来源（规范化值）
     indeterminate_writes: list[dict] = field(default_factory=list)  # 写结果未知清单
     seen_signatures: set[str] = field(default_factory=set)  # 本轮内出现过的签名（去重用）
     per_name_counts: dict[str, int] = field(default_factory=dict)  # 本轮内同工具调用次数
+    write_ops: object | None = None  # 阶段C：写操作状态机（WriteOpTracker；惰性建）
+    refund_confirm: dict | None = None  # Review 修复：服务端确认判定（confirm 时含注入载荷）
     _sequence: int = 0
 
     def next_sequence(self) -> int:
@@ -105,11 +114,19 @@ class ToolTurnState:
         if self.event_callback is not None:
             try:
                 self.event_callback(event_type, data)
-            except Exception:  # noqa: BLE001 —— 事件回调失败不影响工具执行
+            except Exception:
                 log.warning("tool 事件回调失败", exc_info=True)
 
+    def write_tracker(self):
+        """写操作状态机（惰性构建，避免无写轮次的构造开销）。"""
+        if self.write_ops is None:
+            from app.agent.write_ops import WriteOpTracker
 
-def parse_arguments(raw) -> tuple[Optional[dict], Optional[str]]:
+            self.write_ops = WriteOpTracker()
+        return self.write_ops
+
+
+def parse_arguments(raw) -> tuple[dict | None, str | None]:
     """解析工具参数；失败返回 (None, 错误 JSON)——错误回模型自愈。"""
     if isinstance(raw, dict):
         return dict(raw), None
@@ -159,8 +176,8 @@ class ToolBatchExecutor:
     tool_call_guard_enabled=False 时仅保留预算检查（消融 baseline 用）。
     """
 
-    def __init__(self, *, parallelism: Optional[int] = None,
-                 max_concurrent: Optional[int] = None):
+    def __init__(self, *, parallelism: int | None = None,
+                 max_concurrent: int | None = None):
         self._parallelism = (
             settings.tool_parallelism if parallelism is None else max(parallelism, 1)
         )
@@ -183,9 +200,9 @@ class ToolBatchExecutor:
         self._max_calls_per_name = max(settings.tool_max_calls_per_name, 1)
         self._search_max_calls = max(settings.tool_search_max_calls, 1)
 
-    def configure_guard(self, *, enabled: Optional[bool] = None,
-                        max_calls_per_name: Optional[int] = None,
-                        search_max_calls: Optional[int] = None) -> None:
+    def configure_guard(self, *, enabled: bool | None = None,
+                        max_calls_per_name: int | None = None,
+                        search_max_calls: int | None = None) -> None:
         """测试/评测按配置覆盖守卫参数（默认跟随 settings）。"""
         if enabled is not None:
             self._guard_enabled = bool(enabled)
@@ -228,7 +245,7 @@ class ToolBatchExecutor:
         """执行一批工具调用；返回与输入等长、按模型顺序排列的 ToolOutcome。"""
         if self._closed:
             raise RuntimeError("ToolBatchExecutor 已关闭，拒绝新批次")
-        outcomes: list[Optional[ToolOutcome]] = [None] * len(tool_calls)
+        outcomes: list[ToolOutcome | None] = [None] * len(tool_calls)
         plan: list[tuple[int, str, dict]] = []  # (index, name, args)
 
         for i, call in enumerate(tool_calls):
@@ -277,17 +294,99 @@ class ToolBatchExecutor:
             state.seen_signatures.add(signature)
             state.per_name_counts[name] = name_count
             if budget is not None and budget.expired():
-                # 提交规则①：剩余预算不足 → 不发起新工具调用
+                # 提交规则①：剩余预算不足 → 不发起新工具调用（写工具同规，
+                # 预算耗尽后绝不动）
                 outcomes[i] = self._make_outcome(
                     state, call_id, name, arguments,
                     json.dumps({"error": BUDGET_SKIP_ERROR}, ensure_ascii=False),
                     skipped=True, emit_call=True,
                 )
                 continue
+            # 阶段C：写操作状态机拦截（缺参/越权重试/未注册状态机的一律不执行
+            # ——不依赖模型自觉遵守流程；预算检查在前，耗尽后根本到不了这里）
+            if name in WRITE_TOOLS or name in _WRITE_STATE_MACHINE_TOOLS:
+                # Review 修复：本轮确认判定为 ambiguous/cancel → 禁止一切写
+                # 工具。cancel 若不在这里 fail-closed，模型可在取消后重新
+                # 调用第一段 apply_refund，重新签发待确认请求。
+                decision = state.refund_confirm or {}
+                if decision.get("action") in ("ambiguous", "cancel"):
+                    from app.observability.metrics import (
+                        record_refund_confirmation_blocked as _rcb,
+                    )
+
+                    _rcb(str(decision.get("action")))
+                    outcomes[i] = self._make_outcome(
+                        state, call_id, name, arguments,
+                        json.dumps({
+                            "error": "REFUND_CONFIRMATION_REQUIRED",
+                            "message": (
+                                "用户已取消待确认的退款操作，本轮已禁止重新发起；"
+                                "如需退款请等待下一轮重新明确提出申请。"
+                                if decision.get("action") == "cancel" else
+                                "存在待用户确认的退款操作，本轮已禁止执行写操作；"
+                                "请先回应用户的确认或取消"
+                            ),
+                        }, ensure_ascii=False),
+                        skipped=True, emit_call=True,
+                    )
+                    continue
+                if decision.get("action") == "confirm":
+                    # 服务端判定的确认只适用于精确的待确认订单+原因。若模型
+                    # 改写了任一字段，禁止把它当成第一段新退款请求，避免借
+                    # 着用户对 O1 的确认发起 O2/另一原因退款。
+                    target_order = str(decision.get("order_id", "") or "").strip()
+                    target_reason = str(decision.get("reason", "") or "").strip()
+                    call_order = str(arguments.get("order_id", "") or "").strip()
+                    call_reason = str(arguments.get("reason", "") or "").strip()
+                    if (call_order != target_order
+                            or call_reason != target_reason):
+                        from app.observability.metrics import (
+                            record_refund_confirmation_blocked as _rcb,
+                        )
+
+                        _rcb("target_mismatch")
+                        outcomes[i] = self._make_outcome(
+                            state, call_id, name, arguments,
+                            json.dumps({
+                                "error": "REFUND_CONFIRMATION_TARGET_MISMATCH",
+                                "message": (
+                                    "本轮确认仅适用于用户明确确认的同一订单和退款原因；"
+                                    "参数不匹配，已禁止执行。"
+                                ),
+                            }, ensure_ascii=False),
+                            skipped=True, emit_call=True,
+                        )
+                        continue
+                verdict = state.write_tracker().check(name, arguments)
+                if verdict is not None:
+                    log.info("tool.write_blocked name=%s", name)
+                    record_write_blocked(name)
+                    state.write_tracker().blocked_calls.append(
+                        {"tool": name, "arguments": arguments}
+                    )
+                    outcomes[i] = self._make_outcome(
+                        state, call_id, name, arguments, verdict,
+                        skipped=True, emit_call=True,
+                    )
+                    continue
+            internal_args = None
+            if name == "apply_refund":
+                decision = state.refund_confirm or {}
+                if decision.get("action") == "confirm" and str(
+                    arguments.get("order_id", "")
+                ) == str(decision.get("order_id", "")):
+                    # Review 修复：仅服务端判定 confirm 时经内部通道注入
+                    # token/幂等键——模型参数面永远不含保留字段
+                    internal_args = {
+                        "confirmation_token": decision.get("token", ""),
+                        "idempotency_key": decision.get("refund_id", ""),
+                        "refund_id": decision.get("refund_id", ""),
+                    }
             plan.append((i, name, arguments))
             outcomes[i] = ToolOutcome(
                 call_id=call_id, name=name, arguments=arguments,
                 result="", sequence=state.next_sequence(),
+                internal_args=internal_args,
             )
             state.emit("tool_call", {
                 "name": name, "arguments": arguments,
@@ -311,15 +410,17 @@ class ToolBatchExecutor:
                 segments.append(("write" if name in WRITE_TOOLS else "barrier", [idx]))
         flush_reads()
 
+        budget_exhausted = False
         for seg_kind, indices in segments:
-            if budget is not None and budget.expired():
+            if budget_exhausted or (budget is not None and budget.expired()):
                 # 段前预算重查：写工具在预算耗尽后绝不动
                 for idx in indices:
                     self._mark_skipped(outcomes[idx], state, BUDGET_SKIP_ERROR)
                 continue
             if seg_kind == "read":
-                self._run_parallel_segment(indices, outcomes, state, ctx,
-                                           tool_manager, budget)
+                budget_exhausted = self._run_parallel_segment(
+                    indices, outcomes, state, ctx, tool_manager, budget,
+                )
             else:
                 self._run_barrier(
                     outcomes, indices[0], state, ctx, tool_manager,
@@ -331,7 +432,7 @@ class ToolBatchExecutor:
         if state.on_outcomes is not None:
             try:
                 state.on_outcomes(final)
-            except Exception:  # noqa: BLE001 —— 轨迹采集失败不影响对话
+            except Exception:
                 log.warning("on_outcomes 轨迹回调失败", exc_info=True)
         return final
 
@@ -374,32 +475,50 @@ class ToolBatchExecutor:
         return self._permit.acquire(timeout=remaining)
 
     def _submit(self, name, arguments, ctx, tool_manager, remaining,
-                budget, state, outcome) -> Optional[Future]:
+                budget, state, outcome) -> Future | None:
         """permit + 固定池提交；失败（许可超时）→ 标记跳过并返回 None。"""
         if not self._acquire_permit(budget):
             record_tool_timeout("permit")
             self._mark_skipped(outcome, state, PERMIT_TIMEOUT_ERROR)
             return None
+        # 获取许可本身可能正好耗尽最后一点预算。提交前再做一次 fail-closed
+        # 检查，尤其保证排在慢只读段后的写操作不会越过 deadline 启动。
+        if budget is not None and budget.expired():
+            self._permit.release()
+            record_tool_timeout("permit")
+            self._mark_skipped(outcome, state, BUDGET_SKIP_ERROR)
+            return None
         future = self._pool.submit(
             self._run_one, name, arguments, ctx, tool_manager, remaining,
+            outcome.internal_args,
         )
         future.add_done_callback(lambda f: self._permit.release())
         return future
 
     def _run_one(self, name: str, arguments: dict, ctx, tool_manager,
-                 remaining: Optional[float]) -> str:
-        """单工具执行（固定池 worker 内）；MCP/HTTP 传递 remaining 超时。"""
+                 remaining: float | None,
+                 internal_args: dict | None = None) -> str:
+        """单工具执行（固定池 worker 内）；MCP/HTTP 传递 remaining 超时。
+
+        internal_args：仅执行器可写的内部参数通道（Review 修复）——
+        确认凭证/幂等键在本通道注入，模型参数面不含保留字段。
+        """
         with self._active_lock:
             self._active += 1
             self._active_peak = max(self._active_peak, self._active)
         try:
-            return tool_manager.execute_tool(name, arguments, ctx, timeout=remaining)
+            # Review 修复：internal_args 走独立通道（校验后合并），
+            # 模型参数面与工具校验面均不含保留字段
+            return tool_manager.execute_tool(
+                name, arguments, ctx, timeout=remaining,
+                internal_args=internal_args,
+            )
         finally:
             with self._active_lock:
                 self._active -= 1
 
     def _run_parallel_segment(self, indices: list[int], outcomes, state, ctx,
-                              tool_manager, budget) -> None:
+                              tool_manager, budget) -> bool:
         """连续只读段：波次提交（每次 ≤ parallelism）；到期 cancel + 弃等。
 
         已运行任务允许完成并释放 permit——线程总数由固定池保证有界。
@@ -413,11 +532,12 @@ class ToolBatchExecutor:
             None if remaining is None else time.monotonic() + max(remaining, 0.0)
         )
         queue = list(indices)
+        deadline_reached = False
         while queue:
             if budget is not None and budget.expired():
                 for idx in queue:
                     self._mark_skipped(outcomes[idx], state, BUDGET_SKIP_ERROR)
-                return
+                return True
             wave = queue[: self._parallelism]
             queue = queue[self._parallelism :]
 
@@ -430,6 +550,10 @@ class ToolBatchExecutor:
                 )
                 if future is not None:
                     futures[idx] = future
+                elif budget is not None:
+                    # 有预算时 _submit 返回 None 表示许可等待或提交前检查
+                    # 已触达 deadline；后续段（特别是写段）必须熔断。
+                    deadline_reached = True
 
             for idx in wave:  # 按模型原序等待/回填
                 future = futures.get(idx)
@@ -451,6 +575,7 @@ class ToolBatchExecutor:
                     self._finish(outcome, json.dumps(
                         {"error": TOOL_TIMEOUT_ERROR}, ensure_ascii=False,
                     ), state, skipped=True)
+                    deadline_reached = True
                     continue
                 except Exception as e:  # noqa: BLE001
                     self._finish(outcome, json.dumps(
@@ -458,6 +583,7 @@ class ToolBatchExecutor:
                     ), state)
                     continue
                 self._finish(outcome, result, state)
+        return deadline_reached
 
     def _run_barrier(self, outcomes, idx: int, state, ctx, tool_manager,
                      budget, write: bool) -> None:
@@ -479,12 +605,16 @@ class ToolBatchExecutor:
                 record_tool_timeout("write")
                 record_mcp_write_indeterminate(outcome.name)
                 future.cancel()
+                # 幂等键在 internal_args（服务端注入通道，模型参数面
+                # 不含保留字段）；arguments 只兜底开发直退路径
+                internal = outcome.internal_args or {}
                 state.indeterminate_writes.append({
                     "tool": outcome.name,
                     "order_id": str(outcome.arguments.get("order_id", "")),
                     "idempotency_key": str(
-                        outcome.arguments.get("idempotency_key")
-                        or outcome.arguments.get("refund_id") or ""
+                        internal.get("idempotency_key")
+                        or internal.get("refund_id")
+                        or outcome.arguments.get("idempotency_key") or ""
                     ),
                 })
                 self._finish(outcome, json.dumps({
@@ -493,7 +623,7 @@ class ToolBatchExecutor:
                     "error": WRITE_INDETERMINATE_ERROR,
                 }, ensure_ascii=False), state, skipped=True)
                 return
-            except Exception as e:  # noqa: BLE001 —— 工具异常 → 错误 JSON 回模型自愈
+            except Exception as e:
                 log.warning("tool.execute_failed name=%s", outcome.name, exc_info=True)
                 self._finish(outcome, json.dumps(
                     {"error": f"工具执行出错: {e}"}, ensure_ascii=False,
@@ -516,7 +646,7 @@ class ToolBatchExecutor:
                 {"error": TOOL_TIMEOUT_ERROR}, ensure_ascii=False,
             ), state, skipped=True)
             return
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             log.warning("tool.execute_failed name=%s", outcome.name, exc_info=True)
             self._finish(outcome, json.dumps(
                 {"error": f"工具执行出错: {e}"}, ensure_ascii=False,
@@ -552,4 +682,9 @@ def record_tool_timeout(kind: str) -> None:
 
 def record_mcp_write_indeterminate(tool: str) -> None:
     from app.observability.metrics import record_mcp_write_indeterminate as _r
+    _r(tool)
+
+
+def record_write_blocked(tool: str) -> None:
+    from app.observability.metrics import record_write_blocked as _r
     _r(tool)

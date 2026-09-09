@@ -64,10 +64,14 @@ env:
   # ---- 自进化：正式发布默认关闭（先人工审核）----
   SELF_EVOLVE_ENABLED: "false"
   EVOLVE_CAPTURE_ENABLED: "true"
+  HUMAN_QA_EVOLUTION_ENABLED: "false"
+  HUMAN_CONVERSATION_RETENTION_DAYS: "180"
   # ---- 数据库 ----
   DB_URL: "mysql+pymysql://ecom:ecom@mysql:3306/ecom?charset=utf8mb4"
   APP_ENV: prod
   KB_WRITE_LOCK_BACKEND: mysql
+  # 第一阶段保持同步；第二阶段通过 kb_control.kb_async_enabled upsert 切换为异步。
+  KB_ASYNC_API: "false"
 
 envFromSecret: "ecom-agent-secrets"
 
@@ -76,6 +80,16 @@ secret:
   create: false
   data: {}
 
+# 生产显式启用两个独立 Worker；强制跨 hostname 调度，保证节点级容灾。
+kbWorker:
+  enabled: true
+  replicaCount: 2
+  podAntiAffinity:
+    required: true
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1
+
 kbSharedVolume:
   enabled: true
   storageClass: standard
@@ -83,6 +97,21 @@ kbSharedVolume:
   mountPath: /kb-shared
   accessModes: ["ReadWriteMany"]
   srcPath: /app/app/agent/rag/knowledge
+
+# 显式安全默认；启用链路时同时打开 HUMAN_QA_EVOLUTION_ENABLED，发布还需
+# SELF_EVOLVE_ENABLED=true。发布 Worker 两副本、每实例串行，写锁保证单写。
+humanEvalCron:
+  enabled: false
+
+humanPublishWorker:
+  enabled: false
+  replicaCount: 2
+  terminationGracePeriodSeconds: 120
+  podAntiAffinity:
+    required: true
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1
 
 evolutionJob:
   enabled: true

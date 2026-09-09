@@ -1,0 +1,88 @@
+{{- if .Values.kbWorker.enabled }}
+# KB Index Worker（多实例异步建库改造）：独立 Deployment，无 Service。
+# - 复用 Web 的 MySQL/ES/S3/RWX/模型凭据（同一 env/secret/共享卷）；
+# - Web Pod 不启动 Worker（本进程是唯一执行体；KB_WORKER_ENABLED=1 门禁）；
+# - 副本数只提高容灾与解析并行度：全局单写者由 kb_write 锁 +
+#   kb_index_jobs 租约保证（索引提交始终串行）。
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-kb-worker
+  labels:
+    app: ecom-agent-kb-worker
+    app.kubernetes.io/version: {{ .Values.image.tag | quote }}
+spec:
+  replicas: {{ .Values.kbWorker.replicaCount }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      # 滚动期至多一个 Worker 离线：领取停止，当前任务由租约接管
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: ecom-agent-kb-worker
+  template:
+    metadata:
+      labels:
+        app: ecom-agent-kb-worker
+        app.kubernetes.io/version: {{ .Values.image.tag | quote }}
+    spec:
+      # SIGTERM → 停止领取 + 当前任务宽限期内收尾；超时由租约接管
+      #（与 KB_WORKER_GRACE_SECONDS 一致，且 ≥ 租约时长）
+      terminationGracePeriodSeconds: {{ .Values.kbWorker.terminationGracePeriodSeconds }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        {{- if .Values.kbSharedVolume.enabled }}
+        fsGroup: 10001
+        {{- end }}
+      affinity:
+        podAntiAffinity:
+          {{- if .Values.kbWorker.podAntiAffinity.required }}
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: ecom-agent-kb-worker
+              topologyKey: kubernetes.io/hostname
+          {{- else }}
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app: ecom-agent-kb-worker
+                topologyKey: kubernetes.io/hostname
+          {{- end }}
+      containers:
+        - name: kb-worker
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["python", "-m", "app.agent.rag.kb_worker"]
+          env:
+            {{- range $k, $v := .Values.env }}
+            - name: {{ $k }}
+              value: {{ $v | quote }}
+            {{- end }}
+            {{- range $k, $v := .Values.kbWorker.env }}
+            - name: {{ $k }}
+              value: {{ $v | quote }}
+            {{- end }}
+          envFrom:
+            - secretRef:
+                name: {{ .Values.envFromSecret }}
+          # 无 HTTP 端口/探针：进程存活由 K8s 重启策略 + 任务租约接管兜底
+          resources:
+            {{- toYaml .Values.kbWorker.resources | nindent 12 }}
+          {{- if .Values.kbSharedVolume.enabled }}
+          volumeMounts:
+            - name: kb-shared
+              mountPath: {{ .Values.kbSharedVolume.mountPath }}
+          {{- end }}
+      {{- if .Values.kbSharedVolume.enabled }}
+      volumes:
+        - name: kb-shared
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-kb-shared
+      {{- end }}
+{{- end }}

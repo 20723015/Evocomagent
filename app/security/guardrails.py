@@ -106,12 +106,19 @@ def search_result_fence_check(hits: list) -> list:
 
     hit 需含 text/source_path/doc/section；命中注入的块标记 tainted（保留供
     审计，但整体被替换为安全占位），不投毒模型上下文。
+    parent-child 结果的 matched_text（命中子块原文）一并检查：子块是父块
+    的子集，任一命中注入即同时拦截两者。
     """
     out = []
     for hit in hits:
         item = dict(hit)
-        if kb_chunk_tainted(item.get("text", "")):
+        tainted = kb_chunk_tainted(item.get("text", "")) or kb_chunk_tainted(
+            item.get("matched_text", "")
+        )
+        if tainted:
             item["text"] = "（该片段疑似含指令注入，已拦截）"
+            if "matched_text" in item:
+                item["matched_text"] = ""
             item["tainted"] = True
             out.append(item)
             continue

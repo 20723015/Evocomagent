@@ -3,8 +3,9 @@
 _MUTATION_RULES = """只记录用户亲口明确表达的信息，禁止根据浏览、咨询、购买或客服回复推断画像。
 允许的 fact_key：
 - identity.name / identity.membership_level / identity.region
+- identity.occupation / identity.address
 - preference.color / preference.style / preference.brand / preference.price_range
-- preference.category / preference.delivery
+- preference.category / preference.delivery / preference.size
 - behavior.shopping / behavior.payment / issue.current
 - 无法归类时使用 custom.<英文snake_case>
 

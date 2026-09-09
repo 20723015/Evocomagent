@@ -70,6 +70,44 @@ helm upgrade ecom-gray deploy/helm/ecom-agent -n production \
 helm rollback ecom-gray 1
 ```
 
+## KB 异步建库 Worker（多实例异步改造）
+
+- Chart 自带 `{{ .Release.Name }}-kb-worker` Deployment（默认 2 副本、**无
+  Service**）：`python -m app.agent.rag.kb_worker`，复用 Web 的 MySQL/ES/S3/RWX/
+  模型凭据；**Web Pod 不启动 Worker**。
+- 两阶段上线：先部署本版（含迁移 007，由 migration Job 自动执行）并排空旧同步
+  请求 → 再用**幂等 upsert**置共享开关，一次性启用异步 API 与 Worker。不能使用
+  可能影响 0 行的裸 `UPDATE`（旧库可能尚未有该 key）：
+  ```sql
+  INSERT INTO kb_control (`key`, value, version)
+  VALUES ('kb_async_enabled', '1', 0)
+  ON DUPLICATE KEY UPDATE value = VALUES(value), updated_at = CURRENT_TIMESTAMP;
+  ```
+  回退异步也必须使用同一 upsert（将值改为 `'0'`），回到同步语义；排队任务仍
+  由 Worker 收尾。
+- 优雅退出：SIGTERM → Worker 停止领取；当前任务在
+  `KB_WORKER_GRACE_SECONDS`（默认 120s ≥ 租约）内收尾，超时让出租约由其他
+  实例接管。
+- 告警基线：`kb_job_backlog`（最老任务年龄 >10min）、`kb_job_blocked > 0`
+  （等待人工 reconcile）、`kb_job_dead_total` 增长（重试耗尽死信）。
+
+### 异步版本的安全回滚顺序
+
+应用回滚前必须按以下固定顺序执行，数据库不得回滚到 v6 或更低版本：
+
+1. 关闭新入队：用上面的 upsert 将 `kb_async_enabled` 设为 `'0'`，停止新
+   `complete/delete` 任务进入队列。
+2. 排空 active jobs：保持 Worker 运行，等待 `queued`、`running`、
+   `retry_wait`、`blocked` 全部处理完（必要时先修复依赖或人工 reconcile）。
+3. 确认没有 `queued`/`indexing`/`deleting` 文档，再执行 `helm rollback`；
+   例如：
+   ```sql
+   SELECT status, COUNT(*) FROM kb_documents
+   WHERE status IN ('queued', 'indexing', 'deleting') GROUP BY status;
+   ```
+4. 回滚应用后保留并继续使用 schema v7（`kb_index_jobs`、租约字段和
+   `error NOT NULL` 不删除），恢复时仍先执行迁移/启动 gate 校验。
+
 灰度前强制走一轮「离线评估 → 影子回放」：
 ```bash
 python -m app.scripts.run_eval --no-judge                 # 黄金集门禁

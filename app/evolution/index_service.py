@@ -23,7 +23,6 @@ from pathlib import Path
 
 from app.agent.rag.backends import create_backend
 from app.config.settings import settings
-
 from app.evolution.generation import GenerationInfo, GenerationStore, new_generation_id
 
 ROOT = Path(__file__).resolve().parent.parent.parent
@@ -60,9 +59,10 @@ def _journal_es_targets() -> set[str]:
     if jdir.is_dir():
         for p in jdir.glob("*.json"):
             data = _read_journal(p)
-            out.add(str(data.get("index", {}).get("target") or data.get("target") or ""))
-    evo = ROOT / settings.evolve_state_dir / "journal.json"
-    data = _read_journal(evo)
+            out.add(
+                str(data.get("index", {}).get("target") or data.get("target") or "")
+            )
+    data = _read_journal(ROOT / settings.evolve_state_dir / "journal.json")
     out.add(str(data.get("index", {}).get("target") or ""))
     out.discard("")
     return out
@@ -114,6 +114,7 @@ class IndexBuildService:
         # 任一源文件解析失败即中止，杜绝「一次重建静默丢失已有知识」
         self._strict_build = strict_build
         self.last_built_size = 0
+        self.last_chunks: list = []
 
     # ---------- 路径 ----------
     def _numpy_index_dir(self) -> Path:
@@ -153,10 +154,15 @@ class IndexBuildService:
         raise ValueError(f"未知的 RAG 后端: {backend}（可选: numpy / chroma / es）")
 
     # ---------- 构建 ----------
-    def build(self, backend: str, generation_id: str | None = None) -> GenerationInfo:
+    def build(
+        self, backend: str, generation_id: str | None = None,
+        *, allow_empty: bool = False,
+    ) -> GenerationInfo:
         """构建版本化索引并验证；不切换指针。验证失败抛异常。
 
         generation_id 可显式指定（pipeline 需要先写 journal 时），缺省生成。
+        allow_empty：下架后知识库为空是合法终态——跳过 encode 生成合法的
+        空索引。默认 False 抛错，保留普通重建的「防误清空」保护。
         """
         backend = backend.lower()
         chunk_fn = self._chunker
@@ -169,7 +175,18 @@ class IndexBuildService:
         else:
             chunks = chunk_fn(self._kb_dir)
         if not chunks:
-            raise ValueError(f"知识库目录未发现任何文档: {self._kb_dir}")
+            if not allow_empty:
+                raise ValueError(f"知识库目录未发现任何文档: {self._kb_dir}")
+            generation_id = generation_id or new_generation_id(self._clock)
+            info = GenerationInfo(
+                generation_id=generation_id,
+                target=self.target_for(backend, generation_id),
+                embedding_model=self._embedder.model,
+            )
+            self._build_empty(backend, info)
+            self.last_built_size = 0
+            self.last_chunks = []
+            return info
 
         vectors = self._embedder.encode([c.text for c in chunks])
         if len(vectors) != len(chunks):
@@ -183,13 +200,83 @@ class IndexBuildService:
         )
 
         impl = self._backend_impl(backend, info.target)
-        impl.upsert(chunks=chunks, vectors=vectors, embedding_model=info.embedding_model)
+        impl.upsert(
+            chunks=chunks, vectors=vectors, embedding_model=info.embedding_model
+        )
         self._verify(backend, info, chunks)
         # 两阶段激活（评审 R3 / v7 冻结）：build 只创建+验证目标（ES 验证按
         # index_name 直查、不依赖 alias），alias 切换统一在 activate_alias()——
         # 两步之间旧索引始终可用，alias 是「提交点」。
         self.last_built_size = len(chunks)
+        self.last_chunks = list(chunks)
         return info
+
+    def _build_empty(self, backend: str, info: GenerationInfo) -> None:
+        """写合法的空索引（下架后知识库为空的合法终态，allow_empty 路径）。
+
+        numpy：upsert([], [], model) 天然支持（0==0 校验通过，写空 payload）；
+        chroma：建空 collection（跳过 add——chroma 空 add 抛 ValueError）；
+        ES：用 embedder 维度常量创建空 mapping 索引（dense_vector dims=0 非法）。
+        """
+        backend = backend.lower()
+        impl = self._backend_impl(backend, info.target)
+        if backend == "es":
+            impl.ensure_empty(info.embedding_model, self._embedder_dimensions())
+        else:
+            impl.upsert(chunks=[], vectors=[], embedding_model=info.embedding_model)
+        self._verify(backend, info, [])
+
+    def _embedder_dimensions(self) -> int:
+        """空 ES 索引的 dense_vector 维度：embedder 维度常量，缺省 1024。"""
+        for attr in ("dimensions", "_dimensions"):
+            value = getattr(self._embedder, attr, None)
+            if isinstance(value, int) and value > 0:
+                return value
+        return 1024
+
+    def verify_documents(self, backend: str, info: GenerationInfo, source_paths) -> int:
+        """存在性探针（确定性完整性检查，非排名检查）。
+
+        逐个请求的 source_path 在 last_chunks 中的 chunk，用候选索引直查
+        top-3：chunk_id 相同或文本全等即通过（文本全等容忍合法同文文档，
+        打警告日志）。请求的 source_path 无 chunk / 探针未命中 → 抛异常，
+        调用方按批次 retry_wait 走 INDEX_BUILT 回滚重建。返回核对 chunk 数。
+        """
+        wanted = [str(p) for p in source_paths if str(p)]
+        if not wanted:
+            return 0
+        wanted_set = set(wanted)
+        chunks = [c for c in (self.last_chunks or []) if c.source_path in wanted_set]
+        missing = wanted_set - {c.source_path for c in chunks}
+        if missing:
+            raise RuntimeError(
+                f"存在性探针失败：请求的 source_path 无 chunk（{min(missing)} 等 "
+                f"{len(missing)} 个）"
+            )
+        impl = self._backend_impl(backend, info.target)
+        impl.load()
+        checked = 0
+        for chunk in chunks:
+            hits = impl.search(self._embedder.encode_one(chunk.text), top_k=3)
+            by_id = any(
+                getattr(getattr(h, "chunk", None), "chunk_id", None) == chunk.chunk_id
+                for h in hits
+            )
+            by_text = any(
+                getattr(getattr(h, "chunk", None), "text", None) == chunk.text
+                for h in hits
+            )
+            if by_text and not by_id:
+                logging.getLogger("app.evolution.index_service").warning(
+                    "publish_probe.text_match path=%s",
+                    chunk.source_path,
+                )
+            if not (by_id or by_text):
+                raise RuntimeError(
+                    f"存在性探针失败：top-3 未命中 chunk（{chunk.source_path}）"
+                )
+            checked += 1
+        return checked
 
     def _verify(self, backend: str, info: GenerationInfo, chunks) -> None:
         """全新 backend 实例 load + 模型一致 + chunk 数一致 + chunk_id 唯一 + 探针 top1。"""
@@ -211,6 +298,9 @@ class IndexBuildService:
             ids = [c["chunk_id"] for c in data["chunks"]]
             if len(set(ids)) != len(ids):
                 raise RuntimeError("验证失败：chunk_id 存在重复")
+
+        if not chunks:
+            return  # 空索引（allow_empty 下架终态）：模型/数量一致即可，无探针可打
 
         probe = self._embedder.encode_one(chunks[0].text)
         hits = impl.search(probe, top_k=1)
@@ -281,7 +371,7 @@ class IndexBuildService:
 
         if backend == "numpy":
             for f in self._numpy_index_dir().glob("kb_index.*.json"):
-                gen = f.name[len("kb_index."):-len(".json")]
+                gen = f.name[len("kb_index.") : -len(".json")]
                 if gen not in keep_ids:
                     f.unlink(missing_ok=True)
             return
@@ -298,8 +388,11 @@ class IndexBuildService:
                     name = getattr(c, "name", c)
                     if name.startswith(prefix) and name not in keep:
                         client.delete_collection(name)
-            except Exception:  # noqa: BLE001 —— chroma 不可用时清理失败不影响主流程
-                pass
+            except Exception as exc:  # noqa: BLE001 —— 清理失败不影响主流程
+                logging.getLogger("app.evolution.index_service").warning(
+                    "chroma 旧代清理跳过: %s",
+                    type(exc).__name__,
+                )
             return
 
         if backend == "es":
@@ -327,19 +420,20 @@ class IndexBuildService:
             alias = f"{settings.es_index_prefix}-kb-active"
             try:
                 hits = es.indices.get_alias(name=alias)
-                keep.update(k for k in hits.keys())
+                keep.update(hits)
             except Exception as e:  # noqa: BLE001
                 if not _alias_not_found(e):
                     # Alias 状态未知时绝不能继续删除旧索引；即便当前/上一代
                     # 已在 keep 中，也可能误删尚未被指针记录的生效代。
                     logging.getLogger("app.evolution.index_service").warning(
-                        "es 旧代清理跳过（alias 状态未知）: %s", e,
+                        "es 旧代清理跳过（alias 状态未知）: %s",
+                        e,
                     )
                     return
-            for name in es.indices.get(index=prefix + "*").keys():
+            for name in es.indices.get(index=prefix + "*"):
                 if name in keep:
                     continue
-                tail = name[len(prefix):] if name.startswith(prefix) else ""
+                tail = name[len(prefix) :] if name.startswith(prefix) else ""
                 if not re.fullmatch(r"\d{14}-[0-9a-f]{8}", tail):
                     # 非代际格式（如手工索引）一律不动
                     continue
@@ -347,11 +441,14 @@ class IndexBuildService:
                     es.indices.delete(index=name)
                 except Exception as e:  # noqa: BLE001 —— 单索引删除失败不影响其余
                     logging.getLogger("app.evolution.index_service").warning(
-                        "es 旧代删除失败: %s (%s)", name, e,
+                        "es 旧代删除失败: %s (%s)",
+                        name,
+                        e,
                     )
         except Exception as e:  # noqa: BLE001 —— 列举失败：跳过清理（不影响主流程）
             logging.getLogger("app.evolution.index_service").warning(
-                "es 旧代清理跳过: %s", e,
+                "es 旧代清理跳过: %s",
+                e,
             )
 
     def delete_candidate(
@@ -375,7 +472,7 @@ class IndexBuildService:
             return False
 
         prefix = f"{settings.es_index_prefix}-kb-"
-        tail = target[len(prefix):] if target.startswith(prefix) else ""
+        tail = target[len(prefix) :] if target.startswith(prefix) else ""
         if not tail or not re.fullmatch(r"\d{14}-[0-9a-f]{8}", tail):
             # 只允许删除严格版本化目标；手工/未知索引必须人工处理。
             return False
@@ -403,7 +500,7 @@ class IndexBuildService:
                 return False
             try:
                 exists = es.indices.exists(index=target)
-            except Exception:
+            except Exception:  # noqa: BLE001 - 无法确认时 fail-closed
                 # 无法确认是否存在时不要删除，也不要宣称清理完成。
                 return False
             if not exists:
@@ -412,7 +509,9 @@ class IndexBuildService:
             return True
         except Exception as e:  # noqa: BLE001
             logging.getLogger("app.evolution.index_service").warning(
-                "es candidate 删除跳过: %s (%s)", target, e,
+                "es candidate 删除跳过: %s (%s)",
+                target,
+                e,
             )
             return False
 
@@ -464,9 +563,10 @@ class IndexBuildService:
         # consistent：alias 与指针一致（无 alias 的本地后端视为自洽）；
         # alias 落在 journal（未完成上传/下架的 pending 代）→ consistent=False
         # 但属于「可恢复的只前进」状态——由恢复机按恢复表处理。
-        consistent = alias_target is not None and ((not alias_target) or (
-            alias_target == pointer_target and alias_target not in journal
-        ))
+        consistent = alias_target is not None and (
+            (not alias_target)
+            or (alias_target == pointer_target and alias_target not in journal)
+        )
         return {
             "alias_target": alias_target,
             "alias_known": bool(alias_known),

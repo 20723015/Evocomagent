@@ -16,9 +16,16 @@ import uuid
 import pytest
 from sqlalchemy import create_engine, delete, text
 
+from app.agent.rag.job_store import KbIndexJobStore
 from app.stores.object_store import S3ObjectStore
+from app.stores.sql.document_store import DocumentRecord, SqlDocumentStore
 from app.stores.sql.memory_store import SqlLTMStore
-from app.stores.sql.schema import memory_facts, metadata
+from app.stores.sql.schema import (
+    kb_documents,
+    kb_index_jobs,
+    memory_facts,
+    metadata,
+)
 
 
 def _dependency_unavailable(label: str, env_name: str, exc: BaseException):
@@ -92,7 +99,7 @@ def test_mysql_memory_merge_lock_and_commit():
                         + [_fact(f"{p}-{n}")],
                     },
                 )
-        except BaseException as exc:  # re-raise in main thread after join
+        except BaseException as exc:  # re-raise in main thread after join  # noqa: BLE001
             errors.append(exc)
 
     threads = [
@@ -123,6 +130,73 @@ def test_mysql_memory_merge_lock_and_commit():
     finally:
         with engine_a.begin() as conn:
             conn.execute(delete(memory_facts).where(memory_facts.c.user_id == user_id))
+        engine_a.dispose()
+        engine_b.dispose()
+
+
+@pytest.mark.parametrize("operation", ["upload", "delete"])
+def test_mysql_concurrent_kb_enqueue_returns_same_job_id(operation):
+    """两个实例并发 complete/delete 入队只能产生一个任务。
+
+    两个独立 Engine 对应两个 Pod/连接池；真实 MySQL 上同时进入 enqueue，
+    验证输掉文档 CAS 或唯一键竞争的一方会重读赢家，而不是返回 500/409。
+    """
+    base_url = _mysql_url()
+    engine_a = _mysql_engine(base_url)
+    engine_b = _mysql_engine(
+        base_url + ("&" if "?" in base_url else "?") + "connect_timeout=10"
+    )
+    suffix = uuid.uuid4().hex[:16]
+    upload_id = f"it-kb-up-{suffix}"
+    doc_id = f"it-kb-doc-{suffix}"
+    initial_status = "uploading" if operation == "upload" else "indexed"
+    doc_store = SqlDocumentStore(engine_a)
+    record = doc_store.create(DocumentRecord(
+        doc_id=doc_id,
+        upload_id=upload_id,
+        storage_key=f"{upload_id}.md",
+        filename="integration.md",
+        format="md",
+        size_bytes=16,
+        sha256="",
+        uploader="ops-it",
+        status=initial_status,
+    ))
+    stores = (KbIndexJobStore(engine_a), KbIndexJobStore(engine_b))
+    start = threading.Barrier(2)
+    results: list[tuple[dict, bool]] = []
+    errors: list[BaseException] = []
+
+    def enqueue(store: KbIndexJobStore):
+        try:
+            start.wait(timeout=10)
+            if operation == "upload":
+                result = store.enqueue_upload(
+                    doc_id, upload_id, "ops-it", record.version,
+                )
+            else:
+                result = store.enqueue_delete(doc_id, "ops-it", record.version)
+            results.append(result)
+        except BaseException as exc:  # noqa: BLE001
+            errors.append(exc)
+
+    threads = [threading.Thread(target=enqueue, args=(store,)) for store in stores]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join(timeout=30)
+    try:
+        assert all(not thread.is_alive() for thread in threads)
+        assert not errors, errors
+        assert len(results) == 2
+        assert {result[0]["job_id"] for result in results} == {
+            results[0][0]["job_id"],
+        }
+        assert sorted(result[1] for result in results) == [False, True]
+    finally:
+        with engine_a.begin() as conn:
+            conn.execute(delete(kb_index_jobs).where(kb_index_jobs.c.doc_id == doc_id))
+            conn.execute(delete(kb_documents).where(kb_documents.c.doc_id == doc_id))
         engine_a.dispose()
         engine_b.dispose()
 
@@ -187,7 +261,7 @@ def _s3_store():
         )
         try:
             client.head_bucket(Bucket=bucket)
-        except Exception:
+        except Exception:  # noqa: BLE001
             client.create_bucket(Bucket=bucket)
         return S3ObjectStore(bucket, endpoint_url=endpoint, client=client)
     except Exception as exc:  # noqa: BLE001 - unavailable dependency => skip locally

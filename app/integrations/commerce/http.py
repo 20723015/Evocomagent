@@ -145,7 +145,15 @@ class HTTPCommerceGateway(CommerceGateway):
                 "GET", f"/orders/{quote(order_id, safe='')}",
                 self._headers(actor_id, credentials), idempotent=True,
             )
-            return self._map_status(status, payload, "订单查询失败")
+            res = self._map_status(status, payload, "订单查询失败")
+            # 契约信封解包：下游 200 {"order": {...}}，与 mock 的裸订单 dict
+            # 对齐（否则 query_order 返回 {"order": {"order": ...}} 错层）
+            if (res.success and isinstance(res.data, dict)
+                    and isinstance(res.data.get("order"), dict)):
+                res = CommerceResult(
+                    True, data=res.data["order"], message=res.message,
+                )
+            return res
         except ConnectionError as e:
             return CommerceResult(False, message=f"订单查询失败（后端不可用）: {e}")
 
