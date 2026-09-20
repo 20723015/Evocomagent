@@ -79,6 +79,14 @@ def parse_with_timeout(path: Path, timeout: Optional[float] = None,
     except json.JSONDecodeError:
         raise ValueError(f"解析子进程输出无效: {stdout[:200]}") from None
     if payload.get("ok") is not None:
+        if payload.get("truncated"):
+            # worker 为保护 IPC 管道截断了文本：按「超限拒绝」fail-fast，
+            # 恢复 upload_service 长度校验的设计语义（不静默截断入库）
+            raise ValueError(
+                f"解析文本超过长度上限"
+                f"（{payload.get('full_len', '?')} > "
+                f"{payload.get('limit', '?')} 字符）"
+            )
         return str(payload["ok"])
     raise ValueError(f"解析失败: {payload.get('err') or '(无输出)'}")
 

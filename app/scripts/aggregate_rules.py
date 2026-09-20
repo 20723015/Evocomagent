@@ -81,7 +81,7 @@ def main() -> int:
     manifest = build_manifest(
         dataset_path=str(dataset_path), num_cases=total,
         model=settings.model_name, judge_model="",
-        mode="single", use_judge=False,
+        use_judge=False,
         config_overrides={"ab_arm": cfg.to_dict()},
     )
     manifest["run_id"] = args.out

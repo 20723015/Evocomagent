@@ -108,6 +108,14 @@ _ESCALATION_HINTS = (
 )
 _FENCE = re.compile(r"```")
 
+# 中文指令性模式（批次2·Review #1 单值来源）：LTM custom.* 自由文本键与
+# STM 捕获值共用同一词表——用户一句话可把「以后都/今后一律/无视…」类指令
+# 持久化进所有未来会话的 system prompt；宁可漏记不可记毒，丢弃率经指标可观测。
+MEMORY_INSTRUCTION_HINTS = (
+    "以后都", "今后都", "今后一律", "以后一律", "永远都要",
+    "忽略", "无视", "不要遵守", "不得违反", "必须服从",
+)
+
 
 def has_injection(text: str) -> bool:
     """角色标记行首 / 忽略指令 / 越权与泄露诱导 / 代码围栏 → 视为注入。"""

@@ -53,6 +53,10 @@ class EvidencePack:
     query: str                    # 原始查询
     subqueries: list[str] = field(default_factory=list)
     items: list[EvidenceItem] = field(default_factory=list)
+    # RAG 修复计划·1：显式检索状态（多子查询 RRF 合并后 score_source=rrf）
+    score_source: str = "vector"
+    degraded: bool = False
+    degraded_reason: str = ""
 
     @property
     def tainted_hits(self) -> int:
@@ -90,6 +94,9 @@ class EvidencePack:
             "n_items": len(scores),
             "tainted": self.tainted_hits,
             "subqueries": self.subqueries,
+            "score_source": self.score_source,
+            "degraded": self.degraded,
+            "degraded_reason": self.degraded_reason,
         }
 
     def to_results(self) -> list[dict]:
@@ -110,6 +117,9 @@ def rrf_merge(ranked_lists: list[list[EvidenceItem]], k: int = 60,
             contribution = 1.0 / (k + rank + 1)
             existing = fused.get(key)
             if existing is None:
+                # 融合分覆盖前先保存检索原分（docstring：raw_scores 保留各路
+                # 原始分供诊断；历史缺陷：score 被覆盖后原分丢失）
+                item.raw_scores.setdefault("retriever", round(item.score, 6))
                 item.score = contribution
                 item.raw_scores.setdefault("rrf", round(contribution, 6))
                 fused[key] = item

@@ -187,14 +187,15 @@ def test_agent_integration():
         else:
             _fail("Agent 未初始化 SkillManager")
 
-        messages = agent._build_messages()
+        user_text = "我买的鞋子尺码不对，想退掉，订单号是 ORD-20240115-001"
+        messages = agent.context_builder.build(agent, user_text)
         system_content = messages[0]["content"]
         if "可用技能" in system_content and "process-return" in system_content:
             _ok("skill catalog 已注入 system prompt")
         else:
             _fail("skill catalog 未注入 system prompt")
 
-        resp = agent.chat("我买的鞋子尺码不对，想退掉，订单号是 ORD-20240115-001")
+        resp = agent.chat(user_text)
         _ok(f"Agent 回复: {resp.reply[:80]}...")
 
         skill_loaded = any(

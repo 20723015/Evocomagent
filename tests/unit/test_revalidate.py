@@ -541,7 +541,9 @@ def test_recover_revalidate_completes_quarantine(tmp_path):
     assert svc["ledger"].pending_entry("cid-evolved")["reason"] == "revalidation_failed"
     assert "cid-evolved" not in svc["ledger"].published()
     active = svc["pipeline"]._generation_store.active("numpy")
-    assert active.generation_id not in (info.generation_id, "g-crashed")  # 重建切了新代
+    # 中危修复 B4：重建沿用 journal 记录的 generation（此前漏传会生成新代，
+    # ES 崩溃窗口内 reconcile 会误判 BLOCKED）
+    assert active.generation_id == "g-crashed"
 
 
 def test_recover_revalidate_after_partial_move(tmp_path):

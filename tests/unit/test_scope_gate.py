@@ -15,8 +15,7 @@ import pytest
 from app.agent.chat import EcomAgent
 from app.config.settings import settings
 from app.security.scope_gate import SCOPE_BLOCK_REPLY, check_scope
-from app.multi_agent.orchestrator import MultiAgentOrchestrator
-from tests.unit.conftest import FakeChatClient, sample_response
+from tests.unit.conftest import FakeChatClient
 
 
 # ============================================================
@@ -183,50 +182,3 @@ def test_agent_scope_off_regression(reset_settings, tmp_path):
     system_prompt = client.calls[0][1]["messages"][0]["content"]
     assert "非业务内容处理" not in system_prompt
     assert SCOPE_BLOCK_REPLY not in system_prompt
-
-
-def test_multi_agent_scope_off_keeps_legacy_router_and_agent_prompts(
-    reset_settings, tmp_path,
-):
-    """多 Agent 关闭闸门时仍走原路由，且不残留业务范围提示词。"""
-    settings.business_only_scope = False
-    client = (
-        FakeChatClient()
-        .enqueue_chat("postsale")
-        .enqueue_chat("这是正常闲聊回复。")
-        .enqueue_parse(sample_response(reply="这是正常闲聊回复。"))
-    )
-    orch = MultiAgentOrchestrator(
-        session_path=str(tmp_path / "m-off.json"),
-        client=client,
-        memory_enabled=False,
-    )
-
-    result = orch.chat("今天天气怎么样")
-
-    assert result.reply == "这是正常闲聊回复。"
-    assert [kind for kind, _ in client.calls] == ["chat", "chat", "parse"]
-    router_prompt = client.calls[0][1]["messages"][0]["content"]
-    agent_prompt = client.calls[1][1]["messages"][0]["content"]
-    assert "由上层业务范围闸门拦截" not in router_prompt
-    assert "非业务内容" not in agent_prompt
-    assert SCOPE_BLOCK_REPLY not in agent_prompt
-
-
-# ============================================================
-# 多 Agent（MultiAgentOrchestrator）
-# ============================================================
-def test_multi_agent_scope_blocks_before_router(reset_settings, tmp_path):
-    """闲聊天在路由之前被拦截：router 不触发、子 Agent 不执行。"""
-    settings.business_only_scope = True
-    client = FakeChatClient().enqueue_chat("no")
-
-    orch = MultiAgentOrchestrator(
-        session_path=str(tmp_path / "m.json"),
-        client=client,
-        memory_enabled=False,
-    )
-    result = orch.chat("哈哈，周末去哪玩")
-
-    assert result.reply == SCOPE_BLOCK_REPLY
-    assert len(client.calls) == 1  # 仅 scope 判定；router/子 Agent 均未调用

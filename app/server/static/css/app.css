@@ -208,11 +208,6 @@ a:hover { text-decoration: underline; }
 .trace.collapsed .trace-body { display: none; }
 .trace-line { display: flex; gap: 7px; line-height: 1.65; color: var(--text-2); }
 .trace-line .t-ico { flex-shrink: 0; }
-.route-chip {
-  display: inline-flex; align-items: center; gap: 5px;
-  background: var(--info-bg); color: var(--info); border: 1px solid var(--info-border);
-  border-radius: 999px; padding: 2px 10px; font-size: 12px; font-weight: 600;
-}
 .tool-card {
   background: var(--card); border: 1px solid var(--border);
   border-radius: var(--radius-s); overflow: hidden;
@@ -250,6 +245,16 @@ a:hover { text-decoration: underline; }
   background: #f2f4f7; color: var(--text-2); border: 1px solid transparent;
 }
 .chip.warn { background: var(--warn-bg); color: var(--warn); border-color: var(--warn-border); }
+/* 转人工工单提示（handoff 事件早于 reply 到达时先挂在过程卡上） */
+.handoff-chip {
+  margin-top: 6px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  background: var(--warn-bg);
+  color: var(--warn);
+  border: 1px solid var(--warn-border);
+}
 .chip.ok { background: var(--ok-bg); color: var(--ok); border-color: var(--ok-border); }
 .chip.info { background: var(--info-bg); color: var(--info); border-color: var(--info-border); }
 .followup {
@@ -261,6 +266,24 @@ a:hover { text-decoration: underline; }
 }
 .followup:hover { border-color: var(--brand); background: var(--brand-soft); }
 .followup .fu-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* 掉线恢复:上次回复未完成提示 + 重发入口 */
+.pending-notice {
+  display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+  margin-top: 8px; padding: 7px 11px; border-radius: 10px;
+  background: var(--warn-bg); border: 1px solid var(--warn-border);
+  color: var(--warn); font-size: 12.5px;
+}
+.pending-notice .pn-quote {
+  color: var(--text-2); overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap; max-width: 46ch;
+}
+.pending-notice .pn-resend {
+  margin-left: auto; border: 1px solid var(--warn-border); background: var(--card);
+  color: var(--warn); border-radius: 999px; padding: 4px 12px; font-size: 12.5px;
+  cursor: pointer; min-height: 28px; transition: background .12s;
+}
+.pending-notice .pn-resend:hover { background: var(--brand-soft); }
 
 /* 欢迎语示例 */
 .examples { display: flex; flex-wrap: wrap; gap: 8px; padding: 2px 0 4px; }

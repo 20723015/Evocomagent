@@ -283,7 +283,7 @@ def run_arm(cfg: AbConfig, cases, judge_model: str, use_judge: bool,
         OpenAI(api_key=settings.openai_api_key, base_url=settings.openai_base_url)
         if judge_model else None
     )
-    sandbox = Sandbox(mode="single", resilient=True)
+    sandbox = Sandbox(resilient=True)
     evaluator = Evaluator(
         sandbox=sandbox, client=client, model=settings.model_name,
         use_judge=use_judge, pass_threshold=settings.eval_pass_threshold,
@@ -293,7 +293,7 @@ def run_arm(cfg: AbConfig, cases, judge_model: str, use_judge: bool,
     manifest = build_manifest(
         dataset_path=str(dataset_path or settings.eval_dataset_path), num_cases=len(cases),
         model=settings.model_name, judge_model=judge_model,
-        mode="single", use_judge=use_judge,
+        use_judge=use_judge,
         config_overrides={"ab_arm": cfg.to_dict()},
     )
     manifest["arm"] = cfg.name
@@ -415,7 +415,7 @@ def main(argv=None) -> int:
     ab_manifest = build_manifest(
         dataset_path=str(dataset_path), num_cases=len(cases),
         model=settings.model_name, judge_model=judge_model,
-        mode="single", use_judge=True,
+        use_judge=True,
         config_overrides={
             "protocol": "eval-v2-ab",
             "baseline_arm": BASELINE_CFG.to_dict(),

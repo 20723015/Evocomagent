@@ -147,12 +147,18 @@ async def create_upload(request: Request):
     client_upload_id = str(body.get("upload_id", "") or "")
     if client_upload_id:
         _check_id(client_upload_id, "upload_id")  # 标识符白名单 422（与 P2 一致）
+    try:
+        size_bytes = int(body.get("size_bytes", 0) or 0)
+        chunk_size = int(body.get("chunk_size", 0) or 0)
+    except (TypeError, ValueError):
+        # 低危修复 C7：非整数入参 422（与标识符校验同口径），不再 500
+        raise HTTPException(status_code=422, detail="size_bytes/chunk_size 必须为整数")
     return await _run(_service(request), "create_upload",
                       uploader=uploader,
                       filename=str(body.get("filename", "")),
-                      size_bytes=int(body.get("size_bytes", 0) or 0),
+                      size_bytes=size_bytes,
                       content_type=str(body.get("content_type", "")),
-                      chunk_size=int(body.get("chunk_size", 0) or 0),
+                      chunk_size=chunk_size,
                       sha256=str(body.get("sha256", "")),
                       upload_id=str(body.get("upload_id", "")))
 

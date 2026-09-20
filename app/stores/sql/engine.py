@@ -46,8 +46,8 @@ def _build(url: str):
     return engine
 
 
-# 期望的 schema 版本（= deploy/sql 最高迁移编号；009=human_knowledge_hardening）
-EXPECTED_SCHEMA_VERSION = 10
+# 期望的 schema 版本（= deploy/sql 最高迁移编号；015=session_pending_write）
+EXPECTED_SCHEMA_VERSION = 15
 
 
 def _verify_schema_version(engine) -> None:
@@ -65,11 +65,11 @@ def _verify_schema_version(engine) -> None:
                 "生产数据库缺少 schema_migrations 表：请先执行 "
                 "`python -m app.scripts.migrate_db`（或 Helm migration Job）"
             )
-        rows = (
-            engine.connect()
-            .execute(text("SELECT MAX(version) FROM schema_migrations"))
-            .scalar()
-        )
+        # 低危修复 B8：连接用上下文管理器归还连接池（裸 connect().execute 会泄漏）
+        with engine.connect() as conn:
+            rows = conn.execute(
+                text("SELECT MAX(version) FROM schema_migrations")
+            ).scalar()
         latest = int(rows or 0)
         if latest < EXPECTED_SCHEMA_VERSION:
             raise RuntimeError(
@@ -100,6 +100,18 @@ def _ensure_upgrades(engine) -> None:
                         )
                     )
                     changed = True
+                # 014：掉线恢复草稿（本地 sqlite 轻量补列；生产走迁移脚本）
+                if "pending_turn_json" not in session_columns:
+                    conn.execute(
+                        text("ALTER TABLE sessions ADD COLUMN pending_turn_json TEXT NULL")
+                    )
+                    changed = True
+                # 015：写确认两阶段草稿（P1-2，同上）
+                if "pending_write_json" not in session_columns:
+                    conn.execute(
+                        text("ALTER TABLE sessions ADD COLUMN pending_write_json TEXT NULL")
+                    )
+                    changed = True
 
             if inspector.has_table("memory_facts"):
                 fact_columns = {
@@ -120,6 +132,31 @@ def _ensure_upgrades(engine) -> None:
                     if name not in fact_columns:
                         conn.execute(
                             text(f"ALTER TABLE memory_facts ADD COLUMN {name} {ddl}")
+                        )
+                        changed = True
+
+            if inspector.has_table("message_delete_outbox"):
+                pass  # 011 新表由 create_all/迁移脚本建立，无需补列
+
+            if inspector.has_table("outbox_rows"):
+                outbox_columns = {
+                    c["name"] for c in inspector.get_columns("outbox_rows")
+                }
+                # 011：outbox 可靠性字段（sqlite 开发库轻量补列；生产走迁移脚本）
+                outbox_additions = {
+                    "session_uuid": "VARCHAR(32) NOT NULL DEFAULT ''",
+                    "status": "VARCHAR(16) NOT NULL DEFAULT 'pending'",
+                    "attempts": "INTEGER NOT NULL DEFAULT 0",
+                    "next_run_at": "DATETIME NULL",
+                    "lease_owner": "VARCHAR(64) NOT NULL DEFAULT ''",
+                    "lease_token": "VARCHAR(64) NOT NULL DEFAULT ''",
+                    "lease_until": "DATETIME NULL",
+                    "dead_lettered_at": "DATETIME NULL",
+                }
+                for name, ddl in outbox_additions.items():
+                    if name not in outbox_columns:
+                        conn.execute(
+                            text(f"ALTER TABLE outbox_rows ADD COLUMN {name} {ddl}")
                         )
                         changed = True
 

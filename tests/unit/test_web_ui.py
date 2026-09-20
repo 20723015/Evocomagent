@@ -187,3 +187,32 @@ def test_no_stale_legacy_tokens():
         assert "var(--muted)" not in src, name
         assert "var(--primary" not in src, name
         assert "--primary:" not in src, name
+
+
+# ---------- 转人工工单号渲染（A2）----------
+
+def test_chat_js_renders_handoff_ticket_id():
+    """前端必须消费 SSE 的 handoff 事件并渲染工单号。
+
+    回归背景：服务端三路（`/v1/chat` 的 handoff 字段、SSE handoff 事件、
+    渠道出站消息）都已透出工单号，前端只画「⚠ 已转人工」不带单号，
+    用户无法凭号与坐席对账——前端是唯一缺口。
+    """
+    chat = _static()["chat"]
+    # handoff 事件分支存在且在通用 trace 兜底之前
+    assert 'type === "handoff"' in chat
+    assert chat.index('type === "handoff"') < chat.index("traceLog.push(normalizeTrace(")
+    # 工单号进 chip 文案
+    assert "ticket_id" in chat
+    assert "已转人工 · 工单" in chat
+    # 落 transcript 并在回放时透传（否则刷新后单号丢失）
+    assert "handoff: replyData.handoff || null" in chat
+    assert "handoff: t.handoff || null" in chat
+    # 两种到达顺序都要正确：reply 先到（主流程）与 handoff 先到（护栏路径）
+    assert "dom.handoff = data" in chat
+    assert "dom.handoff || null" in chat
+
+
+def test_chat_js_handoff_chip_has_style():
+    """工单提示 chip 有对应样式（handoff 早于 reply 时挂在过程卡上）。"""
+    assert ".handoff-chip" in _static()["css"]

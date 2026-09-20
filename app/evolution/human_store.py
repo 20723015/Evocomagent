@@ -369,6 +369,29 @@ class HumanKnowledgeStore:
             )
             .values(status=CAND_SUPERSEDED, updated_at=self._now())
         )
+        # P2-3（推荐口径）：更高版本接入时，旧版本「已发布」候选不自动下架
+        # （避免知识空窗），仅置 stale 标记——审核台可见，下架由人工决策；
+        # 标记在替换结算 / retire 结算 / 重审失败重置时清零。
+        stale_marked = conn.execute(
+            update(human_knowledge_candidates)
+            .where(
+                human_knowledge_candidates.c.conversation_id.in_(
+                    select(human_conversations.c.id).where(
+                        human_conversations.c.source == source,
+                        human_conversations.c.external_conversation_id
+                        == external_conversation_id,
+                        human_conversations.c.source_version < source_version,
+                    )
+                ),
+                human_knowledge_candidates.c.status == CAND_PUBLISHED,
+                human_knowledge_candidates.c.version_stale == 0,
+            )
+            .values(version_stale=1, updated_at=self._now())
+        ).rowcount or 0
+        if stale_marked:
+            from app.observability.metrics import record_human_version_stale_marked
+
+            record_human_version_stale_marked(int(stale_marked))
         created = (
             conn.execute(
                 select(human_conversations).where(
@@ -1453,6 +1476,7 @@ class HumanKnowledgeStore:
                             status=CAND_RETIRED,
                             retired_at=now,
                             retire_reason=r.get("detail", "")[:255] or "retire_invalid",
+                            version_stale=0,
                             updated_at=now,
                         )
                     )
@@ -1472,6 +1496,7 @@ class HumanKnowledgeStore:
                         retire_reason=batch.get("reason", "")[:255],
                         lifecycle_revision=human_knowledge_candidates.c.lifecycle_revision
                         + 1,
+                        version_stale=0,
                         updated_at=now,
                     )
                 )
@@ -1492,6 +1517,7 @@ class HumanKnowledgeStore:
                         retire_reason=batch.get("reason", "")[:255],
                         lifecycle_revision=human_knowledge_candidates.c.lifecycle_revision
                         + 1,
+                        version_stale=0,
                         updated_at=now,
                     )
                 )
@@ -1574,6 +1600,7 @@ class HumanKnowledgeStore:
                 .values(
                     status=CAND_SUPERSEDED,
                     replaced_by_candidate_id=cid,
+                    version_stale=0,
                     updated_at=now,
                 )
             )
@@ -1625,7 +1652,16 @@ class HumanKnowledgeStore:
                         == external_conversation_id,
                     )
                 ).scalar()
-        except Exception:  # noqa: BLE001 - 检测失败按无更高版本（观测兜底）
+        except Exception as exc:  # noqa: BLE001 - 检测失败按无更高版本（观测兜底）
+            # 吞掉异常会让「补偿检测失效」完全静默——旧版本已发布知识会
+            # 长期滞留。log + 计数至少让失效可见，返回值口径不变。
+            from app.observability.metrics import record_human_lifecycle_inconsistency
+
+            log.warning(
+                "conversation version check failed (%s/%s): %s",
+                source, external_conversation_id, exc,
+            )
+            record_human_lifecycle_inconsistency("version_check_failed")
             return False
         return int(latest or 0) > int(source_version)
 
@@ -1852,9 +1888,14 @@ class HumanKnowledgeStore:
                     select(
                         human_knowledge_candidates.c.published_filename,
                         human_knowledge_candidates.c.revision,
+                        human_knowledge_candidates.c.status,
                     ).where(human_knowledge_candidates.c.id == cid)
                 ).first()
                 if row is None:
+                    continue
+                # 已下架候选：补偿恢复重放时同一条目会再次入队，跳过而不是
+                # 当成「无已发布文件名」——后者会污染 document_missing 指标。
+                if row[2] == CAND_RETIRED:
                     continue
                 filename = str(it.get("filename") or row[0] or "")
                 if not filename:
@@ -1980,6 +2021,7 @@ class HumanKnowledgeStore:
                     .values(
                         status=CAND_SUPERSEDED,
                         replaced_by_candidate_id=replaced_by,
+                        version_stale=0,
                         updated_at=self._now(),
                     )
                 )
@@ -2003,6 +2045,7 @@ class HumanKnowledgeStore:
                         reject_reason=str(reason or "")[:64],
                         published_filename="",
                         publish_batch_id=None,
+                        version_stale=0,
                         updated_at=self._now(),
                     )
                 )
@@ -2082,6 +2125,23 @@ class HumanKnowledgeStore:
             ]
         return detail
 
+    def _now_for_compare(self) -> datetime:
+        """与 next_run_at/created_at 列同源的比较时钟（低危修复 C2）。
+
+        MySQL 模式下这些列由服务端 NOW() 写入（见 _now_expr/_delay_expr），
+        用本地时钟比较会因机器间漂移让轮询延迟/任务年龄失真——改取服务端
+        NOW()；sqlite（测试）或取不到连接时回退本地时钟。
+        """
+        if self._server_time:
+            try:
+                with self._engine.connect() as conn:
+                    value = conn.execute(text("SELECT NOW()")).scalar()
+                if value is not None:
+                    return value
+            except Exception:  # noqa: BLE001 - 观测/调度辅助，失败回退本地时钟
+                pass
+        return _local_now()
+
     def next_evaluation_delay(self, *, poll_seconds: float = 30.0) -> float:
         """常驻评审 Worker 的空闲睡眠时长：到期任务 → 0；否则到最近
         next_run_at 的秒数；无排队任务 → poll_seconds。"""
@@ -2097,7 +2157,7 @@ class HumanKnowledgeStore:
                 ).all()
         except Exception:  # noqa: BLE001 - metrics must not break workers
             return poll_seconds
-        now = _local_now()
+        now = self._now_for_compare()
         due = any(
             next_run is None or next_run <= now
             for next_run, _status in rows
@@ -2128,9 +2188,18 @@ class HumanKnowledgeStore:
                     .mappings()
                     .all()
                 )
+                # 旧版本已发布仍在线的候选数（审核台「新版本已到达」待处理量）
+                stale_published = conn.execute(
+                    select(func.count())
+                    .select_from(human_knowledge_candidates)
+                    .where(
+                        human_knowledge_candidates.c.status == CAND_PUBLISHED,
+                        human_knowledge_candidates.c.version_stale == 1,
+                    )
+                ).scalar()
         except Exception:  # noqa: BLE001 - metrics must not break workers
             return {}
-        now = _local_now() if not self._server_time else None
+        now = self._now_for_compare()
         by_status: dict[str, int] = {}
         oldest_age = 0.0
         for r in rows:
@@ -2140,8 +2209,7 @@ class HumanKnowledgeStore:
                 and r["oldest"] is not None
             ):
                 created = r["oldest"]
-                base = now if now is not None else _local_now()
-                age = max((base - created).total_seconds(), 0.0)
+                age = max((now - created).total_seconds(), 0.0)
                 oldest_age = max(oldest_age, age)
         return {
             "by_status": by_status,
@@ -2149,4 +2217,5 @@ class HumanKnowledgeStore:
             "blocked": by_status.get(JOB_BLOCKED, 0),
             "queue_depth": by_status.get(JOB_QUEUED, 0)
             + by_status.get(JOB_RETRY_WAIT, 0),
+            "stale_published": int(stale_published or 0),
         }

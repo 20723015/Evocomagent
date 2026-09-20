@@ -17,12 +17,24 @@
 
 from __future__ import annotations
 
-from typing import Optional
-
 from app.agent.rag.backends.base import RetrievedChunk
 from app.agent.rag.bm25 import BM25Index
 from app.agent.rag.chunker import Chunk
-from app.agent.rag.retriever import KnowledgeRetriever
+from app.agent.rag.query_normalizer import QueryNormalizer, normalize_query
+from app.agent.rag.rerank import RerankerUnavailable
+from app.agent.rag.retriever import (
+    DEGRADED_RERANKER_UNAVAILABLE,
+    SCORE_SOURCE_RERANK,
+    SCORE_SOURCE_RRF,
+    KnowledgeRetriever,
+    RetrievalResult,
+)
+
+
+def _normalized(query: str, normalizer: QueryNormalizer | None) -> str:
+    """工作流 A：检索入口做一次表层规范化，改写后的 query 同时喂
+    hybrid/BM25/embedder 与 reranker（改写只发生在字符串层，语义不变）。"""
+    return normalize_query(query, normalizer)
 
 
 class ESHybridRetriever:
@@ -31,14 +43,21 @@ class ESHybridRetriever:
     hybrid.py 的 Python 侧融合只在 numpy/chroma 路径使用；rag_backend=es
     时经本类走 ESBackend.hybrid_search（rank.rrf 查询级融合，单次网络往返），
     BM25Index 与 Python RRF 在该路径下退役。接口与 KnowledgeRetriever 对齐
-    （search/load/size），上层（knowledge 单例、Agent）调用方式不变。
+    （search/search_with_status/load/size），上层调用方式不变。
     """
 
-    def __init__(self, embedder, backend, recall_k: int = 30, reranker=None):
+    def __init__(self, embedder, backend, recall_k: int = 30, reranker=None,
+                 normalizer: QueryNormalizer | None = None):
         self._embedder = embedder
         self._backend = backend
         self._recall_k = recall_k
         self._reranker = reranker
+        self._normalizer = normalizer
+
+    @property
+    def scores_meaningful(self) -> bool:
+        """兼容旧调用：仅当挂了精排器（精排分覆盖 RRF 分）时才为 True。"""
+        return self._reranker is not None
 
     def load(self) -> None:
         self._backend.load()
@@ -52,7 +71,12 @@ class ESHybridRetriever:
         return self._backend
 
     def search(self, query: str, top_k: int = 3,
-               timeout: Optional[float] = None) -> list[RetrievedChunk]:
+               timeout: float | None = None) -> list[RetrievedChunk]:
+        return self.search_with_status(query, top_k, timeout=timeout).hits
+
+    def search_with_status(self, query: str, top_k: int = 3,
+                           timeout: float | None = None) -> RetrievalResult:
+        query = _normalized(query, self._normalizer)
         hits = self._backend.hybrid_search(
             query_text=query,
             query_vector=self._embedder.encode_one(query, timeout=timeout),
@@ -60,13 +84,23 @@ class ESHybridRetriever:
             recall_k=self._recall_k,
             timeout=timeout,
         )
-        if self._reranker is not None:
-            hits = self._reranker.rerank(query, hits, top_k, timeout=timeout)
-        else:
-            # hybrid_search 返回 RRF 候选窗口（recall_k 条）；无精排时在此截断，
-            # 与 rerank 路径的最终输出一致（均为 top_k）。
-            hits = hits[:top_k]
-        return hits
+        if self._reranker is None:
+            # RRF 秩融合分无语义：score_source=rrf，调用方不得做阈值门控
+            return RetrievalResult(
+                hits=hits[:top_k], score_source=SCORE_SOURCE_RRF,
+            )
+        try:
+            reranked = self._reranker.rerank(query, hits, top_k, timeout=timeout)
+        except RerankerUnavailable as e:
+            # 精排不可用/部分响应：显式降级（不得用 RRF 0 分做阈值判断）
+            _record_reranker_unavailable(e)
+            return RetrievalResult(
+                hits=hits[:top_k],
+                score_source=SCORE_SOURCE_RRF,
+                degraded=True,
+                degraded_reason=getattr(e, "reason", DEGRADED_RERANKER_UNAVAILABLE),
+            )
+        return RetrievalResult(hits=reranked, score_source=SCORE_SOURCE_RERANK)
 
 
 class HybridRetriever:
@@ -80,11 +114,13 @@ class HybridRetriever:
         bm25: BM25Index,
         recall_k: int = 30,
         reranker=None,
+        normalizer: QueryNormalizer | None = None,
     ):
         self._vector_retriever = vector_retriever
         self._bm25 = bm25
         self._recall_k = recall_k
         self._reranker = reranker
+        self._normalizer = normalizer
 
     def load(self) -> None:
         """委托向量路加载索引（接口与 KnowledgeRetriever 对齐，供知识单例复用）。"""
@@ -95,20 +131,34 @@ class HybridRetriever:
         """已索引 chunk 总数（与向量路一致）。"""
         return self._vector_retriever.size
 
+    @property
+    def scores_meaningful(self) -> bool:
+        return self._reranker is not None
+
     def search(self, query: str, top_k: int = 3,
-               timeout: Optional[float] = None) -> list[RetrievedChunk]:
+               timeout: float | None = None) -> list[RetrievedChunk]:
         """双路召回 → 按 chunk_id 去重融合 → 可选精排 → 返回 Top-K。"""
-        # 召回阶段：两路各取 recall_k 个候选
+        return self.search_with_status(query, top_k, timeout=timeout).hits
+
+    def search_with_status(self, query: str, top_k: int = 3,
+                           timeout: float | None = None) -> RetrievalResult:
+        query = _normalized(query, self._normalizer)
         vector_hits = self._vector_retriever.search(query, self._recall_k, timeout=timeout)
         bm25_hits = self._bm25.search(query, self._recall_k)
-
-        # 融合阶段：RRF 只论排名不计分数，按 chunk_id 去重（同一 chunk 两路贡献可叠加）
         candidates = self._rrf_fuse([vector_hits, bm25_hits], limit=self._recall_k)
-
-        # 精排阶段（可选）：7.3 的 Reranker 扩展点，默认不启用
-        if self._reranker is not None:
-            return self._reranker.rerank(query, candidates, top_k, timeout=timeout)
-        return candidates[:top_k]
+        if self._reranker is None:
+            return RetrievalResult(hits=candidates[:top_k], score_source=SCORE_SOURCE_RRF)
+        try:
+            reranked = self._reranker.rerank(query, candidates, top_k, timeout=timeout)
+        except RerankerUnavailable as e:
+            _record_reranker_unavailable(e)
+            return RetrievalResult(
+                hits=candidates[:top_k],
+                score_source=SCORE_SOURCE_RRF,
+                degraded=True,
+                degraded_reason=getattr(e, "reason", DEGRADED_RERANKER_UNAVAILABLE),
+            )
+        return RetrievalResult(hits=reranked, score_source=SCORE_SOURCE_RERANK)
 
     @staticmethod
     def _rrf_fuse(
@@ -128,3 +178,13 @@ class HybridRetriever:
             RetrievedChunk(chunk=chunk_by_id[cid], score=score)
             for cid, score in ordered[:limit]
         ]
+
+def _record_reranker_unavailable(exc) -> None:
+    try:
+        from app.observability.metrics import record_reranker_unavailable
+
+        record_reranker_unavailable(
+            getattr(exc, "reason", "reranker_unavailable")
+        )
+    except Exception:  # noqa: BLE001
+        pass

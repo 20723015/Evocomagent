@@ -18,13 +18,15 @@ if TYPE_CHECKING:
 class LLMCallRecord:
     """单次 LLM 调用的记录。"""
 
-    purpose: str  # 启发式标注：router / react / extract
+    purpose: str  # 调用用途：react / extract
     model: str
     prompt_tokens: int
     completion_tokens: int
     total_tokens: int
     tool_calls: list[dict] = field(default_factory=list)  # 本次响应请求的工具 [{name, arguments}]
     latency_ms: float = 0.0
+    # 推理模型适配 T9：思考 token（已计入 completion，单列后可看思考成本占比）
+    reasoning_tokens: int = 0
 
 
 @dataclass
@@ -48,7 +50,6 @@ class RunTrace:
     case_id: str
     turns: list[str]
     final_response: Optional["CustomerServiceResponse"] = None
-    route: str | None = None  # 多 Agent 模式下实际路由到的子 Agent
     llm_calls: list[LLMCallRecord] = field(default_factory=list)
     tool_observations: list[ToolObservation] = field(default_factory=list)
     # Agent能力强化计划·改造三：QuoteCheck 输入/输出
@@ -56,10 +57,26 @@ class RunTrace:
     citation_verdict: dict | None = None  # Agent 内部引用校验 verdict（最后轮）
     error: str | None = None  # 运行异常信息，None=正常
 
+    # ReAct 步数余量感知（修改5）：协议级观测。多轮用例按轮累计——
+    # 步数/纠错求和，预告与强制终答取「任一轮触发」
+    react_steps: int = 0  # 各轮 ReAct 步数之和（avg_react_steps 按用例数求均，多轮用例计入的是累计值）
+    steps_margin_hint: bool = False  # 任一轮注入过步数余量预告
+    forced_finalize: bool = False  # 任一轮触发强制终答（最后通牒）
+    protocol_corrections: int = 0  # 各轮纯文本协议纠错次数之和
+
+    # 各轮回复原文：敏感泄露检查要覆盖全部轮（此前只查末轮，多轮套取类
+    # 用例中间轮泄露不设防）；keyword/intent 等结果指标仍按末轮口径
+    turn_replies: list[str] = field(default_factory=list)
+
     # ---------- 便捷聚合属性 ----------
     @property
     def total_tokens(self) -> int:
         return sum(c.total_tokens for c in self.llm_calls)
+
+    @property
+    def reasoning_tokens(self) -> int:
+        """思考 token 合计（推理模型适配 T9：报告与指纹的推理成本口径）。"""
+        return sum(c.reasoning_tokens for c in self.llm_calls)
 
     @property
     def num_llm_calls(self) -> int:
@@ -82,26 +99,38 @@ class RunTrace:
             for obs in self.tool_observations
         ]
 
-    def to_dict(self) -> dict:
-        """精简快照，供报告 JSON 输出。"""
+    def to_dict(self, *, include_tool_outputs: bool = False) -> dict:
+        """精简快照，供报告 JSON 输出。
+
+        原始工具结果默认不落盘（2.2 隐私口径：报告不携带他人订单金额/
+        商品/物流明细；judge 忠实度核对走内存中的 tool_observations）。
+        离线诊断脚本确需原文时显式传 include_tool_outputs=True。
+        """
         resp = self.final_response
-        return {
+        snapshot = {
             "case_id": self.case_id,
             "turns": self.turns,
-            "route": self.route,
+            "turn_replies": self.turn_replies,
             "reply": resp.reply if resp else None,
             "intent": resp.intent.value if resp else None,
             "requires_human": resp.requires_human if resp else None,
             "total_tokens": self.total_tokens,
+            "reasoning_tokens": self.reasoning_tokens,
             "num_llm_calls": self.num_llm_calls,
             "num_tool_calls": self.num_tool_calls,
             "tool_calls": self.tool_call_names,
             "tool_outcomes": self.tool_outcomes,
-            "tool_outputs": [
-                {"name": obs.name, "arguments": obs.arguments, "result": obs.result}
-                for obs in self.tool_observations
-            ],
             "retrieved_sources": self.retrieved_sources,
             "citation_verdict": self.citation_verdict,
+            "react_steps": self.react_steps,
+            "steps_margin_hint": self.steps_margin_hint,
+            "forced_finalize": self.forced_finalize,
+            "protocol_corrections": self.protocol_corrections,
             "error": self.error,
         }
+        if include_tool_outputs:
+            snapshot["tool_outputs"] = [
+                {"name": obs.name, "arguments": obs.arguments, "result": obs.result}
+                for obs in self.tool_observations
+            ]
+        return snapshot

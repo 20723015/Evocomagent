@@ -219,26 +219,29 @@ class SophnetEmbedder:
         return min(self._timeout, timeout)
 
 
-def create_embedder(timeout: float = 60.0):
+def create_embedder(timeout: float = 60.0, model: str | None = None):
     """按 settings.embedding_provider 构建嵌入器。
 
     openai（默认）→ OpenAI /embeddings；sophnet → SophNet EasyLLM 适配。
     供 knowledge / build_kb_index / run_evolution 等统一入口使用。
+    ``model`` 非空时覆盖 settings.embedding_model（记忆嵌入等独立型号
+    场景——调用方以此保证存储标签与向量真实来源一致）。
     """
     from app.config.settings import settings  # 局部导入：embedder 属底层模块
 
+    model = model or settings.embedding_model
     if settings.embedding_provider == "sophnet":
         return SophnetEmbedder(
             url=settings.sophnet_embedding_url,
             api_key=settings.sophnet_api_key or settings.openai_api_key,
             easyllm_id=settings.sophnet_easyllm_id,
-            model=settings.embedding_model,
+            model=model,
             dimensions=settings.sophnet_embedding_dimensions,
             timeout=timeout,
         )
     return Embedder(
         api_key=settings.openai_api_key,
         base_url=settings.openai_base_url,
-        model=settings.embedding_model,
+        model=model,
         timeout=timeout,
     )

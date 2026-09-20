@@ -1,0 +1,58 @@
+{
+  "protocol": "retrieval-eval-v1",
+  "frozen": true,
+  "dataset": {
+    "path": "E:\\ea\\app\\evaluation\\retrieval_cases_v3.json",
+    "sha256": "01e98071182a7cbe7e8395a2286bcfa62a5214007bf327290df582a2a41015f5",
+    "num_cases": 959
+  },
+  "top_k": 5,
+  "variant": "hybrid-rerank",
+  "retrieval": {
+    "backend": "es",
+    "embedding_model": "bge-m3",
+    "embedding_provider": "sophnet",
+    "embedding_dimensions": 1024,
+    "embedding_endpoint": "https://www.sophnet.com/api/open-apis/projects/74tM3K15eJPqCtrzJcIms3/easyllms/embeddings",
+    "embedding_endpoint_sha256": "c9c53f58a0118fa5e69d36aa4f43164ba50ef4ac44b3a8b1c9a83e26520a2dee",
+    "openai_base_url": "https://www.sophnet.com/api/open-apis/v1",
+    "openai_base_url_sha256": "c789a3f0c021b2246f04d5a0318a7f937d4ac44b580b136caeb31b6387a58c37",
+    "hybrid": true,
+    "hybrid_recall_k": 60,
+    "rerank": "bge-reranker-v2-m3",
+    "rerank_endpoint": "http://localhost:8001/rerank",
+    "rerank_endpoint_sha256": "372501c3aeac8ca0cd17a08278540ade7d6c22cad34347307c49326e3335ed2c",
+    "rerank_model": "",
+    "min_relevance_score": null,
+    "query_normalize": {
+      "enabled": false
+    },
+    "config_fingerprint": "64b1c95282fd1250",
+    "generation_target": "ecom-kb-20260918080753-74c8a721",
+    "kb_dir": "app/agent/rag/knowledge",
+    "kb_index_path": "app/sessions/kb_index.json",
+    "chroma_persist_dir": "app/sessions/chroma"
+  },
+  "thresholds": {
+    "min_positive_recall": 0.95,
+    "min_easy_recall": 0.98,
+    "min_hard_recall": 0.8,
+    "min_mrr": 0.9,
+    "min_ndcg": 0.9,
+    "min_negative_rejection": 0.9,
+    "applied_min_score": null,
+    "applied_min_score_hard": null,
+    "hard_threshold_overridden": false,
+    "hard_threshold_policy": "same_as_min_score",
+    "online_threshold_match": true,
+    "online_min_score": null
+  },
+  "git": {
+    "commit": "9e4c7bd019760713018ecec35d1a4d76d62076a2"
+  },
+  "runtime": {
+    "python": "3.12.2",
+    "deps_sha256": "90480c060116d211b7556b4c83f23661e2185c1fcf3e0d83f416b56ba7cf5f0f"
+  },
+  "config_hash": "544ef0bd89e38c15b1d5dc0899c646b7b098652a4aa466af202c6e1a69b62530"
+}

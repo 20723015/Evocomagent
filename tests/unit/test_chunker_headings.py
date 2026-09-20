@@ -111,15 +111,23 @@ def test_heading_inside_code_fence_ignored(tmp_path):
 
 
 def test_recursive_scan_and_hidden_dirs(tmp_path):
+    """RAG-2：只索引根目录 + evolved/ + uploads/；nesteds/隐藏/archive 不索引。"""
     kb = tmp_path / "kb"
     (kb / "sub" / "deep").mkdir(parents=True)
     (kb / ".trash").mkdir()
-    _write(kb / "sub" / "deep", "a.md", "# 文档A\n\n## 章节\n\n内容A\n")
+    (kb / "archive").mkdir()
+    (kb / "evolved").mkdir()
+    _write(kb, "root.md", "# 根文档\n\n## 章节\n\n根内容\n")
+    _write(kb / "evolved", "a.md", "# 文档A\n\n## 章节\n\n内容A\n")
+    _write(kb / "sub" / "deep", "nested.md", "# 嵌套\n\n## 章节\n\n不应索引\n")
     _write(kb / ".trash", "b.md", "# 垃圾\n\n## 章节\n\n内容B\n")
+    _write(kb / "archive", "old.md", "# 旧政策\n\n## 章节\n\n历史内容\n")
     chunks = chunk_kb_dir(kb)
     docs = {c.doc for c in chunks}
-    assert "a" in docs
+    assert "自进化知识" in docs and "root" in docs  # evolved/ 与根目录均索引
     assert "垃圾" not in docs
+    assert "nested" not in docs  # 非允许目录（sub/deep）
+    assert "old" not in docs  # archive 排除
     assert all(c.heading_path for c in chunks)
 
 
@@ -562,11 +570,15 @@ class _MiniES:
 
     def bulk(self, operations, index=None, refresh=False):
         pending = None
+        n = 0
         for op in operations:
             if "create" in op:
                 pending = op["create"]["_id"]
+                n += 1
             else:
                 self.docs[pending] = op
+        # 合法 bulk 响应（ESBackend.upsert 依赖 errors/items，None 会 AttributeError）
+        return {"errors": False, "items": [{"index": {"status": 201}} for _ in range(n)]}
 
     def search(self, index, **kw):
         hits = [

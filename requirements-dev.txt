@@ -2,3 +2,7 @@
 pytest>=8[pytest]
 httpx>=0.27
 fakeredis[lua]>=2.20
+reportlab>=4  # 测试期造带边框表格 PDF 夹具
+pypinyin>=0.51  # build_query_lexicon.py 的构建期依赖（拼音首字母/同音字表）
+jieba>=0.42     # 构建期通用词典真词护栏（防错字纠正改坏正常词）
+

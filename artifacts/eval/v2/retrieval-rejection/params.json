@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "frozen_at": "2026-09-18T00:33:33+00:00",
+  "dataset": "app/evaluation/retrieval_cases_v3.json",
+  "dataset_hash": "98c0fecbeffd461e",
+  "dev_fraction": 0.8,
+  "dev_size": 784,
+  "holdout_size": 175,
+  "holdout_used": true,
+  "params": {
+    "min_top1": 0.206,
+    "min_gap": 0.0,
+    "min_coverage": 0.0
+  },
+  "dev_metrics": {
+    "negative_reject_rate": 0.5833333333333334,
+    "positive_reject_rate": 0.036337209302325583,
+    "feasible": false,
+    "fallback": "best_effort"
+  },
+  "holdout_metrics": {
+    "negative_reject_rate": 0.6,
+    "positive_reject_rate": 0.05333333333333334
+  },
+  "holdout_ran_at": "2026-09-18T00:35:06+00:00"
+}

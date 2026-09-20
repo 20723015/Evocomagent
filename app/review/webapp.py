@@ -26,6 +26,7 @@ import hashlib
 import hmac
 import html
 import secrets
+import threading
 import time
 from pathlib import Path
 
@@ -211,6 +212,44 @@ def _csrf_field(csrf: str) -> str:
     return f"<input type='hidden' name='csrf' value='{html.escape(csrf, quote=True)}'>"
 
 
+# ------------------------------------------------------------
+# 登录爆破防护（低危修复 C9）：per-IP 失败限流——本文件无既有限流设施，
+# 文件内自实现小工具。同一 IP 窗口内失败 ≥ 上限 → 429 冷却；成功登录清零。
+# ------------------------------------------------------------
+_LOGIN_FAIL_LIMIT = 5
+_LOGIN_FAIL_WINDOW_SECONDS = 600.0
+_login_failures: dict[str, list[float]] = {}
+_login_failures_lock = threading.Lock()
+
+
+def _client_ip(request: Request) -> str:
+    return request.client.host if request.client else "unknown"
+
+
+def _login_blocked(ip: str) -> bool:
+    now = time.time()
+    with _login_failures_lock:
+        hits = _login_failures.get(ip)
+        if hits is None:
+            return False
+        hits[:] = [t for t in hits if now - t < _LOGIN_FAIL_WINDOW_SECONDS]
+        if not hits:
+            del _login_failures[ip]
+            return False
+        return len(hits) >= _LOGIN_FAIL_LIMIT
+
+
+def _record_login_failure(ip: str) -> None:
+    now = time.time()
+    with _login_failures_lock:
+        _login_failures.setdefault(ip, []).append(now)
+
+
+def _clear_login_failures(ip: str) -> None:
+    with _login_failures_lock:
+        _login_failures.pop(ip, None)
+
+
 def create_review_app() -> FastAPI:
     app = FastAPI(title="知识审核后台", version="0.2.0")
 
@@ -224,11 +263,20 @@ def create_review_app() -> FastAPI:
         return LOGIN_HTML
 
     @app.post("/login")
-    async def login(token: str = Form("")):
+    async def login(request: Request, token: str = Form("")):
         if not settings.review_admin_token:
             raise HTTPException(status_code=503, detail="审核后台未配置 REVIEW_ADMIN_TOKEN")
+        ip = _client_ip(request)
+        if _login_blocked(ip):
+            raise HTTPException(
+                status_code=429,
+                detail="登录失败次数过多，请稍后再试",
+            )
+        # 恒定时间比较保留（防时序侧信道）
         if not secrets.compare_digest(token, settings.review_admin_token):
+            _record_login_failure(ip)
             raise HTTPException(status_code=401, detail="管理令牌错误")
+        _clear_login_failures(ip)
         cookie, _ = _issue_session()
         resp = RedirectResponse("/", status_code=303)
         resp.set_cookie(

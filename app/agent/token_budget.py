@@ -6,20 +6,35 @@
 - 最近对话及工具结果：50%
 - 最终输出预留：20%
 
+**水位一致性不变式（推理模型适配 T2）**：
+`SHARE_OUTPUT_RESERVE × context_window_tokens ≥ settings.llm_max_tokens`。
+推理模型的思考 token 与可见输出共享同一输出上限，`llm_max_tokens` 抬到 8192 后，
+旧的 32768 窗口（预留≈6.5k）不再满足该不变式 → 窗口抬到 65536（预留≈13k）。
+`tests/unit/test_token_budget_reservation.py` 固定该不变式，改任一侧都要同步改另一侧。
+
 token 估算为确定性启发式（不依赖 tokenizer）：CJK 字符 ≈ 1 token/字，
 ASCII 连续段 ≈ 4 字符/token——只用于水位控制，不用于计费。
 """
+
 
 from __future__ import annotations
 
 import json
 import re
 
-# 预算份额（默认值；settings 可覆盖用于评测）
+# 预算份额（默认值；settings.memory_budget_share 可覆盖用于阶段4消融评测）
 SHARE_SYSTEM = 0.20
 SHARE_MEMORY = 0.10
 SHARE_DIALOG = 0.50
 SHARE_OUTPUT_RESERVE = 0.20
+
+# 份额绝对值上限（256k 级窗口防膨胀）：system/memory 注入内容本身有界
+# （system prompt ≈2.5k、记忆 ≤8 facts + 3 summaries ≈1k），百分比份额在
+# 大窗口下形同虚设；dialog 不随窗口等比放大（每步 prefill 成本/延迟随
+# 输入线性增长，工作集必须有界）。上限只在大窗口生效，32k 下无行为变化。
+CAP_SYSTEM = 8192
+CAP_MEMORY = 8192
+CAP_DIALOG = 65536
 
 _ASCII_RUN = re.compile(r"[\x00-\x7f]+")
 
@@ -53,12 +68,29 @@ def estimate_messages_tokens(messages: list[dict]) -> int:
 
 
 def budget_shares(context_window_tokens: int) -> dict[str, int]:
-    """按上下文窗口切预算（含输出预留）。"""
+    """按上下文窗口切预算（含输出预留）。
+
+    大窗口（如 256k）下按 CAP_* 收敛到有界工作集：system/memory 的注入
+    内容有界、dialog 有成本与延迟上界，百分比份额只在小窗口下有意义。
+
+    记忆系统重构·阶段4 消融：memory 份额经 ``settings.memory_budget_share``
+    覆盖（候选 10% → 15%；不改写其余份额——dialog/output 各自独立语义，
+    消融单项变动便于归因）。覆盖失败（异常值）回退默认 10%。
+    """
+    memory_share = SHARE_MEMORY
+    try:
+        from app.config.settings import settings
+
+        override = float(getattr(settings, "memory_budget_share", SHARE_MEMORY))
+        if 0.0 < override <= 0.30:  # 合理域：>0 且不挤占对话主预算
+            memory_share = override
+    except Exception:  # noqa: BLE001 —— 配置异常不得破坏上下文构建
+        pass
     window = max(int(context_window_tokens), 1024)
     return {
-        "system": int(window * SHARE_SYSTEM),
-        "memory": int(window * SHARE_MEMORY),
-        "dialog": int(window * SHARE_DIALOG),
+        "system": min(int(window * SHARE_SYSTEM), CAP_SYSTEM),
+        "memory": min(int(window * memory_share), CAP_MEMORY),
+        "dialog": min(int(window * SHARE_DIALOG), CAP_DIALOG),
         "output_reserve": int(window * SHARE_OUTPUT_RESERVE),
     }
 
@@ -96,6 +128,16 @@ def trim_messages_to_budget(messages: list[dict], budget: int) -> list[dict]:
     if drop and drop < len(kept):
         kept = kept[drop:]
     elif drop and drop >= len(kept):
+        # 全孤儿窗口（如首条即超大 tool 结果把非 tool 消息全部挤出预算）：
+        # 回退原始尾部最后一条可独立成窗口的消息兜底（调用链中即用户消息）。
+        # 孤儿 tool 与孤儿 tool_calls assistant 都会破坏对话约束，不作兜底；
+        # 确实不存在才返回空。
+        for message in reversed(messages):
+            if message.get("role") == "tool":
+                continue
+            if message.get("role") == "assistant" and message.get("tool_calls"):
+                continue
+            return [message]
         return []
     return kept
 

@@ -1,4 +1,27 @@
-"""电商 Mock 数据：订单、商品、物流（阶段一：订单增加 user_id 供按用户过滤）"""
+"""电商 Mock 数据：订单、商品、物流（阶段一：订单增加 user_id 供按用户过滤）
+
+P2-1 扩容（追加不改写）：
+- 下面的 ``ORDERS`` / ``PRODUCTS`` / ``LOGISTICS`` 是**内置种子**，逐字节冻结——
+  u1–u5 的既有条目被 ``app/evaluation/cases_large.json`` 黄金集 ground truth
+  绑定，任何改写都会让评测口径失真；
+- 扩容数据由 ``app/scripts/seed_commerce_data.py`` 确定性生成到
+  ``app/agent/tools/data/commerce_seed.json``，经 :func:`get_dataset` 按
+  「既有键优先、只增不改」合并后读取（文件缺失 → 回落内置种子，import 契约
+  与行为不变）；
+- 模块级 ``ORDERS`` / ``PRODUCTS`` / ``LOGISTICS`` 永远只含种子条目，
+  既有调用方（含断言「全部订单数 == 5」的单测）不受扩容影响；
+- 需要让 Mock 网关服务扩容订单时**显式接线**（不默认接管，否则会打破
+  ``test_commerce_gateway`` / ``test_tool_context`` 的「全部订单数 == 5」口径）：
+  ``MockCommerceGateway(orders=get_dataset()["orders"],
+  logistics=get_dataset()["logistics"])``；商品侧已默认走扩容目录
+  （``app/agent/tools/product.py`` → ``get_dataset()["products"]``）。
+"""
+
+from __future__ import annotations
+
+import copy
+import json
+from pathlib import Path
 
 ORDERS = {
     "ORD-20240115-001": {
@@ -177,3 +200,94 @@ LOGISTICS = {
         ],
     },
 }
+
+# ============================================================
+# P2-1：扩容数据集（追加不改写）
+# ============================================================
+DATA_DIR = Path(__file__).resolve().parent / "data"
+GENERATED_DATA_PATH = DATA_DIR / "commerce_seed.json"
+
+# 内置种子快照：生成器与测试的「扩容前原样」基准。扩容只增不改，任何生成
+# 条目都不得覆盖这些键（merge_generated 用 setdefault 语义强制保证）。
+SEED_ORDERS = copy.deepcopy(ORDERS)
+SEED_PRODUCTS = copy.deepcopy(PRODUCTS)
+SEED_LOGISTICS = copy.deepcopy(LOGISTICS)
+
+_DATASET_SECTIONS = ("orders", "products", "logistics")
+
+# path(str) → ((mtime_ns, size) | None, dataset)；文件变更即失效（生成器落盘后
+# 同进程读取也能拿到新数据）。
+_dataset_cache: dict[str, tuple[tuple[int, int] | None, dict]] = {}
+
+
+def load_generated_data(path: str | Path | None = None) -> dict | None:
+    """读取扩容数据集 JSON；缺失/损坏/结构非法 → None（绝不抛，回落内置种子）。
+
+    只做结构校验（三个 section 必须都是 dict），不做内容校验——内容由生成器
+    的 ``assert_seed_preserved`` 在生成侧保证。
+    """
+    target = Path(path) if path is not None else GENERATED_DATA_PATH
+    try:
+        raw = target.read_text(encoding="utf-8")
+    except OSError:
+        return None
+    try:
+        data = json.loads(raw)
+    except ValueError:
+        return None
+    if not isinstance(data, dict):
+        return None
+    out: dict = {}
+    for key in _DATASET_SECTIONS:
+        section = data.get(key)
+        if not isinstance(section, dict):
+            return None
+        out[key] = section
+    return out
+
+
+def merge_generated(base: dict, extra: dict) -> dict:
+    """追加不改写合并：既有键一律保留（``setdefault`` 语义）。
+
+    生成器输出自带种子条目，这里再兜一层——即使生成文件里出现同 ID 条目，
+    模块内置种子也永远胜出（黄金集 ground truth 不可被覆盖）。
+    """
+    merged = dict(base)
+    for key, value in extra.items():
+        merged.setdefault(key, value)
+    return merged
+
+
+def get_dataset(path: str | Path | None = None) -> dict:
+    """扩容数据集视图：``{orders, products, logistics}`` = 种子 + 生成条目。
+
+    - 生成文件缺失 → 三个 section 即内置种子（行为与扩容前一致）；
+    - 命中缓存按 (mtime_ns, size) 失效，避免每次工具调用重复解析大 JSON；
+    - 返回的 dict 是独立副本（section 内条目对象与种子共享，调用方只读；
+      需要修改请自行 deepcopy）。
+    """
+    target = Path(path) if path is not None else GENERATED_DATA_PATH
+    try:
+        stat = target.stat()
+        stamp: tuple[int, int] | None = (stat.st_mtime_ns, stat.st_size)
+    except OSError:
+        stamp = None
+
+    key = str(target)
+    cached = _dataset_cache.get(key)
+    if cached is not None and cached[0] == stamp:
+        return cached[1]
+
+    generated = load_generated_data(target)
+    dataset = {
+        "orders": merge_generated(ORDERS, generated["orders"]) if generated else dict(ORDERS),
+        "products": merge_generated(PRODUCTS, generated["products"]) if generated else dict(PRODUCTS),
+        "logistics": merge_generated(LOGISTICS, generated["logistics"]) if generated else dict(LOGISTICS),
+    }
+    _dataset_cache[key] = (stamp, dataset)
+    return dataset
+
+
+def reset_dataset_cache() -> None:
+    """清空数据集缓存（测试/生成器落盘后强制重读用）。"""
+    _dataset_cache.clear()

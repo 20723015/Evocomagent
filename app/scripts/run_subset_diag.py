@@ -88,12 +88,13 @@ def main() -> int:
                 return cid, prev, True
             # 错误结果视为未完成：删除重跑（429 打穿的用例不计入完成）
             ckpt.unlink(missing_ok=True)
-        sandbox = Sandbox(mode="single", resilient=True)
+        sandbox = Sandbox(resilient=True)
         evaluator = Evaluator(
             sandbox=sandbox,
             client=OpenAI(api_key=settings.openai_api_key, base_url=settings.openai_base_url),
             model=settings.model_name, use_judge=False,
             pass_threshold=settings.eval_pass_threshold,
+            include_tool_outputs=True,  # 本脚本目的就是离线重跑 judge，需要原文
         )
         try:
             report = evaluator.run_all([case])

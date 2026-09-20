@@ -1,0 +1,16 @@
+WARNING:app.stores:Redis 不可用（Timeout connecting to server），状态外置降级为本地文件
+{"event": "============================================================", "level": "info", "timestamp": "2026-09-17T22:26:21.744334Z"}
+{"event": "  并夕夕 · 知识库索引构建（版本化）", "level": "info", "timestamp": "2026-09-17T22:26:21.744334Z"}
+{"event": "  后端      : numpy", "level": "info", "timestamp": "2026-09-17T22:26:21.744334Z"}
+{"event": "  源目录    : E:\\ea\\app\\agent\\rag\\knowledge", "level": "info", "timestamp": "2026-09-17T22:26:21.744334Z"}
+{"event": "  Embedding : bge-m3", "level": "info", "timestamp": "2026-09-17T22:26:21.744334Z"}
+{"event": "============================================================", "level": "info", "timestamp": "2026-09-17T22:26:21.744334Z"}
+{"event": "\n[1/3] 扫描并切分知识文档（7.1 多格式 + parent-child）...", "level": "info", "timestamp": "2026-09-17T22:26:22.408753Z"}
+{"event": "PDF 表格抽取回退纯文本（平台治理与处罚总则.pdf）: ModuleNotFoundError", "level": "info", "timestamp": "2026-09-17T22:26:22.601528Z"}
+{"event": "   已构建 782 个 chunk", "level": "info", "timestamp": "2026-09-17T22:26:39.317094Z"}
+{"event": "\n[2/3] 验证版本化索引...", "level": "info", "timestamp": "2026-09-17T22:26:39.317094Z"}
+{"event": "   generation : 20260918062638-cbed3be5", "level": "info", "timestamp": "2026-09-17T22:26:39.317094Z"}
+{"event": "   目标       : E:\\ea\\app\\sessions\\kb_index.20260918062638-cbed3be5.json", "level": "info", "timestamp": "2026-09-17T22:26:39.317094Z"}
+{"event": "   候选描述   : artifacts\\eval\\p02\\ab-legacy.json", "level": "info", "timestamp": "2026-09-17T22:26:39.318097Z"}
+{"event": "\n[3/3] 保持未激活，等待发布门禁完成。", "level": "info", "timestamp": "2026-09-17T22:26:39.318097Z"}
+{"event": "\n🎉 索引构建完成。", "level": "info", "timestamp": "2026-09-17T22:26:39.318097Z"}

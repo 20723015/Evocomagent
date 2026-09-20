@@ -28,7 +28,7 @@ from pathlib import Path
 
 from app.agent.context import ToolContext
 from app.agent.rag.backends import create_backend
-from app.agent.rag.chunker import chunk_body
+from app.agent.rag.chunker import chunk_body, strip_inherited_table_head
 from app.agent.rag.retriever import KnowledgeRetriever
 from app.config.settings import settings
 from app.evolution.generation import GenerationStore
@@ -160,11 +160,19 @@ MAX_SUBQUERIES = 3  # 阶段D：最多三个子查询
 
 
 def _parent_window(c) -> tuple[str, str]:
-    """父块窗口优先；父块不含命中子块正文时回退子块（旧索引/构建异常兜底）。"""
+    """父块窗口优先；父块不含命中子块正文时回退子块（旧索引/构建异常兜底）。
+
+    续块表头（P0-4）是从同一父块更早位置复制的行，与命中正文拼接后不再是父块的
+    连续子串——剥离继承表头后仍需落在父块内才认父块，否则回退命中子块。
+    """
 
     body = chunk_body(c.text)
-    if c.parent_text and body and body in c.parent_text:
-        return c.parent_text, "parent"
+    if c.parent_text and body:
+        if body in c.parent_text:
+            return c.parent_text, "parent"
+        stripped = strip_inherited_table_head(body)
+        if stripped != body and stripped in c.parent_text:
+            return c.parent_text, "parent"
     return c.text, "self"
 
 
@@ -209,7 +217,7 @@ def search_knowledge(
           "error": "..."  # 仅失败时存在
         }
     """
-    subqueries = _normalize_subqueries(query, queries)
+    subqueries = _resolve_subqueries(query, queries, timeout)
     if not subqueries:
         return {"success": False, "error": "query 不能为空", "query": query, "results": []}
 
@@ -234,9 +242,22 @@ def search_knowledge(
 
     top_k = max(1, min(int(top_k or 3), 5))
     # 统一最终检索口径（与评测/校准/探针同一条 final_search）；多子查询并行
-    # 召回后 RRF 合并再父块去重（阶段D）
+    # 召回后 RRF 合并再父块去重（阶段D）。
+    # P1-4 组合语义：联合拒绝是「单阈值不可达」的替代——联合阈值已配置
+    # （params.active）时最终门控由联合判定独占，legacy 单阈值不再传入，
+    # 避免同一层正例被两道门双重砍；仅当四个联合阈值全为 None 时才回落
+    # legacy 单阈值（历史行为逐字段不变）。
+    from app.agent.rag import rejection as rejection_mod
+
+    rejection_params = rejection_mod.params_from_settings()
+    legacy_min_score = (
+        None if rejection_params.active else settings.rag_min_relevance_score
+    )
     try:
-        pack = _multi_query_search(retriever, subqueries, top_k, timeout)
+        bundle = _multi_query_search_bundle(
+            retriever, subqueries, top_k, timeout,
+            min_score=legacy_min_score,
+        )
     except Exception as e:
         return {
             "success": False,
@@ -246,7 +267,60 @@ def search_knowledge(
             "results": [],
         }
 
+    pack = bundle.pack
     results = pack.to_results()
+
+    # RAG 修复计划·1：精排不可用 → 生产默认 fail-closed（禁止用未验证证据回答）
+    from app.observability.metrics import (
+        record_rag_degraded,
+        record_rag_rejection,
+        record_rag_retrieve,
+        record_rag_retrieve_failed,
+    )
+
+    if pack.degraded:
+        record_rag_degraded(pack.degraded_reason or "unknown")
+        if settings.rag_rerank_fail_closed:
+            record_rag_retrieve_failed(pack.degraded_reason or "degraded")
+            return {
+                "success": False,
+                "backend": settings.rag_backend,
+                "query": query,
+                "subqueries": pack.subqueries,
+                "results": [],
+                "error": pack.degraded_reason or "reranker_unavailable",
+                "evidence": pack.diagnostics(),
+            }
+
+    # P1-4 四信号联合拒绝：在最终口径 hits（父块折叠后）上判定；降级/RRF 秩
+    # 融合分无语义 → applicable=False（与 final_search 的阈值门控同一纪律）。
+    # 判定为拒绝 → 与 degraded 分支同构的 fail-closed（success=False + 空
+    # results），不新造返回结构。
+    decision = rejection_mod.decide_rejection(
+        bundle.outcome.hits, subqueries[0], rejection_params,
+        score_source=bundle.outcome.score_source,
+        degraded=bundle.outcome.degraded,
+    )
+    if decision.applicable:
+        record_rag_rejection(
+            "rejected" if decision.rejected else "accepted",
+            decision.reasons,
+            reason=decision.reason,
+        )
+    elif rejection_params.active:
+        record_rag_rejection("skipped", reason=decision.skip_reason)
+    if decision.rejected:
+        record_rag_retrieve(pack.diagnostics())
+        record_rag_retrieve_failed(f"rejected:{decision.reason or 'unknown'}")
+        return {
+            "success": False,
+            "backend": settings.rag_backend,
+            "query": query,
+            "subqueries": pack.subqueries,
+            "results": [],
+            "error": f"retrieval_rejected:{decision.reason or 'unknown'}",
+            "evidence": pack.diagnostics(),
+        }
 
     # 3.5 检索侧：KB 块（尤其 evolved/ 沉淀）视为不可信数据 →
     # 来源围栏包裹 + 注入语句标注 tainted 拦截
@@ -264,10 +338,7 @@ def search_knowledge(
                 item.tainted = True
                 item.text = r.get("text", item.text)
 
-    from app.observability.metrics import record_rag_retrieve
-
     record_rag_retrieve(pack.diagnostics())
-
     return {
         "success": True,
         "backend": settings.rag_backend,
@@ -292,48 +363,86 @@ def _normalize_subqueries(query: str, queries: list[str] | None) -> list[str]:
     return out[:MAX_SUBQUERIES]
 
 
-def _dedup_by_parent(items, top_k: int):
-    """EvidenceItem 父块去重：同一 parent_id 只保留首见（排序已就绪），截 top_k。"""
-    out: list = []
-    seen: set[str] = set()
-    for item in items:
-        if item.parent_id:
-            if item.parent_id in seen:
-                continue
-            seen.add(item.parent_id)
-        out.append(item)
-        if len(out) >= top_k:
-            break
-    return out
+def _resolve_subqueries(query: str, queries: list[str] | None,
+                        timeout: float | None) -> list[str]:
+    """子查询规整 + P1-3 改写路：原 query 居首，改写结果追加在末尾。
+
+    契约与 ``_normalize_subqueries`` 一致（原 query 必居首、去重、≤3）：
+    - 模型已给满 MAX_SUBQUERIES 条 → 不改写（不挤掉模型显式提交的子查询）；
+    - 改写失败/等价/未配置 → 原列表原样返回（fail-open，热路径不抛）；
+    - 改写成功 → 作为第二/三路与原 query 并行召回，经 final_multi_search 的
+      既有语义（逐路门控 → RRF 合并 → 父块折叠 → Top-K）合流。
+    """
+    subqueries = _normalize_subqueries(query, queries)
+    if not subqueries or len(subqueries) >= MAX_SUBQUERIES:
+        return subqueries
+    import time as _time
+
+    from app.agent.rag.query_rewrite import rewrite_query
+
+    _t0 = _time.perf_counter()
+    rewritten = rewrite_query(subqueries[0], timeout=timeout)
+    _record_rewrite_latency_delta(_time.perf_counter() - _t0)
+    if rewritten and rewritten not in subqueries:
+        subqueries.append(rewritten)
+    return subqueries[:MAX_SUBQUERIES]
+
+
+def _record_rewrite_latency_delta(seconds: float) -> None:
+    """改写路延迟增量打点（埋点失败不影响检索）。"""
+    try:
+        from app.observability.metrics import record_query_rewrite_latency_delta
+
+        record_query_rewrite_latency_delta(seconds)
+    except Exception:  # noqa: BLE001
+        pass
+
+
+class _MultiSearchBundle:
+    """_multi_query_search 的完整结果：证据包 + 原始 outcome（联合拒绝取信号）。"""
+
+    __slots__ = ("pack", "outcome")
+
+    def __init__(self, pack, outcome):
+        self.pack = pack
+        self.outcome = outcome
+
+
+def _multi_query_search_bundle(retriever, subqueries: list[str], top_k: int,
+                               timeout: float | None,
+                               min_score: float | None = None):
+    """多子查询编排统一走 final_multi_search（B1 提取，线上/评测共用口径）。
+
+    检索编排（并行召回 → 逐路门控 → RRF 合并 → 父块去重 → Top-K，RRF 分与
+    降级状态聚合）收敛到 retriever_factory.final_multi_search；本函数只负责
+    在其结果之上构建 EvidencePack（父块窗口文本、子查询归因），并保留原始
+    outcome 供 P1-4 联合拒绝在最终 hits 上取信号。
+    """
+    from app.agent.rag.evidence import EvidencePack
+    from app.agent.rag.retriever_factory import final_multi_search
+
+    outcome = final_multi_search(
+        retriever, subqueries, top_k,
+        # 统一口径：阈值由调用方显式传入（线上传 legacy 单阈值或 None，
+        # 评测侧传本次校准阈值），检索层不再自行读取 settings
+        min_score=min_score, timeout=timeout,
+    )
+    items = [
+        _item_from_hit(hit, query)
+        for hit, query in zip(outcome.hits, outcome.hit_queries)
+    ]
+    pack = EvidencePack(
+        query=subqueries[0], subqueries=list(subqueries), items=items,
+        score_source=outcome.score_source, degraded=outcome.degraded,
+        degraded_reason=outcome.degraded_reason,
+    )
+    return _MultiSearchBundle(pack=pack, outcome=outcome)
 
 
 def _multi_query_search(retriever, subqueries: list[str], top_k: int,
                         timeout: float | None):
-    """多子查询并行召回 → RRF 合并 → 阈值门控 → 父块去重 → Top-K。"""
-    from concurrent.futures import ThreadPoolExecutor
-
-    from app.agent.rag.evidence import EvidencePack, rrf_merge
-    from app.agent.rag.retriever import filter_hits_by_score
-
-    recall = min(top_k * 3, 15)
-    min_score = settings.rag_min_relevance_score
-
-    def _one(subquery: str):
-        raw = retriever.search(subquery, top_k=recall, timeout=timeout)
-        gated = filter_hits_by_score(raw, min_score)
-        return [_item_from_hit(hit, subquery) for hit in gated]
-
-    if len(subqueries) == 1:
-        items = _one(subqueries[0])
-        kept = _dedup_by_parent(items, top_k)
-    else:
-        workers = min(len(subqueries), 3)
-        with ThreadPoolExecutor(max_workers=workers,
-                                thread_name_prefix="rag-multi") as pool:
-            ranked_lists = list(pool.map(_one, subqueries))
-        # RRF 融合（天然父块去重）后截取 top_k
-        kept = _dedup_by_parent(
-            rrf_merge(ranked_lists, top_n=top_k * 2), top_k,
-        )
-
-    return EvidencePack(query=subqueries[0], subqueries=list(subqueries), items=kept)
+    """（兼容保留）只取证据包；联合拒绝调用方请用 _multi_query_search_bundle。"""
+    return _multi_query_search_bundle(
+        retriever, subqueries, top_k, timeout,
+        min_score=settings.rag_min_relevance_score,
+    ).pack

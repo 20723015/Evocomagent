@@ -9,11 +9,26 @@ Review 修复后的终答协议（唯一成功路径）：
 - **纯文本输出不再视为终答**：追加协议纠错并重试（消耗剩余步数）；
 - 混合业务工具 + final_response：只写一条 assistant tool-call 消息，
   每个 call ID 恰好一个 tool 结果（final 全部返回协议错误）；
-- 达到最大步数 → 最后一轮只挂 final_response 且显式 tool_choice 强制收尾；
+- 达到最大步数 → 最后一轮只挂 final_response 强制收尾（显式 tool_choice；
+  画像不支持强制 tool_choice 时降级为 system 软强制，见 T4）；
   仍失败 → ForcedFinalizeFailed（上层确定性转人工 fallback）；
+- 步数余量提示：剩余步数（含当前步）≤ 2 时注入一条 system 预告（只注一次，
+  零额外 LLM 调用），与耗尽后的最后通牒语义互补；
 - 预算耗尽 → LLMBudgetExhausted（上层确定性 fallback，零 LLM）；
 - 工具批次经 ToolBatchExecutor（原序分段并行 + 守卫 + 写状态机拦截 + 退款
-  确认注入）；SSE `thought` 事件为受控状态说明，不透出模型原始思考。
+  确认注入）。
+
+推理模型全量适配（T2/T3/T4/T6）：
+- **参数**：调用点传的是「调用方偏好值」，是否发给厂商由 `llm/client.py` 的
+  画像层决定（T1）——这里直传 `temperature`/`max_tokens` 不改，语义已降级为
+  偏好，勿在调用点按模型分支（那会把改写面重新摊到 17 处）；
+- **reasoning 双通道**（T3）：窗口通道按画像剥离/原样回传，审计通道
+  （`full_turn_messages`）始终留存 `reasoning` 附加字段；
+- **强制收尾**（T4）：达成手段可按画像降级为软强制，`ForcedFinalizeFailed`
+  兜底语义与上层转人工路径零改动；
+- **SSE**（T6）：`thought` 仍是受控状态说明；模型推理原文只在
+  `settings.sse_reasoning_enabled`（默认关，产品/合规决策）打开时经
+  `emit_reasoning` 透出，且过输出 guardrails。
 """
 
 from __future__ import annotations
@@ -31,6 +46,14 @@ from app.agent.tools.batch_executor import ToolTurnState
 from app.agent.tools.digest import digest_tool_result
 from app.agent.turn_budget import LLMBudgetExhausted
 from app.agent.turn_context import AgentTurnContext, ToolTraceEntry
+from app.llm.model_profile import effective_profile
+from app.llm.reasoning import (
+    CapturedReasoning,
+    capture_reasoning,
+    merge_audit,
+    window_content,
+    window_extra_fields,
+)
 
 FINAL_ACCEPTED_RESULT = json.dumps(
     {"success": True, "accepted": True, "code": "FINAL_RESPONSE_ACCEPTED"},
@@ -41,6 +64,24 @@ PLAIN_TEXT_CORRECTION = (
     "请基于你上面的答复内容，立即调用 final_response 工具提交最终答复"
     "（intent/reply/requires_human/follow_up_question）；不要再输出纯文本。"
 )
+# T4：画像不支持强制 tool_choice 时的软强制提示（挂终止工具 + 该 system 提示，
+# 提高仍能走协议的概率；仍失败则 ForcedFinalizeFailed 语义不变）
+FORCED_FINALIZE_SOFT_PROMPT = (
+    "已达到本轮的步骤上限。你现在必须调用 final_response 工具提交最终答复"
+    "（intent/reply/requires_human/follow_up_question），不要再输出纯文本、"
+    "也不要再调用其他工具。"
+)
+# 步数余量提示：模型看不到自己还剩几步，只有耗尽后才收到最后通牒
+# （FORCED_FINALIZE_SOFT_PROMPT），实测缺口是「最后一两步还在开新查询方向」。
+# 阈值取 2（含当前步）：完成必要的最后查询后尽快收尾。与最后通牒语义互补——
+# 该提示是预告（仍可不调用 final_response 继续干活），不是协议强制。
+STEPS_MARGIN_REMAINING = 2
+STEPS_MARGIN_PROMPT = (
+    "提示：本轮工具调用步骤即将用尽（含当前这一步，还剩 {remaining} 步）。"
+    "请尽快完成必要的最后一次查询并调用 final_response 提交最终答复，"
+    "不要再开启新的查询方向。"
+)
+
 _FINAL_PREMATURE_ERROR = json.dumps({
     "error": "FINAL_RESPONSE_PREMATURE",
     "message": "本轮还有业务工具刚返回结果，请先基于结果回答，再重新调用 final_response",
@@ -72,13 +113,33 @@ class ReactRunner:
         self._ctx = ctx
         agent = self._agent
         max_steps = agent.max_react_steps
+        margin_hint_sent = False
         for step in range(max_steps):
             ctx.react_steps = step + 1
             if ctx.budget.expired():
                 raise LLMBudgetExhausted("轮次预算耗尽，停止 ReAct 循环")
+            # 步数余量提示（含当前步）：只注一次，注入先于本步 build()，
+            # 当步即生效。窗口从尾保留，该消息不会被 trim 裁掉。
+            remaining = max_steps - step
+            hint_now = remaining <= STEPS_MARGIN_REMAINING and not margin_hint_sent
+            if hint_now:
+                margin_hint_sent = True
+                ctx.steps_margin_hint = True
+                self._push_window_message({
+                    "role": "system",
+                    "content": STEPS_MARGIN_PROMPT.format(remaining=remaining),
+                })
+                from app.observability.metrics import record_steps_margin_hint
+
+                record_steps_margin_hint()
             # 受控状态说明（SSE thought 事件：不再透出模型原始思考）
             agent.emit_status(
-                f"正在处理您的请求（第 {step + 1}/{max_steps} 步）", step=step + 1,
+                (
+                    f"正在整理您的请求（第 {step + 1}/{max_steps} 步）"
+                    if hint_now
+                    else f"正在处理您的请求（第 {step + 1}/{max_steps} 步）"
+                ),
+                step=step + 1,
             )
             final = self._step(ctx, state)
             if final is not None:
@@ -99,6 +160,9 @@ class ReactRunner:
         tools = list(agent.tool_manager.tool_definitions) + [
             FINAL_RESPONSE_TOOL_DEFINITION,
         ]
+        # temperature/max_tokens 是「调用方偏好值」：是否真的发给厂商由
+        # llm/client.py 的画像层（T1）决定（推理模型删 temperature、改参数名、
+        # 抬下限）。调用点保持直传，避免改写面重新摊到 17 个调用点。
         response = agent.client.chat.completions.create(
             model=agent.model,
             messages=messages,
@@ -109,17 +173,21 @@ class ReactRunner:
         ctx.llm_calls += 1
         choice = response.choices[0]
         assistant_msg = choice.message
+        captured = capture_reasoning(assistant_msg)
+        self._emit_reasoning(captured)
         tool_calls = list(assistant_msg.tool_calls or [])
 
         # 纯文本：未走终止协议 → 协议纠错并重试（Review 修复：不再视为终答）
         if not tool_calls:
-            content = assistant_msg.content or ""
-            self._push_window_message({"role": "assistant", "content": content})
+            self._push_window_message(
+                *self._assistant_message(assistant_msg, captured),
+            )
             self._push_window_message({
                 "role": "system", "content": PLAIN_TEXT_CORRECTION,
             })
             from app.observability.metrics import record_final_protocol_correction
 
+            ctx.protocol_corrections += 1
             record_final_protocol_correction()
             return None
 
@@ -130,7 +198,7 @@ class ReactRunner:
                   if tc.function.name == FINAL_RESPONSE_TOOL_NAME]
 
         # 只写一条 assistant tool-call 消息（全部 calls，保持 API 消息序合法）
-        self._append_assistant_tool_calls(assistant_msg, tool_calls)
+        self._append_assistant_tool_calls(assistant_msg, tool_calls, captured)
 
         if business:
             self._execute_business(ctx, state, business)
@@ -155,33 +223,56 @@ class ReactRunner:
         agent = self._agent
         if ctx.budget.expired():
             raise LLMBudgetExhausted("轮次预算耗尽，强制收尾被拒绝")
+        profile = effective_profile(agent.model)
+        soft = not profile.supports_forced_tool_choice
         messages = agent.context_builder.build(agent, ctx.current_query)
         ctx.context_tokens = agent.context_builder.last_context_tokens
-        response = agent.client.chat.completions.create(
-            model=agent.model,
-            messages=messages,
-            temperature=agent.temperature,
-            tools=[FINAL_RESPONSE_TOOL_DEFINITION],
-            tool_choice={
+        kwargs: dict = {
+            "model": agent.model,
+            "tools": [FINAL_RESPONSE_TOOL_DEFINITION],
+            "temperature": agent.temperature,
+            "max_tokens": agent.llm_max_tokens,
+        }
+        if soft:
+            # T4：画像不支持强制 tool_choice（探针第 2 项）→ 达成手段改为
+            # 「只挂终止工具 + system 软强制」。兜底语义不变：仍纯文本即
+            # ForcedFinalizeFailed（上层确定性转人工）。提示同时进窗口与审计，
+            # 保证审计切片能解释这一轮的收尾方式。
+            hint = {"role": "system", "content": FORCED_FINALIZE_SOFT_PROMPT}
+            self._push_window_message(hint)
+            messages = [*messages, hint]
+        else:
+            kwargs["tool_choice"] = {
                 "type": "function",
                 "function": {"name": FINAL_RESPONSE_TOOL_NAME},
-            },
-            max_tokens=agent.llm_max_tokens,
+            }
+        from app.observability.metrics import (
+            record_forced_finalize_attempt,
+            record_forced_finalize_fallback,
         )
+
+        mode = "soft" if soft else "hard"
+        record_forced_finalize_attempt(mode)
+        response = agent.client.chat.completions.create(messages=messages, **kwargs)
         ctx.llm_calls += 1
         assistant_msg = response.choices[0].message
+        captured = capture_reasoning(assistant_msg)
+        self._emit_reasoning(captured)
         tool_calls = list(assistant_msg.tool_calls or [])
         if not tool_calls:
             # 未按协议输出 → 强制收尾失败（确定性 fallback）
+            record_forced_finalize_fallback(mode)
             raise ForcedFinalizeFailed("强制终答未返回 final_response 调用")
         tc = tool_calls[0]
         args, error = validate_final_response(tc.function.arguments)
         if error is not None:
+            record_forced_finalize_fallback(mode)
             raise ForcedFinalizeFailed(f"强制终答参数非法: {error}")
         # 审计消息序完整：assistant(tool_calls) + 恰好一个接受结果
-        self._append_assistant_tool_calls(assistant_msg, [tc])
+        self._append_assistant_tool_calls(assistant_msg, [tc], captured)
         self._append_tool_message(tc.id, FINAL_ACCEPTED_RESULT, ctx)
         return args
+
 
     # ---------- 工具执行与轨迹 ----------
     def _execute_business(self, ctx: AgentTurnContext, state: ToolTurnState,
@@ -217,20 +308,19 @@ class ReactRunner:
         ok = not has_error
         code = str(payload.get("code", "") or ("ERROR" if has_error else "OK"))
         side_effect = "none"
-        if oc.name == "apply_refund":
-            if payload.get("status") == "indeterminate":
+        if oc.name in ("submit_refund_application", "cancel_refund_application"):
+            status = str(payload.get("status") or "")
+            if status == "indeterminate":
                 side_effect = "indeterminate"
-            elif payload.get("confirmed") or payload.get("replayed"):
-                side_effect = "committed"
-            elif payload.get("status") == "pending_confirmation":
-                side_effect = "pending"
-        # 写状态机观察（归属验证/退款推进）；合并 internal_args：
-        # confirm 段的 confirmation_token/idempotency_key 在服务端注入通道，
-        # 不合并则 tokens_issued 无法回收、indeterminate 条目幂等键恒为空
+            elif status in (
+                "merchant_reviewing", "approved", "rejected",
+                "refund_processing", "refunded", "withdrawn",
+            ) or payload.get("replayed"):
+                side_effect = "submitted"
+        # 写状态机观察（归属验证/申请结果推进）；工具结果载荷自带
+        # client_request_id（工具层自生成并回写），indeterminate 对账锚点由此承载
         if payload:
-            ctx.write_ops.observe(
-                oc.name, {**oc.arguments, **(oc.internal_args or {})}, payload,
-            )
+            ctx.write_ops.observe(oc.name, dict(oc.arguments), payload)
         # 检索证据（声明级接地用；完整结果只进审计）
         if oc.name == "search_knowledge" and ok:
             for item in payload.get("results", []) or []:
@@ -254,28 +344,63 @@ class ReactRunner:
         )
 
     # ---------- 消息窗口 ----------
-    def _push_window_message(self, msg: dict) -> None:
-        """同时进模型窗口（raw_messages）与轮次审计切片（full_turn_messages）。"""
-        self._agent.raw_messages.append(msg)
-        self._ctx.full_turn_messages.append(msg)
+    def _push_window_message(self, msg: dict, audit_msg: dict | None = None) -> None:
+        """同时进模型窗口（raw_messages）与轮次审计切片（full_turn_messages）。
 
-    def _append_assistant_tool_calls(self, assistant_msg, tool_calls) -> None:
-        msg_dict = {"role": "assistant", "content": assistant_msg.content or ""}
-        msg_dict["tool_calls"] = [
-            {
-                "id": tc.id,
-                "type": "function",
-                "function": {
-                    "name": tc.function.name,
-                    "arguments": tc.function.arguments,
-                },
-            }
-            for tc in tool_calls
-        ]
-        self._push_window_message(msg_dict)
+        T3 双通道：窗口消息与审计消息可以**不同内容**（窗口按画像剥离
+        reasoning，审计附加 reasoning）。`audit_msg` 缺省 = 两通道同一对象，
+        即非推理路径的现状行为。
+        """
+        self._agent.raw_messages.append(msg)
+        self._ctx.full_turn_messages.append(msg if audit_msg is None else audit_msg)
+
+    def _assistant_message(self, assistant_msg,
+                           captured: CapturedReasoning | None,
+                           tool_calls=None) -> tuple[dict, dict]:
+        """assistant 消息的双通道形态：返回 (窗口消息, 审计消息)。
+
+        - 窗口：content 按画像取值（`required_signed` 原样回传 thinking block，
+          其余压平为文本）+ 仅在 `required_signed` 时回填 reasoning 字段；
+        - 审计：附加 `reasoning` 字段（additive），供 turns archive 对账。
+        """
+        profile = effective_profile(self._agent.model)
+        content = window_content(assistant_msg, profile, captured)
+        window: dict = {"role": "assistant", "content": content}
+        window.update(window_extra_fields(profile, captured))
+        if tool_calls is not None:
+            window["tool_calls"] = [
+                {
+                    "id": tc.id,
+                    "type": "function",
+                    "function": {
+                        "name": tc.function.name,
+                        "arguments": tc.function.arguments,
+                    },
+                }
+                for tc in tool_calls
+            ]
+        return window, merge_audit(window, captured)
+
+    def _emit_reasoning(self, captured: CapturedReasoning | None) -> None:
+        """T6：reasoning 透出（开关 + guardrails 都在 chat.emit_reasoning 内）。"""
+        if captured is None:
+            return
+        emit = getattr(self._agent, "emit_reasoning", None)
+        if emit is None:
+            return
+        emit(captured.sse_text(), step=self._ctx.react_steps)
+
+    def _append_assistant_tool_calls(self, assistant_msg, tool_calls,
+                                     captured: CapturedReasoning | None = None) -> None:
+        if captured is None:
+            captured = capture_reasoning(assistant_msg)
+        self._push_window_message(
+            *self._assistant_message(assistant_msg, captured, tool_calls),
+        )
 
     def _append_tool_message(self, call_id: str, result: str,
                              ctx: AgentTurnContext) -> None:
         self._push_window_message(
             {"role": "tool", "tool_call_id": call_id, "content": result},
         )
+

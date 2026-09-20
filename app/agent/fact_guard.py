@@ -41,6 +41,10 @@ class FactGuardVerdict:
     claims_grounded: int = 0
     removed_sentences: int = 0
     conflicts: list[str] = field(default_factory=list)
+    # 模型**原文**是否已提「转人工」。调用方据此升级，而不是看校验后的文本：
+    # 删句后本模块会追加「…可转人工核实。」，用校验后文本判定等于自我触发
+    # （任何删句都必然升级），该判据将失去区分度（2026-09-18 实测）。
+    mentions_handoff: bool = False
 
     @property
     def ok(self) -> bool:
@@ -52,16 +56,29 @@ class FactGuardVerdict:
             "claims_grounded": self.claims_grounded,
             "removed_sentences": self.removed_sentences,
             "conflicts": self.conflicts,
+            "mentions_handoff": self.mentions_handoff,
         }
 
 
+# 千分位逗号：数字内部的逗号既不是子句分隔符、也不是声明边界。
+# 不合并会让 `20,000 元` 在子句切分处断成 `000 元` 碎片，碎片与真实值
+# 混进同一 (主题锚点, 单位) 值集合 → 触发「同键多值」误判 → 删句 → 升级
+# （2026-09-18 Docker 口径评测实测：156/335 例因此过度转人工）。
+_THOUSANDS_RE = re.compile(r"(?<=\d),(?=\d)")
+
+
+def _strip_thousands(text: str) -> str:
+    """合并千分位：`20,000 元` → `20000 元`（只动数字之间的逗号）。"""
+    return _THOUSANDS_RE.sub("", str(text or ""))
+
+
 def _normalize(text: str) -> str:
-    return re.sub(r"\s+", "", str(text or ""))
+    return re.sub(r"\s+", "", _strip_thousands(text))
 
 
 def _sentence_has_evidence(sentence: str, evidence_blob: str) -> bool:
     """句子中的每个数字声明都要在证据中找到（归一化包含匹配）。"""
-    claims = _NUMBER_RE.findall(sentence)
+    claims = _NUMBER_RE.findall(_strip_thousands(sentence))
     if not claims:
         return True  # 无数字声明：不做词面拦截（声明级校验聚焦数字）
     for claim in claims:
@@ -82,7 +99,9 @@ def _claim_clauses(text: str) -> list[tuple[str, str]]:
     import unicodedata as _uni
 
     clauses: list[tuple[str, str]] = []
-    for raw in _re.split(r"[，,；;、\n]", str(text or "")):
+    # 先合并千分位再切子句：否则 `1,000 元、5,000 元` 会被数字内的逗号
+    # 切成 `000 元` 这类假声明键。
+    for raw in _re.split(r"[，,；;、\n]", _strip_thousands(str(text or ""))):
         norm = _normalize(raw)
         if not norm:
             continue
@@ -149,6 +168,8 @@ def ground_reply(reply: str, evidence_texts: list[str],
     verdict = FactGuardVerdict()
     if not enabled or not reply:
         return reply, verdict
+    # 升级判据取模型原文（见 FactGuardVerdict.mentions_handoff 注释）
+    verdict.mentions_handoff = "转人工" in reply
     evidence_blob = _normalize("".join(evidence_texts))
     if not evidence_blob:
         return reply, verdict  # 无证据：放行（不误杀非事实回复）
@@ -156,7 +177,7 @@ def ground_reply(reply: str, evidence_texts: list[str],
     sentences = [s for s in _SENT_SPLIT_RE.split(reply) if s]
     kept: list[str] = []
     for sentence in sentences:
-        claims = _NUMBER_RE.findall(sentence)
+        claims = _NUMBER_RE.findall(_strip_thousands(sentence))
         verdict.claims_total += len(claims)
         sentence_conflicts = _detect_conflicts(sentence, evidence_texts)
         for conflict in sentence_conflicts:
@@ -170,8 +191,10 @@ def ground_reply(reply: str, evidence_texts: list[str],
 
     cleaned = "".join(kept).strip()
     if verdict.removed_sentences and not cleaned:
-        # 全部被删：转核实提示（不做内容编造）
+        # 全部被删：转核实提示（不做内容编造）。替换文案承诺了「已转人工」，
+        # 升级判据必须同步置位——否则回复承诺转人工而程序不转，言行脱节。
         cleaned = "您咨询的具体数字需要进一步核实，我暂时无法给出准确答复；已为您转人工确认，请稍候。"
+        verdict.mentions_handoff = True
     if verdict.removed_sentences and cleaned and not cleaned.endswith(("。", "！", "？", "！", "?")):
         cleaned += "。"
     if verdict.removed_sentences and cleaned:

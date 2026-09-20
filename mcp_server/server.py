@@ -18,19 +18,24 @@ import json
 import sys
 from collections.abc import Mapping
 from pathlib import Path
-from typing import Optional
-
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from mcp.server.fastmcp import Context, FastMCP
-from mcp.types import CallToolResult, TextContent
 
 from app.agent.context import ToolContext
 from app.agent.tools.order import query_order as _query_order
 from app.agent.tools.product import query_product as _query_product
 from app.agent.tools.logistics import query_logistics as _query_logistics
-from app.agent.tools.refund import apply_refund as _apply_refund
+from app.agent.tools.refund import (
+    cancel_refund_application as _cancel_refund_application,
+)
+from app.agent.tools.refund import (
+    query_refund_application as _query_refund_application,
+)
+from app.agent.tools.refund import (
+    submit_refund_application as _submit_refund_application,
+)
 from app.agent.tools.knowledge import search_knowledge as _search_knowledge
 from app.config.settings import settings
 
@@ -99,26 +104,6 @@ def _meta_value(meta, key: str):
     return getattr(meta, key, None)
 
 
-def _refund_internal_args(ctx: Context) -> dict:
-    """读取退款确认内部参数（meta 通道），绝不扩展工具公开 schema。"""
-    request_context = ctx.request_context if ctx is not None else None
-    meta = request_context.meta if request_context is not None else None
-    raw = _meta_value(meta, "internal_args")
-    if raw is None:
-        return {}
-    if not isinstance(raw, Mapping):
-        raise ValueError("退款确认内部参数格式无效")
-    allowed = {"confirmation_token", "idempotency_key", "refund_id"}
-    out: dict = {}
-    for key, value in raw.items():
-        if key not in allowed:
-            continue
-        if not isinstance(value, str) or len(value) > 512:
-            raise ValueError("退款确认内部参数格式无效")
-        out[key] = value
-    return out
-
-
 @mcp.tool()
 def query_order(order_id: str, ctx: Context) -> str:
     """根据订单号查询订单详情，包括订单状态、商品信息、金额、物流单号等"""
@@ -143,47 +128,42 @@ def query_logistics(order_id: str, ctx: Context) -> str:
 
 
 @mcp.tool()
-def apply_refund(order_id: str, reason: str, ctx: Context):
-    """为指定订单申请退款。注意：这是一个敏感操作，调用前应先与用户确认"""
+def submit_refund_application(order_id: str, reason: str, ctx: Context) -> str:
+    """为指定订单提交退款申请（敏感写操作；创建后进入商家审核，审核通过前可撤回）
+
+    信任模型说明（P1-2）：Agent 侧的「用户确认」两阶段协议依赖会话状态，而 MCP
+    server 是独立进程、看不到会话——因此 ToolManager 已把需确认的写工具固定在
+    本地执行（不会路由到这里）。本面只服务持有 refund:write actor token 的**可信
+    系统调用方**：确认由其自身的用户交互保证，包装层在此显式声明该结论，
+    工具层的「无确认结论即不落库」不变量仍然成立（唯一执行点未绕过）。
+    """
     user_ctx = _actor_ctx_refund(ctx)
-    # confirmation_token/refund_id 只由服务端从 meta 内部通道读取，保持
-    # MCP 公开 schema 仍只有 order_id/reason。
-    internal = _refund_internal_args(ctx)
-    result = _apply_refund(
-        order_id, reason, user_ctx,
-        confirmation_token=internal.get("confirmation_token"),
-        idempotency_key=internal.get("idempotency_key"),
-        refund_id=internal.get("refund_id"),
-    )
-    text = json.dumps(result, ensure_ascii=False)
-    if result.get("status") != "pending_confirmation":
-        return text
+    # 可信调用方在同一请求内完成两阶段：先登记草稿，再声明确认结论执行。
+    # 工具层「无草稿即不落库」的不变量对 MCP 路径同样成立（无旁路）。
+    _submit_refund_application(order_id, reason, user_ctx)
+    user_ctx.write_confirm = "confirm"
+    result = _submit_refund_application(order_id, reason, user_ctx)
+    return json.dumps(result, ensure_ascii=False)
 
-    # 首段凭证只放 MCP 响应 _meta，不进正文。生产通常由共享 Redis 直接
-    # 提供同一注册表；本地双进程模式由 ToolManager 消费该 meta 后同步。
-    # 直接 MCP 调用方只会在显式读取协议 meta 时接触此内部字段。
-    from app.agent.refund_gate import get_session_pending
-    from app.agent.tools.refund import _confirmation_store
 
-    pending = get_session_pending(
-        _confirmation_store(), user_ctx.user_id, user_ctx.session_id,
+@mcp.tool()
+def query_refund_application(application_id: str = "",
+                             order_id: str = "",
+                             ctx: Context = None) -> str:
+    """查询退款申请（application_id 与 order_id 必须且只能提供一个）"""
+    user_ctx = _actor_ctx_refund(ctx)
+    result = _query_refund_application(
+        application_id or None, order_id or None, user_ctx,
     )
-    matched = next(
-        (item for item in pending if item.refund_id == result.get("refund_id")),
-        None,
-    )
-    if matched is None or not matched.token:
-        return text
-    return CallToolResult(
-        content=[TextContent(type="text", text=text)],
-        _meta={"refund_confirmation": {
-            "refund_id": matched.refund_id,
-            "order_id": matched.order_id,
-            "reason": matched.reason,
-            "confirmation_token": matched.token,
-            "expires_in_seconds": settings.refund_confirm_ttl_seconds,
-        }},
-    )
+    return json.dumps(result, ensure_ascii=False)
+
+
+@mcp.tool()
+def cancel_refund_application(application_id: str, ctx: Context) -> str:
+    """撤回退款申请（仅审核中的申请可撤回；敏感写操作）"""
+    user_ctx = _actor_ctx_refund(ctx)
+    result = _cancel_refund_application(application_id, user_ctx)
+    return json.dumps(result, ensure_ascii=False)
 
 
 @mcp.tool()

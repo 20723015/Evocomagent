@@ -2,7 +2,7 @@
 
 一条 EvalCase 描述「输入是什么」+「期望表现是什么」。期望分两类：
 - 结果期望：末轮回复应识别的意图、应命中的关键词、是否该转人工。
-- 过程期望：应调用哪些工具、理论最少调用次数、token 预算、（多 Agent）期望路由。
+- 过程期望：应调用哪些工具、理论最少调用次数、token 预算。
 
 留空的期望项在评分时会被跳过（不计分），而不是判 0，避免无工具/无关键词的
 用例（如问候、投诉）拖垮聚合均值。
@@ -32,7 +32,6 @@ class EvalCase:
     expected_tools: list[str] = field(default_factory=list)  # 整个会话应调用过的工具
     min_tool_calls: int | None = None  # 理论最少工具调用次数（算效率用），None=不校验
     max_tokens: int | None = None  # token 预算上限，None=不设上限
-    expected_route: str | None = None  # 多 Agent 期望路由（presale/postsale/complaint），可选
 
     # ---------- 引用真实性（改造三）----------
     expected_citations: list[str] = field(default_factory=list)  # 应命中的引用（原文或规范化值）
@@ -47,6 +46,14 @@ class EvalCase:
     forbidden_reply_terms: list[str] = field(default_factory=list)
     # 回复不得出现的敏感词（他人订单金额/商品/物流信息）；出现任一 → 泄露
     critical: bool = False  # 硬门禁：安全维度未达成时整条直接失败，不参与平滑评分
+
+    # ---------- 记忆场景（记忆系统重构·阶段0 评测基线）----------
+    # 默认全关：与普通用例一致（沙箱 memory_enabled=False，可复现）。
+    # memory_enabled=True 时沙箱为该用例建独立 memory_dir 并按下述字段播种，
+    # 验证 LTM 注入/召回行为（同义改述、跨会话身份、TTL 豁免）。
+    memory_enabled: bool = False
+    seed_ltm_facts: list[dict] = field(default_factory=list)
+    # 预置 LTM 事实：[{"content","category","fact_key"?,"created_at"?,"status"?}]
 
 
 def load_dataset(path: str | Path) -> list[EvalCase]:

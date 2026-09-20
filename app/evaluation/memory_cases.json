@@ -1,0 +1,82 @@
+{
+  "_comment": "记忆系统重构·阶段0 评测基线：LTM 注入/召回行为用例。运行：python app/scripts/run_eval.py --dataset app/evaluation/memory_cases.json --no-judge --run-id memory-baseline。同义改述类用例在纯词面（before）预期失败——失败即漏注证据；阶段2 语义开启后必须全过。created_at 相对 2026-09-15 计算（400 天前=2025-08-11，用于 TTL/豁免用例）。",
+  "cases": [
+    {
+      "id": "memory_synonym_paraphrase",
+      "description": "同义改述偏好：LTM 存『退款原路退回』，用户用『退货/钱打给我』改述提问（词面零重叠，纯词面预期漏注）",
+      "memory_enabled": true,
+      "seed_ltm_facts": [
+        {"content": "用户偏好退款时原路退回付款账户", "category": "preference", "fact_key": "preference.delivery", "created_at": "2026-09-01T10:00:00+00:00"}
+      ],
+      "turns": ["如果我退货，钱会怎么打给我？"],
+      "expected_keywords": ["原路"],
+      "expected_requires_human": false,
+      "max_tokens": 8000
+    },
+    {
+      "id": "memory_cross_session_identity",
+      "description": "跨会话身份：LTM 存姓名/会员身份，新会话直接问『我叫什么名字』（词面零重叠，纯词面预期漏注）",
+      "memory_enabled": true,
+      "seed_ltm_facts": [
+        {"content": "用户名叫张三", "category": "identity", "fact_key": "identity.name", "created_at": "2026-09-01T10:00:00+00:00"},
+        {"content": "用户是钻石会员", "category": "identity", "fact_key": "identity.membership_level", "created_at": "2026-09-01T10:00:00+00:00"}
+      ],
+      "turns": ["你还记得我叫什么名字吗？"],
+      "expected_keywords": ["张三"],
+      "expected_requires_human": false,
+      "max_tokens": 8000
+    },
+    {
+      "id": "memory_ttl_expired_issue",
+      "description": "TTL 过期：400 天前的 issue 事实不得注入（回复不得提及少发/补发），新鲜偏好正常注入",
+      "memory_enabled": true,
+      "seed_ltm_facts": [
+        {"content": "用户反馈订单少发了一件，要求补发", "category": "issue", "fact_key": "issue.current", "created_at": "2025-08-11T10:00:00+00:00"},
+        {"content": "用户偏好简约风格的穿搭", "category": "preference", "fact_key": "preference.style", "created_at": "2026-09-01T10:00:00+00:00"}
+      ],
+      "turns": ["我想要简约风格的衣服，有推荐吗？"],
+      "expected_keywords": ["简约"],
+      "forbidden_reply_terms": ["少发", "补发"],
+      "expected_requires_human": false,
+      "max_tokens": 8000
+    },
+    {
+      "id": "memory_identity_ttl_exempt",
+      "description": "TTL 豁免：400 天前的 identity 事实仍应注入（身份长期有效，回归保护——before/after 都应通过）",
+      "memory_enabled": true,
+      "seed_ltm_facts": [
+        {"content": "用户是钻石会员", "category": "identity", "fact_key": "identity.membership_level", "created_at": "2025-08-11T10:00:00+00:00"}
+      ],
+      "turns": ["我是你们的老客户了，帮我看看上次说的那个会员等级还有什么权益"],
+      "expected_keywords": ["钻石"],
+      "expected_requires_human": false,
+      "max_tokens": 8000
+    },
+    {
+      "id": "memory_inject_relevance",
+      "description": "相关性注入：与 query 词面相关的偏好应注入（蓝色运动鞋）；无关事实（健身教练）不得无条件注入",
+      "memory_enabled": true,
+      "seed_ltm_facts": [
+        {"content": "用户最喜欢蓝色的运动鞋", "category": "preference", "fact_key": "preference.color", "created_at": "2026-09-01T10:00:00+00:00"},
+        {"content": "用户是健身教练", "category": "identity", "fact_key": "identity.occupation", "created_at": "2026-09-01T10:00:00+00:00"}
+      ],
+      "turns": ["我想买双运动鞋，推荐个颜色呗？"],
+      "expected_keywords": ["蓝色"],
+      "forbidden_reply_terms": ["健身教练"],
+      "expected_requires_human": false,
+      "max_tokens": 8000
+    },
+    {
+      "id": "memory_recall_fallback",
+      "description": "漏注度量：预算偏好词面零重叠（『挑个手机』vs『两千元以内』）；未注入时 Agent 应经 recall_user_memory 或语义检索拿到，否则关键词失败即漏注",
+      "memory_enabled": true,
+      "seed_ltm_facts": [
+        {"content": "用户买数码产品的预算通常在两千元以内", "category": "preference", "fact_key": "preference.price_range", "created_at": "2026-09-01T10:00:00+00:00"}
+      ],
+      "turns": ["帮我挑个合适的手机"],
+      "expected_keywords": ["两千"],
+      "expected_requires_human": false,
+      "max_tokens": 8000
+    }
+  ]
+}

@@ -5,8 +5,6 @@
   进库；模型历史不含中间 tool 消息；outbox 不含 confirmation token；
 - 终答协议：纯文本纠错恢复；混合/多 final/非法参数消息序；强制终答失败
   → 确定性 fallback；
-- 退款安全：确认成功 / 取消 / 答非所问 / 多笔待确认 / 恶意 token 参数 /
-  token 载荷不匹配 / 过期 / 重放；
 - 记忆任务：水位单调（并发不回退）/ reset 后 obsolete / Redis 缓存失效 /
   文件队列真实 worker（完成、失败重试、租约接管、幂等）；
 - 事实校验：同主题 7天/15天 冲突发现；不同主题不误报；单一证据通过。
@@ -15,7 +13,6 @@
 from __future__ import annotations
 
 import json
-import time
 
 import pytest
 from fakeredis import FakeRedis, FakeServer
@@ -29,29 +26,16 @@ from app.agent.memory.jobs import (
     MemoryJobWorker,
     SqlMemoryJobStore,
 )
-from app.agent.refund_gate import (
-    ConfirmationDecision,
-    PendingRefund,
-    judge_refund_confirmation,
-)
 from app.config.settings import settings
 from app.stores.base import SessionState
-from app.stores.sql.schema import chat_messages, memory_jobs, metadata, outbox_rows
+from app.stores.sql.schema import chat_messages, memory_jobs, metadata
 from app.stores.sql.session_store import SqlSessionStore
 from tests.unit.conftest import FakeChatClient
 
 
 @pytest.fixture(autouse=True)
-def _isolated_refund_store(monkeypatch):
-    """每个测试独立的确认存储 + 工具注册表快照（避免跨测试泄漏）。"""
-    import threading
-
-    import app.agent.tools.refund as refund_mod
-    from app.security.refunds import InProcessConfirmationStore
-
-    fresh = InProcessConfirmationStore()
-    monkeypatch.setattr(refund_mod, "_store_instance", fresh)
-    monkeypatch.setattr(refund_mod, "_store_lock", threading.Lock())
+def _isolated_tool_registry():
+    """工具注册表快照（避免跨测试泄漏）。"""
     from app.agent.tools import registry as _registry
 
     snapshot = dict(_registry._TOOL_MAP)
@@ -71,10 +55,14 @@ def _sql_engine():
 
 def _sql_agent(engine, tmp_path, client, user_id="u1", session_id="s1"):
     store = SqlSessionStore(engine)
-    return EcomAgent(
+    agent = EcomAgent(
         user_id=user_id, session_id=session_id, session_store=store,
         client=client, memory_enabled=False, use_mcp=False,
-    ), store
+    )
+    # 修复计划·二轮 1：写工具租约门禁在 ToolManager；测试直构 Agent 时
+    # 模拟路由已绑定租约（生产由 /v1/chat 注入）
+    agent.bind_lease_guard(lambda: None)
+    return agent, store
 
 
 # ============================================================
@@ -171,77 +159,6 @@ def _response_mixed():
     ]))])
 
 
-def test_outbox_contains_no_confirmation_token():
-    """退款两轮流程：outbox/审计消息不含 confirmation token。"""
-    from app.agent.tools import registry
-
-    registry._TOOL_MAP["apply_refund"] = _real_apply_refund
-    settings.refund_confirmation_required = True
-    engine = _sql_engine()
-
-    # 轮 1：签发待确认
-    client1 = (
-        FakeChatClient()
-        .enqueue_tool_call("c1", "apply_refund",
-                           '{"order_id": "ORD-20240115-001", "reason": "质量问题"}')
-        .enqueue_final_response("已登记退款申请，请确认。", intent="return_request")
-    )
-    agent1, _ = _sql_agent(engine, None, client1)
-    agent1.chat("我要退掉订单 ORD-20240115-001，质量问题")
-
-    # 轮 2：用户确认 → 服务端注入 token → committed
-    client2 = (
-        FakeChatClient()
-        .enqueue_tool_call("c2", "apply_refund",
-                           '{"order_id": "ORD-20240115-001", "reason": "质量问题"}')
-        .enqueue_final_response("您的退款已提交成功。", intent="return_request")
-    )
-    agent2, _ = _sql_agent(engine, None, client2)
-    agent2.chat("确认")
-    committed = _last_committed_payload()
-    assert committed is not None and committed.get("confirmed") is True
-
-    # outbox 与审计消息均不含 token
-    with engine.connect() as conn:
-        payloads = [
-            row.payload for row in conn.execute(select(outbox_rows)).mappings().all()
-        ]
-    blob = json.dumps(payloads, ensure_ascii=False)
-    for pending in _issued_tokens():
-        assert pending not in blob
-
-
-def _last_committed_payload() -> dict | None:
-    from app.agent.tools.refund import _confirmation_store
-
-    store = _confirmation_store()
-    if isinstance(store, __import__("app.security.refunds", fromlist=["x"]).InProcessConfirmationStore):
-        for result, _expires in store._results.values():
-            if result.get("confirmed"):
-                return result
-    return None
-
-
-def _issued_tokens() -> list[str]:
-    from app.agent.tools.refund import _confirmation_store
-
-    store = _confirmation_store()
-    if isinstance(store, __import__("app.security.refunds", fromlist=["x"]).InProcessConfirmationStore):
-        return [token for token, (_p, _e) in store._data.items()]
-    return []
-
-
-def _real_apply_refund(order_id, reason, ctx=None, confirmation_token=None,
-                       idempotency_key=None, refund_id=None):
-    """直连真实退款工具（复用 mock 网关与确认存储）。"""
-    from app.agent.tools.refund import apply_refund
-
-    return apply_refund(
-        order_id, reason, ctx=ctx, confirmation_token=confirmation_token,
-        idempotency_key=idempotency_key, refund_id=refund_id,
-    )
-
-
 # ============================================================
 # 终答协议
 # ============================================================
@@ -315,405 +232,6 @@ def validate_args(payload):
 
 
 # ============================================================
-# 退款确认闸门
-# ============================================================
-def _gate_pending():
-    return [
-        PendingRefund(refund_id="r1", order_id="ORD-A", reason="质量问题",
-                      token="t1"),
-    ]
-
-
-def test_gate_confirm_cancel_ambiguous_matrix():
-    # 明确确认
-    d = judge_refund_confirmation("确认退款", _gate_pending())
-    assert d.action == "confirm" and d.payload.order_id == "ORD-A"
-    # 简短肯定 + 唯一待确认 → confirm
-    d = judge_refund_confirmation("好", _gate_pending())
-    assert d.action == "confirm"
-    # 否定/取消优先
-    d = judge_refund_confirmation("取消吧", _gate_pending())
-    assert d.action == "cancel"
-    d = judge_refund_confirmation("不要了", _gate_pending())
-    assert d.action == "cancel"
-    # 答非所问 → ambiguous
-    d = judge_refund_confirmation("退款到哪了", _gate_pending())
-    assert d.action == "ambiguous" and not d.clarification
-    # 多笔待确认未带订单号 → 确定性澄清
-    multi = _gate_pending() + [
-        PendingRefund(refund_id="r2", order_id="ORD-B", reason="尺寸不合适",
-                      token="t2"),
-    ]
-    d = judge_refund_confirmation("确认", multi)
-    assert d.action == "ambiguous" and "订单号" in d.clarification
-    # 多笔待确认 + 订单号 → 定位成功
-    d = judge_refund_confirmation("确认 ORD-B 的退款", multi)
-    assert d.action == "confirm" and d.payload.order_id == "ORD-B"
-    # 否定确认、答非所问不能因包含“确认/提交/确定”字样而放行。
-    single = _gate_pending()
-    for text in ("我不确认退款", "不能确认", "暂时不能确认",
-                 "如何提交投诉材料", "我确定物流还没到"):
-        d = judge_refund_confirmation(text, single)
-        assert d.action == "ambiguous", (text, d)
-    # 点名另一笔订单时不得回退到唯一 pending 条目。
-    d = judge_refund_confirmation("确认 ORD-NOT-THIS", single)
-    assert d.action == "ambiguous"
-    # 疑问句不是授权；否定“取消”不能被误当成取消；短订单号也须严格绑定。
-    assert judge_refund_confirmation("如何确认退款？", single).action == "ambiguous"
-    assert judge_refund_confirmation("是否确认退款", single).action == "ambiguous"
-    assert judge_refund_confirmation("不取消退款，我确认退款", single).action == "confirm"
-    short_id = [PendingRefund(refund_id="r3", order_id="O1", reason="x", token="t3")]
-    assert judge_refund_confirmation("确认退款 O2", short_id).action == "ambiguous"
-    # 无待确认 → none
-    assert judge_refund_confirmation("确认", []).action == "none"
-
-
-def test_executor_injects_token_only_on_server_confirm():
-    """confirm 判定 → 执行器内部通道注入 token；模型参数面无保留字段。"""
-    executed = {}
-
-    def spy_refund(order_id, reason, ctx=None, confirmation_token=None,
-                   idempotency_key=None, refund_id=None):
-        executed.update({
-            "token": confirmation_token, "key": idempotency_key,
-            "order": order_id, "confirmed": True,
-        })
-        return {"success": True, "confirmed": True, "idempotency_key": idempotency_key}
-
-    from app.agent.tools import registry
-
-    registry._TOOL_MAP["apply_refund"] = spy_refund
-    settings.refund_confirmation_required = True
-
-    engine = _sql_engine()
-    client = FakeChatClient().enqueue_final_response("退款完成。", intent="return_request")
-    agent, _ = _sql_agent(engine, None, client)
-    # 模拟服务端已判定 confirm（pipeline 闸门产物）
-    agent._confirmation_store = lambda: object()  # 阻断真实存储访问（本测试手工注入）
-    agent.current_confirmation = ConfirmationDecision(
-        action="confirm",
-        payload=PendingRefund(refund_id="rid-9", order_id="ORD-9",
-                              reason="质量问题", token="tok-9"),
-        matched_order_id="ORD-9",
-    )
-    from app.agent.tools.batch_executor import ToolTurnState
-    from app.agent.turn_budget import TurnBudget
-    from app.agent.tools.batch_executor import ToolTurnState as _TTS
-
-    state = _TTS()
-    state.refund_confirm = {
-        "action": "confirm", "token": "tok-9", "refund_id": "rid-9",
-        "order_id": "ORD-9", "reason": "质量问题",
-    }
-    outcome = agent.tool_executor.execute(
-        [{"id": "c1", "name": "apply_refund",
-          "arguments": '{"order_id": "ORD-9", "reason": "质量问题"}'}],
-        state, agent.ctx, agent.tool_manager,
-    )
-    payload = json.loads(outcome[0].result)
-    assert payload.get("confirmed") is True
-    assert executed["token"] == "tok-9" and executed["key"] == "rid-9"
-    # 模型可见参数（审计）不含保留字段
-    assert "confirmation_token" not in outcome[0].arguments
-
-
-def test_executor_blocks_writes_on_ambiguous():
-    from app.agent.tools.batch_executor import ToolBatchExecutor, ToolTurnState
-
-    class NoExecManager:
-        def execute_tool(self, name, arguments, ctx=None, timeout=None, internal_args=None):
-            raise AssertionError("ambiguous 时写工具不得执行")
-
-    executor = ToolBatchExecutor(parallelism=1, max_concurrent=2)
-    state = ToolTurnState()
-    state.refund_confirm = {"action": "ambiguous"}
-    outcomes = executor.execute(
-        [{"id": "c1", "name": "apply_refund",
-          "arguments": '{"order_id": "O1", "reason": "x"}'}],
-        state, None, NoExecManager(),
-    )
-    assert outcomes[0].skipped is True
-    assert "REFUND_CONFIRMATION_REQUIRED" in outcomes[0].result
-    executor.close()
-
-
-def test_executor_blocks_writes_after_cancel_and_on_confirm_target_mismatch():
-    from app.agent.tools.batch_executor import ToolBatchExecutor, ToolTurnState
-
-    class NoExecManager:
-        def execute_tool(self, name, arguments, ctx=None, timeout=None, internal_args=None):
-            raise AssertionError("cancel/target mismatch 时写工具不得执行")
-
-    executor = ToolBatchExecutor(parallelism=1, max_concurrent=2)
-    try:
-        state = ToolTurnState()
-        state.refund_confirm = {"action": "cancel"}
-        out = executor.execute(
-            [{"id": "c1", "name": "apply_refund",
-              "arguments": '{"order_id": "O1", "reason": "x"}'}],
-            state, None, NoExecManager(),
-        )[0]
-        assert out.skipped and "REFUND_CONFIRMATION_REQUIRED" in out.result
-
-        state = ToolTurnState()
-        state.refund_confirm = {
-            "action": "confirm", "token": "t", "refund_id": "rid",
-            "order_id": "O1", "reason": "原退款原因",
-        }
-        out = executor.execute(
-            [{"id": "c2", "name": "apply_refund",
-              "arguments": '{"order_id": "O2", "reason": "原退款原因"}'}],
-            state, None, NoExecManager(),
-        )[0]
-        assert out.skipped and "REFUND_CONFIRMATION_TARGET_MISMATCH" in out.result
-    finally:
-        executor.close()
-
-
-def test_registry_rejects_reserved_tool_args():
-    from app.agent.tools.registry import execute_tool
-
-    result = execute_tool("apply_refund", {
-        "order_id": "O1", "reason": "x", "confirmation_token": "evil",
-    })
-    assert "RESERVED_TOOL_ARGUMENT" in result
-
-
-def test_token_payload_binding_and_expiry_and_replay():
-    from app.security.refunds import (
-        ConfirmationInvalid,
-        InProcessConfirmationStore,
-        RefundConfirmation,
-    )
-
-    store = InProcessConfirmationStore()
-
-    def executor(oid, rsn, key):
-        return {"success": True}
-
-    # 用户绑定：载荷 u1，confirm 用 u2 → 拒绝
-    controller = RefundConfirmation(store)
-    issued = controller.request("O1", "质量问题", user_id="u1", session_id="s1")
-    with pytest.raises(ConfirmationInvalid):
-        controller.confirm(
-            issued["confirmation_token"], executor,
-            order_id="O1", refund_id=issued["refund_id"],
-            user_id="u2", session_id="s1",
-        )
-
-    # 过期：TTL=0 → take 失败
-    expired_ctl = RefundConfirmation(store, ttl_seconds=0)
-    expired = expired_ctl.request("O2", "x", user_id="u1", session_id="s1")
-    time.sleep(0.01)
-    with pytest.raises(ConfirmationInvalid):
-        expired_ctl.confirm(
-            expired["confirmation_token"], executor,
-            order_id="O2", refund_id=expired["refund_id"],
-            user_id="u1", session_id="s1",
-        )
-
-    # 绑定失败尝试同样烧掉 token（单次语义：错误尝试令牌即失效），
-    # 正常确认需重新签发
-    issued2 = controller.request("O1", "质量问题", user_id="u1", session_id="s1")
-    # 重放：首次成功 → 再次同 refund_id confirm → replayed=true（幂等）
-    ok = controller.confirm(
-        issued2["confirmation_token"], executor,
-        order_id="O1", refund_id=issued2["refund_id"],
-        user_id="u1", session_id="s1",
-    )
-    assert ok.get("confirmed") is True
-    # replay 也必须提供同一 token（仅 refund_id + bogus token 不能读取结果
-    # 账本），否则攻击者可越权获得他人的退款结果。
-    with pytest.raises(ConfirmationInvalid):
-        controller.confirm(
-            "any-token", executor,
-            order_id="O1", refund_id=issued2["refund_id"],
-            user_id="u1", session_id="s1",
-        )
-    replay = controller.confirm(
-        issued2["confirmation_token"], executor,
-        order_id="O1", refund_id=issued2["refund_id"],
-        user_id="u1", session_id="s1",
-    )
-    assert replay.get("replayed") is True
-
-    # 会话注册表：确认成功后待确认条目被清除
-    remaining = {e["refund_id"] for e in store.get_session_refunds("u1", "s1")}
-    assert issued2["refund_id"] not in remaining
-
-
-def test_redis_confirmation_legacy_fallback_is_atomic():
-    from app.security.refunds import RedisConfirmationStore
-
-    class LegacyRedis:
-        def __init__(self):
-            self.values = {"refund_confirm:t1": b"payload"}
-            self.eval_calls = 0
-
-        def getdel(self, key):
-            raise AttributeError("GETDEL unavailable")
-
-        def eval(self, script, key_count, key):
-            assert key_count == 1 and "GET" in script and "DEL" in script
-            self.eval_calls += 1
-            return self.values.pop(key, None)
-
-    redis = LegacyRedis()
-    store = RedisConfirmationStore(redis)
-    assert store.take("t1") == "payload"
-    assert store.take("t1") is None
-    assert redis.eval_calls == 2
-
-
-def test_mcp_refund_confirmation_uses_internal_meta_without_schema_fields(monkeypatch):
-    """MCP 第二段确认：凭证走 meta 内部通道，公开参数仍只有订单/原因。"""
-    from types import SimpleNamespace
-
-    from app.agent.context import ToolContext
-    from app.agent.tools.manager import ToolManager
-    from app.mcp_client.actor import SCOPE_REFUND_WRITE, issue_actor_token
-    from mcp_server import server as mcp_server
-
-    calls = []
-
-    class FakeMcpClient:
-        def connect(self):
-            return [{
-                "type": "function", "function": {
-                    "name": "apply_refund", "description": "refund",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "order_id": {"type": "string"},
-                            "reason": {"type": "string"},
-                        },
-                        "required": ["order_id", "reason"],
-                    },
-                },
-            }]
-
-        def call_tool(self, name, arguments, timeout=None, *, actor_token=None,
-                      write=False, internal_args=None):
-            calls.append((name, dict(arguments), actor_token, write,
-                          dict(internal_args or {})))
-            return json.dumps({"success": True, "confirmed": True})
-
-        def close(self):
-            pass
-
-    monkeypatch.setattr(settings, "mcp_actor_secret",
-                        "actor-secret-0123456789-abcdefghijklmnop")
-    manager = ToolManager(
-        use_mcp=True, mcp_server_url="http://fake",
-        mcp_client=FakeMcpClient(),
-    )
-    try:
-        result = manager.execute_tool(
-            "apply_refund",
-            {"order_id": "O1", "reason": "质量问题"},
-            ToolContext(user_id="u1", session_id="s1"),
-            internal_args={
-                "confirmation_token": "tok",
-                "refund_id": "rid",
-                "idempotency_key": "rid",
-            },
-        )
-        assert json.loads(result)["confirmed"] is True
-        name, arguments, actor, write, internal = calls[-1]
-        assert name == "apply_refund" and write is True
-        assert arguments == {"order_id": "O1", "reason": "质量问题"}
-        assert internal["confirmation_token"] == "tok"
-        assert "confirmation_token" not in arguments
-
-        token = issue_actor_token("u1", "s1", (SCOPE_REFUND_WRITE,))
-        captured = {}
-
-        def fake_apply(order_id, reason, ctx, **kwargs):
-            captured.update({"order_id": order_id, "reason": reason,
-                             "ctx": ctx, **kwargs})
-            return {"success": True, "confirmed": True}
-
-        monkeypatch.setattr(mcp_server, "_apply_refund", fake_apply)
-        mcp_ctx = SimpleNamespace(request_context=SimpleNamespace(meta={
-            "actor": token,
-            "internal_args": {
-                "confirmation_token": "tok",
-                "refund_id": "rid",
-                "idempotency_key": "rid",
-            },
-        }))
-        out = json.loads(mcp_server.apply_refund("O1", "质量问题", mcp_ctx))
-        assert out["confirmed"] is True
-        assert captured["confirmation_token"] == "tok"
-        assert captured["refund_id"] == "rid"
-    finally:
-        manager.close()
-
-
-def test_mcp_pending_meta_is_synced_without_exposing_token(monkeypatch):
-    from app.agent.context import ToolContext
-    from app.agent.refund_gate import get_session_pending
-    from app.agent.tools import refund as refund_tool
-    from app.agent.tools.manager import ToolManager
-    from app.mcp_client.client import MCPToolResult
-    from app.security.refunds import InProcessConfirmationStore
-
-    confirmation_store = InProcessConfirmationStore()
-    monkeypatch.setattr(refund_tool, "_store_instance", confirmation_store)
-    monkeypatch.setattr(settings, "mcp_actor_secret",
-                        "actor-secret-0123456789-abcdefghijklmnop")
-
-    class FakeMcpClient:
-        def connect(self):
-            return [{
-                "type": "function", "function": {
-                    "name": "apply_refund", "description": "refund",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "order_id": {"type": "string"},
-                            "reason": {"type": "string"},
-                        },
-                        "required": ["order_id", "reason"],
-                    },
-                },
-            }]
-
-        def call_tool(self, name, arguments, **kwargs):
-            public = json.dumps({
-                "success": True,
-                "status": "pending_confirmation",
-                "refund_id": "rid-1",
-            })
-            return MCPToolResult(public, {"refund_confirmation": {
-                "refund_id": "rid-1",
-                "order_id": "O1",
-                "reason": "质量问题",
-                "confirmation_token": "secret-token",
-                "expires_in_seconds": 300,
-            }})
-
-        def close(self):
-            pass
-
-    manager = ToolManager(
-        use_mcp=True, mcp_server_url="http://fake", mcp_client=FakeMcpClient(),
-    )
-    try:
-        result = manager.execute_tool(
-            "apply_refund", {"order_id": "O1", "reason": "质量问题"},
-            ToolContext(user_id="u1", session_id="s1"),
-        )
-        assert "secret-token" not in result
-        assert type(result) is str
-        pending = get_session_pending(confirmation_store, "u1", "s1")
-        assert len(pending) == 1
-        assert pending[0].token == "secret-token"
-    finally:
-        manager.close()
-
-
-# ============================================================
 # 记忆任务
 # ============================================================
 def test_sql_watermark_never_regresses_with_stale_agent_state():
@@ -776,7 +294,7 @@ def test_sql_worker_marks_stale_job_obsolete_after_reset():
     called = []
     worker = MemoryJobWorker(
         jobs,
-        lambda uid: (_ for _ in ()).throw(AssertionError("obsolete 任务不得读取消息")),
+        lambda uid, sid: (_ for _ in ()).throw(AssertionError("obsolete 任务不得读取消息")),
         None, "fake", worker_id="w1",
     )
     # 手动标记 claimed 为 pending 以便 process_once 领取（模拟崩溃前已入队）
@@ -834,7 +352,7 @@ def test_file_queue_real_worker_complete_fail_lease_idempotent(tmp_path, monkeyp
         def extract_and_save(self, client, model, messages, summary):
             captured.append(messages)
 
-    worker = MemoryJobWorker(store, lambda uid: FakeLTM(), None, "fake", "w1")
+    worker = MemoryJobWorker(store, lambda uid, sid: FakeLTM(), None, "fake", "w1")
     done = worker.process_once()
     assert done == 1 and len(captured) == 1
     assert store.jobs_snapshot() == []  # 完成即出队
@@ -848,7 +366,7 @@ def test_file_queue_real_worker_complete_fail_lease_idempotent(tmp_path, monkeyp
         def extract_and_save(self, *a, **k):
             raise RuntimeError("boom")
 
-    worker2 = MemoryJobWorker(store, lambda uid: BoomLTM(), None, "fake", "w2")
+    worker2 = MemoryJobWorker(store, lambda uid, sid: BoomLTM(), None, "fake", "w2")
     assert worker2.process_once() == 0
     entry = store.jobs_snapshot()[0]
     assert entry["status"] == "pending" and entry["attempts"] == 1
@@ -870,33 +388,32 @@ def test_file_queue_real_worker_complete_fail_lease_idempotent(tmp_path, monkeyp
     assert all(j["session_key"] != "u3/s3" for j in store.jobs_snapshot())
 
 
-def test_agent_reset_cleans_refund_pending_and_file_jobs(tmp_path, monkeypatch):
-    """reset：同 session 首写正常；待确认退款状态与文件任务一并清理。"""
-    monkeypatch.setattr(settings, "memory_dir", str(tmp_path / "memory"))
-    settings.session_dir = str(tmp_path / "sessions")
-    settings.evolve_capture_enabled = False
-    from app.agent.tools.refund import _confirmation_store
+def test_memory_job_payload_skips_plain_text_correction_turns():
+    """低危修复 A4：纯文本协议纠错的 assistant 稿（后跟 PLAIN_TEXT_CORRECTION
+    system 消息）不进 memory job 巩固负载——负载只含用户消息与最终答复
+    （修复前中间纠错文本被当作独立轮次巩固进 LTM）。"""
+    from app.agent.chat import _memory_job_payload
+    from app.agent.react_runner import PLAIN_TEXT_CORRECTION
 
-    store = _confirmation_store()
-    store.put_session_refund("u1", "session", {
-        "refund_id": "r1", "order_id": "O1", "reason": "x", "token": "t1",
-        "user_id": "u1", "session_id": "session",
-    }, 300)
-    assert store.get_session_refunds("u1", "session")
+    folded = [
+        {"role": "user", "content": "退货政策是什么"},
+        {"role": "assistant", "content": "七天无理由可退。"},  # 中间纠错稿
+        {"role": "system", "content": PLAIN_TEXT_CORRECTION},
+        {"role": "assistant", "content": "七天无理由退货，运费由商家承担。"},
+    ]
+    payload = _memory_job_payload(folded)
+    assert [m["content"] for m in payload] == [
+        "退货政策是什么", "七天无理由退货，运费由商家承担。",
+    ]
 
-    client = FakeChatClient().enqueue_final_response("答复", intent="other")
-    agent = EcomAgent(user_id="u1", client=client, memory_enabled=False,
-                      use_mcp=False)
-    agent.context_builder._window = 8192
-    agent.reset()
-    assert store.get_session_refunds("u1", "session") == []  # 待确认已清
-
-    # 相同 session key 首写正常
-    client2 = FakeChatClient().enqueue_final_response("新答复", intent="other")
-    agent2 = EcomAgent(user_id="u1", client=client2, memory_enabled=False,
-                       use_mcp=False)
-    result = agent2.chat("你好")
-    assert result.reply == "新答复"
+    # 无纠错轮的普通负载不受影响
+    plain = [
+        {"role": "user", "content": "你好"},
+        {"role": "assistant", "content": "您好，请问有什么可以帮您？"},
+    ]
+    assert [m["content"] for m in _memory_job_payload(plain)] == [
+        "你好", "您好，请问有什么可以帮您？",
+    ]
 
 
 # ============================================================

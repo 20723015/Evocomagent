@@ -101,6 +101,7 @@ class IndexBuildService:
         clock=None,
         chunker=None,
         strict_build: bool = False,
+        contextual_enricher=None,
     ):
         self._embedder = embedder
         self._kb_dir = Path(kb_dir)
@@ -113,6 +114,9 @@ class IndexBuildService:
         # v7 冻结：会切 alias 的构建（上传/下架/自进化/手工 CLI）一律 strict——
         # 任一源文件解析失败即中止，杜绝「一次重建静默丢失已有知识」
         self._strict_build = strict_build
+        # P1-1 构建期上下文增强：显式注入优先；None 且 settings 开启时按需创建
+        self._contextual = contextual_enricher
+        self.last_context_report: dict = {}
         self.last_built_size = 0
         self.last_chunks: list = []
 
@@ -188,7 +192,20 @@ class IndexBuildService:
             self.last_chunks = []
             return info
 
-        vectors = self._embedder.encode([c.text for c in chunks])
+        # P1-1：构建期上下文增强（默认关闭；开启后只改 index_input，块文本不变）。
+        # LLM 不可用/单块失败按块降级回机械前缀，绝不阻断构建。
+        self.last_context_report = {}
+        enricher = self._resolve_enricher()
+        if enricher is not None and chunks:
+            report = enricher.enrich(chunks)
+            self.last_context_report = report.as_dict()
+            logging.getLogger("app.evolution.index_service").info(
+                "contextual_index built=%s", self.last_context_report
+            )
+
+        # 索引输入与块展示文本分离（P1-1/P1-2）：index_input() 承载只该影响检索的
+        # 内容（构建期上下文/evolved 问题），为空时严格回退 text
+        vectors = self._embedder.encode([c.index_input() for c in chunks])
         if len(vectors) != len(chunks):
             raise ValueError(f"向量数({len(vectors)}) 与 chunk 数({len(chunks)})不一致")
 
@@ -200,8 +217,10 @@ class IndexBuildService:
         )
 
         impl = self._backend_impl(backend, info.target)
+        extra = self._index_meta() if str(backend).lower() == "es" else {}
         impl.upsert(
-            chunks=chunks, vectors=vectors, embedding_model=info.embedding_model
+            chunks=chunks, vectors=vectors, embedding_model=info.embedding_model,
+            **extra,
         )
         self._verify(backend, info, chunks)
         # 两阶段激活（评审 R3 / v7 冻结）：build 只创建+验证目标（ES 验证按
@@ -210,6 +229,27 @@ class IndexBuildService:
         self.last_built_size = len(chunks)
         self.last_chunks = list(chunks)
         return info
+
+    def _resolve_enricher(self):
+        """P1-1 增强器解析：显式注入优先；settings 开启时按需创建（失败则跳过）。
+
+        创建失败（缺 API Key/依赖）只告警并降级为「不增强」——构建正确性不依赖
+        LLM 可用性，与单块失败同款语义。
+        """
+        if self._contextual is not None:
+            return self._contextual
+        if not settings.rag_contextual_index:
+            return None
+        try:
+            from app.agent.rag.contextual import create_enricher_from_settings
+
+            self._contextual = create_enricher_from_settings()
+        except Exception as e:  # noqa: BLE001 —— 增强失败不阻断构建
+            logging.getLogger("app.evolution.index_service").warning(
+                "contextual_index.disabled err=%s", type(e).__name__,
+            )
+            return None
+        return self._contextual
 
     def _build_empty(self, backend: str, info: GenerationInfo) -> None:
         """写合法的空索引（下架后知识库为空的合法终态，allow_empty 路径）。
@@ -221,10 +261,32 @@ class IndexBuildService:
         backend = backend.lower()
         impl = self._backend_impl(backend, info.target)
         if backend == "es":
-            impl.ensure_empty(info.embedding_model, self._embedder_dimensions())
+            meta = self._index_meta()
+            impl.ensure_empty(
+                info.embedding_model, self._embedder_dimensions(),
+                embedding_provider=meta.get("embedding_provider", ""),
+                config_fingerprint=meta.get("config_fingerprint", ""),
+            )
         else:
             impl.upsert(chunks=[], vectors=[], embedding_model=info.embedding_model)
         self._verify(backend, info, [])
+
+    def _index_meta(self) -> dict:
+        """索引 `_meta` 的 embedding 配置（provider/dimensions/指纹）——仅 ES 消费。"""
+        try:
+            from app.agent.rag.fingerprint import (
+                config_fingerprint,
+                embedding_dimensions,
+            )
+            from app.config.settings import settings
+
+            return {
+                "embedding_provider": (settings.embedding_provider or "openai").lower(),
+                "dimensions": embedding_dimensions(),
+                "config_fingerprint": config_fingerprint(),
+            }
+        except Exception:  # noqa: BLE001 —— 元数据失败不阻断构建
+            return {}
 
     def _embedder_dimensions(self) -> int:
         """空 ES 索引的 dense_vector 维度：embedder 维度常量，缺省 1024。"""
@@ -257,7 +319,7 @@ class IndexBuildService:
         impl.load()
         checked = 0
         for chunk in chunks:
-            hits = impl.search(self._embedder.encode_one(chunk.text), top_k=3)
+            hits = impl.search(self._embedder.encode_one(chunk.index_input()), top_k=3)
             by_id = any(
                 getattr(getattr(h, "chunk", None), "chunk_id", None) == chunk.chunk_id
                 for h in hits
@@ -302,7 +364,7 @@ class IndexBuildService:
         if not chunks:
             return  # 空索引（allow_empty 下架终态）：模型/数量一致即可，无探针可打
 
-        probe = self._embedder.encode_one(chunks[0].text)
+        probe = self._embedder.encode_one(chunks[0].index_input())
         hits = impl.search(probe, top_k=1)
         if not hits or hits[0].chunk.chunk_id != chunks[0].chunk_id:
             raise RuntimeError("验证失败：向量探针 top1 未命中首个 chunk")

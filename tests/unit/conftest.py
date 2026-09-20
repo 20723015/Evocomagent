@@ -342,6 +342,33 @@ def _default_embedding_settings(monkeypatch):
     monkeypatch.setattr(settings, "embedding_model", "text-embedding-3-small")
 
 
+@pytest.fixture(autouse=True)
+def _default_rejection_settings(monkeypatch):
+    """P1-4 联合拒绝阈值不进入单测默认口径。
+
+    阈值是**分数尺度绑定**的校准值（settings 默认来自 bge-m3 纯向量 dev
+    校准），而单测替身 embedder（FakeEmbedder/字符 hash）的余弦分布与之无关：
+    阈值生效会把替身检索结果按真实尺度误拒。既有用例继续测各自的关注点；
+    需要验证联合拒绝的用例显式覆盖这四个字段（见 test_rag_rejection.py）。
+    """
+    monkeypatch.setattr(settings, "rag_rejection_min_top1", None)
+    monkeypatch.setattr(settings, "rag_rejection_min_gap", None)
+    monkeypatch.setattr(settings, "rag_rejection_min_coverage", None)
+    monkeypatch.setattr(settings, "rag_rejection_min_rerank", None)
+
+
+@pytest.fixture(autouse=True)
+def _fresh_commerce_gateway():
+    """每个测试前重置进程级网关单例（中危修复 B2 后 mock 会推进退款状态机，
+    单例跨测试持有已退款状态会让后续退款用例误 409/拒单；set_gateway(None)
+    让下一次 get_gateway() 按配置重建全新实例）。"""
+    from app.integrations.commerce import set_gateway
+
+    set_gateway(None)
+    yield
+    set_gateway(None)
+
+
 @pytest.fixture
 def tmp_state_dir(tmp_path):
     """evolution 状态目录：turns / state / output。"""

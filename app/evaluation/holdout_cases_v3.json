@@ -1,0 +1,2909 @@
+{
+  "cases": [
+    {
+      "id": "holdout_001",
+      "query": "3C数码商品的赠品出问题能退换吗",
+      "expected": [
+        "3C数码类目规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_002",
+      "query": "哪些商品不支持七天无理由退货",
+      "expected": [
+        "七天无理由商品清单.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_003",
+      "query": "上门取件需要提前多久预约",
+      "expected": [
+        "上门取件服务说明.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_004",
+      "query": "乐器类目退换货有什么特殊要求",
+      "expected": [
+        "乐器类目规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_005",
+      "query": "乐器配件里的耗材损坏了能保修吗",
+      "expected": [
+        "乐器配件规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_006",
+      "query": "晒单可以拿什么奖励",
+      "expected": [
+        "买家评价与晒单规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_007",
+      "query": "二手商品的成色等级是怎么划分的",
+      "expected": [
+        "二手闲置交易规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_008",
+      "query": "五金建材类的安装服务收费吗",
+      "expected": [
+        "五金建材类目规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_009",
+      "query": "买到假货平台会怎么赔付",
+      "expected": [
+        "价保与赔付规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_010",
+      "query": "哪些类目的商品不参与价保",
+      "expected": [
+        "价保除外类目清单.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_011",
+      "query": "企业采购需要提交什么资质材料",
+      "expected": [
+        "企业采购与团购.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_012",
+      "query": "企业采购的售后响应和普通订单有区别吗",
+      "expected": [
+        "企业采购专属售后.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_013",
+      "query": "优惠券过期了还能用吗",
+      "expected": [
+        "优惠券与促销规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_014",
+      "query": "订单退款成功后优惠券会退回来吗",
+      "expected": [
+        "优惠券退回与补发规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_015",
+      "query": "钻石会员的价保期限能延长吗",
+      "expected": [
+        "会员价保升级规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_016",
+      "query": "安平保险的运费险承保哪些责任",
+      "expected": [
+        "保险公司运费险承保条款.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_017",
+      "query": "偏远地区订单的运费由谁承担",
+      "expected": [
+        "偏远地区配送补充说明.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_018",
+      "query": "健身器材的大件三包包含什么",
+      "expected": [
+        "健身器材类目规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_019",
+      "query": "儿童安全座椅需要什么认证资质",
+      "expected": [
+        "儿童安全座椅类目规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_020",
+      "query": "先用后付的还款时间怎么算",
+      "expected": [
+        "先用后付与分期付款.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_021",
+      "query": "先用后付的额度分哪几档",
+      "expected": [
+        "先用后付额度规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_022",
+      "query": "冷链商品的包装标准是什么",
+      "expected": [
+        "冷链配送标准.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_023",
+      "query": "平台有哪些分期免息活动",
+      "expected": [
+        "分期手续费费率表.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_024",
+      "query": "办公设备的硒鼓墨盒能退吗",
+      "expected": [
+        "办公设备类目规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_025",
+      "query": "平台对发货包装有什么标准要求",
+      "expected": [
+        "包装与发货规范.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_026",
+      "query": "医药保健类目经营需要什么资质",
+      "expected": [
+        "医药保健类目规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_027",
+      "query": "星海电器的三包期限是多久",
+      "expected": [
+        "厂家全国联保三包政策.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_028",
+      "query": "厨具的材质安全有什么要求",
+      "expected": [
+        "厨具与餐厨用品类目规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_029",
+      "query": "厨房小家电退换货有什么特殊规定",
+      "expected": [
+        "厨房小家电类目规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_030",
+      "query": "电子发票怎么申请开具",
+      "expected": [
+        "发票与开票规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_031",
+      "query": "同城闪送覆盖哪些城市区域",
+      "expected": [
+        "同城闪送服务说明.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_032",
+      "query": "光驰数码的官方延保怎么购买",
+      "expected": [
+        "品牌官方延保服务条款.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_033",
+      "query": "品类券可以在哪些类目下使用",
+      "expected": [
+        "品类券适用范围细则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_034",
+      "query": "售后纠纷的举证责任怎么分配",
+      "expected": [
+        "售后纠纷处理SOP.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_035",
+      "query": "家电过了保修期还能维修吗",
+      "expected": [
+        "售后维修与延保.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_036",
+      "query": "怎么查询商品的溯源信息",
+      "expected": [
+        "商品质检与溯源.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_037",
+      "query": "商家入驻平台需要交多少保证金",
+      "expected": [
+        "商家入驻与保证金管理规范.docx"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_038",
+      "query": "种子种苗有质量问题怎么售后",
+      "expected": [
+        "园艺与农资类目规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_039",
+      "query": "联名商品拆封了还能退吗",
+      "expected": [
+        "图书周边与联名商品规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_040",
+      "query": "购买的电子课程能退款吗",
+      "expected": [
+        "图书文教类目规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_041",
+      "query": "大件家电的安装费怎么收取",
+      "expected": [
+        "大件家电配送安装规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_042",
+      "query": "大促期间的价保期限是几天",
+      "expected": [
+        "大促价保特别条款.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_043",
+      "query": "双11大促的关键时间节点有哪些",
+      "expected": [
+        "大促作战手册.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_044",
+      "query": "大促活动的优惠可以叠加吗",
+      "expected": [
+        "大促活动总规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_045",
+      "query": "跨店满减是怎么结算的",
+      "expected": [
+        "大促满减与跨店规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_046",
+      "query": "大额订单的退款要多久到账",
+      "expected": [
+        "大额订单退款时效.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_047",
+      "query": "随机保修和加购延保的覆盖范围有什么区别",
+      "expected": [
+        "官方延保服务范围对照.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_048",
+      "query": "定制商品可以加急生产吗",
+      "expected": [
+        "定制商品生产周期说明.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_049",
+      "query": "宠物智能设备坏了保修多久",
+      "expected": [
+        "宠物智能设备类目规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_050",
+      "query": "宠物粮开封后能退吗",
+      "expected": [
+        "宠物用品类目规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_051",
+      "query": "平台客服的首响时效是多久",
+      "expected": [
+        "客服SOP与应答手册.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_052",
+      "query": "家纺尺寸不合适能换吗",
+      "expected": [
+        "家居家纺类目规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_053",
+      "query": "清洁剂的成分标注有什么要求",
+      "expected": [
+        "家庭清洁用品类目规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_054",
+      "query": "家用电器的三包期限怎么算",
+      "expected": [
+        "家用电器类目规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_055",
+      "query": "定制的家纺工期是多久",
+      "expected": [
+        "家纺定制类目规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_056",
+      "query": "PRO会员有什么专属权益",
+      "expected": [
+        "平台付费会员（PRO）权益.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_057",
+      "query": "平台分期购每月几号出账",
+      "expected": [
+        "平台分期购细则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_058",
+      "query": "商家售假会被平台怎么处罚",
+      "expected": [
+        "平台治理与处罚总则.pdf"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_059",
+      "query": "店铺积分怎么兑换商品",
+      "expected": [
+        "店铺会员积分兑换细则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_060",
+      "query": "平台券和店铺券能同时用在一单吗",
+      "expected": [
+        "店铺券与平台券叠加规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_061",
+      "query": "关注店铺后能领店铺红包吗",
+      "expected": [
+        "店铺粉丝与会员.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_062",
+      "query": "华顺快递延误了有赔偿吗",
+      "expected": [
+        "快递公司延误与丢件赔偿标准.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_063",
+      "query": "商品拆封后影响退货吗",
+      "expected": [
+        "拆封商品退换判定标准.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_064",
+      "query": "二手相机怎么判断成色",
+      "expected": [
+        "摄影器材类目规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_065",
+      "query": "发现账户有异常交易怎么处理",
+      "expected": [
+        "支付与账户安全.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_066",
+      "query": "汇付宝账户安全险怎么申请理赔",
+      "expected": [
+        "支付平台账户安全险条款.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_067",
+      "query": "盲盒拆了还能退吗",
+      "expected": [
+        "收藏与潮玩类目规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_068",
+      "query": "教辅书买错了版本能换吗",
+      "expected": [
+        "文具与教辅类目规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_069",
+      "query": "智能穿戴设备的健康数据安全吗",
+      "expected": [
+        "智能设备与穿戴类目规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_070",
+      "query": "服装定制的量体尺寸错了怎么办",
+      "expected": [
+        "服装定制与量体规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_071",
+      "query": "衣服洗后缩水算质量问题吗",
+      "expected": [
+        "服装鞋帽类目规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_072",
+      "query": "到店服务的券没使用能退吗",
+      "expected": [
+        "本地生活与到店服务规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_073",
+      "query": "极速退款最多能退多少金额",
+      "expected": [
+        "极速退款规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_074",
+      "query": "校园专区学生认证需要什么材料",
+      "expected": [
+        "校园专区规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_075",
+      "query": "母婴洗护产品用了过敏能退吗",
+      "expected": [
+        "母婴洗护类目规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_076",
+      "query": "婴儿推车有质量问题怎么售后",
+      "expected": [
+        "母婴用品类目规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_077",
+      "query": "泳镜的防雾涂层掉了能换吗",
+      "expected": [
+        "泳具与水上运动规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_078",
+      "query": "活体宠物的退换规则是什么",
+      "expected": [
+        "活体宠物交易规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_079",
+      "query": "海外直邮的行邮税怎么缴纳",
+      "expected": [
+        "海外直邮税费说明.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_080",
+      "query": "鱼竿断了能保修吗",
+      "expected": [
+        "渔具类目规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_081",
+      "query": "港澳台订单的配送时效是多久",
+      "expected": [
+        "港澳台订单规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_082",
+      "query": "滑雪板可以租赁吗",
+      "expected": [
+        "滑雪与冰雪运动规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_083",
+      "query": "灯具的电压规格选错了能退吗",
+      "expected": [
+        "灯具照明类目规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_084",
+      "query": "物流停滞多久可以发起催单",
+      "expected": [
+        "物流异常与投诉处理.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_085",
+      "query": "普通快递的承诺时效是几天",
+      "expected": [
+        "物流时效与赔付标准.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_086",
+      "query": "玩具的安全认证要求是什么",
+      "expected": [
+        "玩具与童车类目规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_087",
+      "query": "手表进水了在保修范围内吗",
+      "expected": [
+        "珠宝钟表类目规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_088",
+      "query": "篮球气压不足算质量问题吗",
+      "expected": [
+        "球类运动类目规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_089",
+      "query": "冷冻分割肉的分割标准是什么",
+      "expected": [
+        "生鲜冷冻分割标准.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_090",
+      "query": "生鲜商品签收后多久内可以申请售后",
+      "expected": [
+        "生鲜与定制商品规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_091",
+      "query": "云讯电信的话费余额可以退吗",
+      "expected": [
+        "电信运营商话费退费规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_092",
+      "query": "电动自行车上牌需要什么手续",
+      "expected": [
+        "电动自行车类目规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_093",
+      "query": "百亿补贴的商品有什么购买限制",
+      "expected": [
+        "百亿补贴规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_094",
+      "query": "直播间抽奖的中奖资格是什么",
+      "expected": [
+        "直播与限时活动规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_095",
+      "query": "近视镜片可以定制吗",
+      "expected": [
+        "眼镜与视力保健类目规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_096",
+      "query": "果园种出来的水果有问题能售后吗",
+      "expected": [
+        "砍价与游戏玩法规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_097",
+      "query": "签收后多久内可以申请破损赔付",
+      "expected": [
+        "破损赔付标准细则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_098",
+      "query": "礼品卡的有效期是多久",
+      "expected": [
+        "礼品卡与储值卡.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_099",
+      "query": "社区团购下单后多久可以取货",
+      "expected": [
+        "社区团购履约规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_100",
+      "query": "平台积分可以抵扣多少钱",
+      "expected": [
+        "积分兑换与抵扣规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_101",
+      "query": "中鉴检测的鉴定流程是怎样的",
+      "expected": [
+        "第三方鉴定机构流程说明.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_102",
+      "query": "真皮包怎么鉴别材质",
+      "expected": [
+        "箱包配饰类目规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_103",
+      "query": "大米缺斤少两怎么赔付",
+      "expected": [
+        "粮油调味类目规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_104",
+      "query": "怎么举报商家售假",
+      "expected": [
+        "纠纷仲裁与举报规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_105",
+      "query": "美妆产品用了过敏怎么处理",
+      "expected": [
+        "美妆个护类目规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_106",
+      "query": "云翼航空托运行李损坏怎么申请赔偿",
+      "expected": [
+        "航空公司行李损坏赔偿指引.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_107",
+      "query": "茶叶的保质期标注有什么要求",
+      "expected": [
+        "茶叶与冲饮品规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_108",
+      "query": "游戏点卡充错了能退吗",
+      "expected": [
+        "虚拟商品与充值类目规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_109",
+      "query": "购物车的降价提醒怎么设置",
+      "expected": [
+        "购物车与收藏夹规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_110",
+      "query": "跨境商品一般多久能送到",
+      "expected": [
+        "跨境与海外购.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_111",
+      "query": "跨境订单清关需要多久",
+      "expected": [
+        "跨境清关与税费说明.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_112",
+      "query": "跨境商品退货的运费由谁承担",
+      "expected": [
+        "跨境退货特别流程.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_113",
+      "query": "汽车配件买错型号可以退吗",
+      "expected": [
+        "车品配件类目规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_114",
+      "query": "边境地区有哪些禁运商品",
+      "expected": [
+        "边境地区配送限制.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_115",
+      "query": "帐篷有质量问题怎么售后",
+      "expected": [
+        "运动户外类目规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_116",
+      "query": "商家赠送的运费险怎么赔付",
+      "expected": [
+        "运费险商家版规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_117",
+      "query": "运费险怎么申请理赔",
+      "expected": [
+        "运费险细则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_118",
+      "query": "各支付渠道的退款到账时间分别是多久",
+      "expected": [
+        "退款到账时效分档表.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_119",
+      "query": "七天无理由退货的运费由谁承担",
+      "expected": [
+        "退货运费承担方判定规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_120",
+      "query": "退货运费按什么标准计算",
+      "expected": [
+        "退货运费计算标准.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_121",
+      "query": "酒类商品的销售限制是什么",
+      "expected": [
+        "酒类商品规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_122",
+      "query": "华信银行信用卡分期怎么申请",
+      "expected": [
+        "银行信用卡分期业务条款.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_123",
+      "query": "恒丰银行储蓄卡被盗刷怎么赔付",
+      "expected": [
+        "银行储蓄卡盗刷赔付规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_124",
+      "query": "门店自提的流程是怎样的",
+      "expected": [
+        "门店自提规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_125",
+      "query": "我的个人信息会被共享给谁",
+      "expected": [
+        "隐私与个人信息.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_126",
+      "query": "露营用的气罐可以快递吗",
+      "expected": [
+        "露营装备类目规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_127",
+      "query": "预售商品和现货有什么区别",
+      "expected": [
+        "预售商品规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_128",
+      "query": "预售付了定金还能退吗",
+      "expected": [
+        "预售定金与尾款规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_129",
+      "query": "临期食品可以正常购买吗",
+      "expected": [
+        "食品饮料类目规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_130",
+      "query": "香薰蜡烛夏天运输会融化吗",
+      "expected": [
+        "香薰与蜡烛类目规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_131",
+      "query": "公路车的配件坏了能保修吗",
+      "expected": [
+        "骑行运动类目规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_132",
+      "query": "3C数码激活后怎么清理个人数据",
+      "expected": [
+        "3C数码类目规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_133",
+      "query": "晒单审核需要多久",
+      "expected": [
+        "买家评价与晒单规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_134",
+      "query": "二手商品有平台保障吗",
+      "expected": [
+        "二手闲置交易规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_135",
+      "query": "怎么查询商品是否属于价保除外类目",
+      "expected": [
+        "价保除外类目清单.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_136",
+      "query": "企业团购的起订量是多少",
+      "expected": [
+        "企业采购与团购.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_137",
+      "query": "偏远地区订单的配送时效是多久",
+      "expected": [
+        "偏远地区配送补充说明.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_138",
+      "query": "儿童安全座椅的安装服务怎么预约",
+      "expected": [
+        "儿童安全座椅类目规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_139",
+      "query": "分期逾期会收取什么费用",
+      "expected": [
+        "分期手续费费率表.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_140",
+      "query": "包装材料有什么环保要求",
+      "expected": [
+        "包装与发货规范.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_141",
+      "query": "保健品的宣传有什么限制",
+      "expected": [
+        "医药保健类目规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_142",
+      "query": "星海电器的免费安装包含哪些项目",
+      "expected": [
+        "厂家全国联保三包政策.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_143",
+      "query": "不粘锅涂层脱落了能退吗",
+      "expected": [
+        "厨具与餐厨用品类目规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_144",
+      "query": "用了品类券的订单退款后券会退回吗",
+      "expected": [
+        "品类券适用范围细则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_145",
+      "query": "售后纠纷受理后多久会有结果",
+      "expected": [
+        "售后纠纷处理SOP.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_146",
+      "query": "保证金在什么情况下会被扣罚",
+      "expected": [
+        "商家入驻与保证金管理规范.docx"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_147",
+      "query": "大促报名有什么门槛",
+      "expected": [
+        "大促作战手册.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_148",
+      "query": "PRO会员申请退款会退会费吗",
+      "expected": [
+        "平台付费会员（PRO）权益.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_149",
+      "query": "平台分期购和先用后付有什么区别",
+      "expected": [
+        "平台分期购细则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_150",
+      "query": "店铺券和平台券叠加时先扣哪张",
+      "expected": [
+        "店铺券与平台券叠加规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "easy",
+        "direct"
+      ]
+    },
+    {
+      "id": "holdout_151",
+      "query": "买回来的鞋码子小了咋整",
+      "expected": [
+        "服装鞋帽类目规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "colloquial"
+      ]
+    },
+    {
+      "id": "holdout_152",
+      "query": "快递好几天不动了咋办",
+      "expected": [
+        "物流异常与投诉处理.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "colloquial"
+      ]
+    },
+    {
+      "id": "holdout_153",
+      "query": "退的钱咋还没到账",
+      "expected": [
+        "退款到账时效分档表.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "colloquial"
+      ]
+    },
+    {
+      "id": "holdout_154",
+      "query": "运费险能赔多少",
+      "expected": [
+        "运费险细则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "colloquial"
+      ]
+    },
+    {
+      "id": "holdout_155",
+      "query": "店铺的积分咋攒",
+      "expected": [
+        "店铺会员积分兑换细则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "colloquial"
+      ]
+    },
+    {
+      "id": "holdout_156",
+      "query": "券咋突然用不了了",
+      "expected": [
+        "优惠券与促销规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "colloquial"
+      ]
+    },
+    {
+      "id": "holdout_157",
+      "query": "收到货发现少了件咋整",
+      "expected": [
+        "破损赔付标准细则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "colloquial"
+      ]
+    },
+    {
+      "id": "holdout_158",
+      "query": "先用后付的钱咋还",
+      "expected": [
+        "先用后付与分期付款.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "colloquial"
+      ]
+    },
+    {
+      "id": "holdout_159",
+      "query": "闪送咋收费的",
+      "expected": [
+        "同城闪送服务说明.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "colloquial"
+      ]
+    },
+    {
+      "id": "holdout_160",
+      "query": "冷链的东西到了咋签收",
+      "expected": [
+        "冷链配送标准.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "colloquial"
+      ]
+    },
+    {
+      "id": "holdout_161",
+      "query": "自提咋弄",
+      "expected": [
+        "门店自提规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "colloquial"
+      ]
+    },
+    {
+      "id": "holdout_162",
+      "query": "跨境买的坏了咋退",
+      "expected": [
+        "跨境退货特别流程.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "colloquial"
+      ]
+    },
+    {
+      "id": "holdout_163",
+      "query": "大促的满减咋算",
+      "expected": [
+        "大促满减与跨店规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "colloquial"
+      ]
+    },
+    {
+      "id": "holdout_164",
+      "query": "积分能抵钱花吗",
+      "expected": [
+        "积分兑换与抵扣规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "colloquial"
+      ]
+    },
+    {
+      "id": "holdout_165",
+      "query": "活体宠物咋运过来的",
+      "expected": [
+        "活体宠物交易规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "colloquial"
+      ]
+    },
+    {
+      "id": "holdout_166",
+      "query": "一单里同时用了店铺券和平台券，订单取消后这两张券怎么退",
+      "expected": [
+        "优惠券退回与补发规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "condition"
+      ]
+    },
+    {
+      "id": "holdout_167",
+      "query": "大促买的商品又降价了，还能申请价保补差价吗",
+      "expected": [
+        "大促价保特别条款.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "condition"
+      ]
+    },
+    {
+      "id": "holdout_168",
+      "query": "钻石会员买的商品超过了7天才降价，能补差吗",
+      "expected": [
+        "会员价保升级规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "condition"
+      ]
+    },
+    {
+      "id": "holdout_169",
+      "query": "先用后付的订单逾期了还没还清，会有什么影响",
+      "expected": [
+        "先用后付与分期付款.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "condition"
+      ]
+    },
+    {
+      "id": "holdout_170",
+      "query": "预售付了定金后商品下架了，定金还能退吗",
+      "expected": [
+        "预售定金与尾款规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "condition"
+      ]
+    },
+    {
+      "id": "holdout_171",
+      "query": "企业采购的订单出了问题，售后和普通用户一样吗",
+      "expected": [
+        "企业采购专属售后.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "condition"
+      ]
+    },
+    {
+      "id": "holdout_172",
+      "query": "港澳台订单要退货，运费该谁承担",
+      "expected": [
+        "港澳台订单规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "condition"
+      ]
+    },
+    {
+      "id": "holdout_173",
+      "query": "冷链商品签收时就发现化冻了，可以拒收吗",
+      "expected": [
+        "冷链配送标准.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "condition"
+      ]
+    },
+    {
+      "id": "holdout_174",
+      "query": "跨境商品拆封后发现质量问题还能退吗",
+      "expected": [
+        "跨境退货特别流程.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "condition"
+      ]
+    },
+    {
+      "id": "holdout_175",
+      "query": "活体宠物在运输途中出了问题，责任怎么划分",
+      "expected": [
+        "活体宠物交易规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "condition"
+      ]
+    },
+    {
+      "id": "holdout_176",
+      "query": "定制家具约定的工期延误了，能要赔偿吗",
+      "expected": [
+        "定制商品生产周期说明.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "condition"
+      ]
+    },
+    {
+      "id": "holdout_177",
+      "query": "大件家电安装时师傅说要另外收费，合理吗",
+      "expected": [
+        "大件家电配送安装规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "condition"
+      ]
+    },
+    {
+      "id": "holdout_178",
+      "query": "百亿补贴买的东西降价了，能退差价吗",
+      "expected": [
+        "百亿补贴规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "condition"
+      ]
+    },
+    {
+      "id": "holdout_179",
+      "query": "同城闪送超过承诺时间没送到，能赔多少",
+      "expected": [
+        "同城闪送服务说明.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "condition"
+      ]
+    },
+    {
+      "id": "holdout_180",
+      "query": "生鲜签收超过24小时才发现坏了，还能赔吗",
+      "expected": [
+        "生鲜与定制商品规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "condition"
+      ]
+    },
+    {
+      "id": "holdout_181",
+      "query": "刚收到货就发现外包装瘪了一块",
+      "expected": [
+        "破损赔付标准细则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "indirect"
+      ]
+    },
+    {
+      "id": "holdout_182",
+      "query": "退货运费到底谁掏",
+      "expected": [
+        "退货运费承担方判定规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "indirect"
+      ]
+    },
+    {
+      "id": "holdout_183",
+      "query": "买手机加钱买的延长保修能用吗",
+      "expected": [
+        "官方延保服务范围对照.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "indirect"
+      ]
+    },
+    {
+      "id": "holdout_184",
+      "query": "东西买完两天就降价了，差价能要回来吗",
+      "expected": [
+        "价保与赔付规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "indirect"
+      ]
+    },
+    {
+      "id": "holdout_185",
+      "query": "包装盒拆了还能退吗",
+      "expected": [
+        "拆封商品退换判定标准.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "indirect"
+      ]
+    },
+    {
+      "id": "holdout_186",
+      "query": "快递显示签收了但我没拿到",
+      "expected": [
+        "物流异常与投诉处理.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "indirect"
+      ]
+    },
+    {
+      "id": "holdout_187",
+      "query": "点了短信链接钱被转走了",
+      "expected": [
+        "支付与账户安全.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "indirect"
+      ]
+    },
+    {
+      "id": "holdout_188",
+      "query": "旧手机能折价换新吗",
+      "expected": [
+        "售后维修与延保.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "indirect"
+      ]
+    },
+    {
+      "id": "holdout_189",
+      "query": "商家一直不发货有赔偿吗",
+      "expected": [
+        "物流时效与赔付标准.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "indirect"
+      ]
+    },
+    {
+      "id": "holdout_190",
+      "query": "抽奖中的实物奖品多久寄出",
+      "expected": [
+        "直播与限时活动规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "indirect"
+      ]
+    },
+    {
+      "id": "holdout_191",
+      "query": "现在买光驰手机还有官方延保可以加购吗",
+      "expected": [
+        "品牌官方延保服务条款.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "timing"
+      ]
+    },
+    {
+      "id": "holdout_192",
+      "query": "现在运费险理赔最高能赔多少",
+      "expected": [
+        "运费险细则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "timing"
+      ]
+    },
+    {
+      "id": "holdout_193",
+      "query": "现在哪些商品还能七天无理由退货",
+      "expected": [
+        "七天无理由商品清单.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "timing"
+      ]
+    },
+    {
+      "id": "holdout_194",
+      "query": "现在极速退款的上限还是200元吗",
+      "expected": [
+        "极速退款规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "timing"
+      ]
+    },
+    {
+      "id": "holdout_195",
+      "query": "现在大促价保还是15天吗",
+      "expected": [
+        "大促价保特别条款.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "timing"
+      ]
+    },
+    {
+      "id": "holdout_196",
+      "query": "现在砍价免费拿还是24小时有效吗",
+      "expected": [
+        "砍价与游戏玩法规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "timing"
+      ]
+    },
+    {
+      "id": "holdout_197",
+      "query": "现在快递丢件的赔偿标准是多少",
+      "expected": [
+        "快递公司延误与丢件赔偿标准.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "timing"
+      ]
+    },
+    {
+      "id": "holdout_198",
+      "query": "现在大额订单退款需要多久",
+      "expected": [
+        "大额订单退款时效.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "timing"
+      ]
+    },
+    {
+      "id": "holdout_199",
+      "query": "现在客服人工响应要等多久",
+      "expected": [
+        "客服SOP与应答手册.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "timing"
+      ]
+    },
+    {
+      "id": "holdout_200",
+      "query": "现在发票还是邮寄纸质版吗",
+      "expected": [
+        "发票与开票规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "timing"
+      ]
+    },
+    {
+      "id": "holdout_201",
+      "query": "账号注销了，里面的余额和优惠券还能找回来吗",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "near_domain"
+      ]
+    },
+    {
+      "id": "holdout_202",
+      "query": "未成年人注册账号下单可以吗",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "near_domain"
+      ]
+    },
+    {
+      "id": "holdout_203",
+      "query": "帮朋友代付的订单，退款会退到谁的账户",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "near_domain"
+      ]
+    },
+    {
+      "id": "holdout_204",
+      "query": "同一个订单可以拆成两单发到不同的地址吗",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "near_domain"
+      ]
+    },
+    {
+      "id": "holdout_205",
+      "query": "快递在途中，能拦截改送到别的地址吗",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "near_domain"
+      ]
+    },
+    {
+      "id": "holdout_206",
+      "query": "直播回放可以下载保存吗",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "near_domain"
+      ]
+    },
+    {
+      "id": "holdout_207",
+      "query": "平台积分能转赠给朋友吗",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "near_domain"
+      ]
+    },
+    {
+      "id": "holdout_208",
+      "query": "店铺粉丝数量多了能提现吗",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "near_domain"
+      ]
+    },
+    {
+      "id": "holdout_209",
+      "query": "卖家说先确认收货再补发赠品，靠谱吗",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "near_domain"
+      ]
+    },
+    {
+      "id": "holdout_210",
+      "query": "商品显示已下架，还能申请售后吗",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "near_domain"
+      ]
+    },
+    {
+      "id": "holdout_211",
+      "query": "页面显示有货，下单却失败是为什么",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "near_domain"
+      ]
+    },
+    {
+      "id": "holdout_212",
+      "query": "平台总部在哪里，可以参观吗",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "near_domain"
+      ]
+    },
+    {
+      "id": "holdout_213",
+      "query": "平台的招聘信息在哪里看",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "near_domain"
+      ]
+    },
+    {
+      "id": "holdout_214",
+      "query": "APP里的开屏广告怎么关掉",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "near_domain"
+      ]
+    },
+    {
+      "id": "holdout_215",
+      "query": "青少年模式在哪里开启",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "near_domain"
+      ]
+    },
+    {
+      "id": "holdout_216",
+      "query": "别人盗用我的照片开店卖货怎么办",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "near_domain"
+      ]
+    },
+    {
+      "id": "holdout_217",
+      "query": "卖家要求先补差价才发货，怎么投诉",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "near_domain"
+      ]
+    },
+    {
+      "id": "holdout_218",
+      "query": "店铺粉丝群怎么加入",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "near_domain"
+      ]
+    },
+    {
+      "id": "holdout_219",
+      "query": "卖家威胁说不给好评就不发货怎么办",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "near_domain"
+      ]
+    },
+    {
+      "id": "holdout_220",
+      "query": "平台界面能切换成繁体中文吗",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "near_domain"
+      ]
+    },
+    {
+      "id": "holdout_221",
+      "query": "平台支持少数民族语言界面吗",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "near_domain"
+      ]
+    },
+    {
+      "id": "holdout_222",
+      "query": "差几块钱才包邮，有凑单推荐吗",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "near_domain"
+      ]
+    },
+    {
+      "id": "holdout_223",
+      "query": "节假日商家还发货吗",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "near_domain"
+      ]
+    },
+    {
+      "id": "holdout_224",
+      "query": "主播推荐的商品质量有保障吗",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "near_domain"
+      ]
+    },
+    {
+      "id": "holdout_225",
+      "query": "同一件商品不同店价格差很多，怎么判断",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "near_domain"
+      ]
+    },
+    {
+      "id": "holdout_226",
+      "query": "平台有旧手机回收业务吗",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "near_domain"
+      ]
+    },
+    {
+      "id": "holdout_227",
+      "query": "买东西送的赠品需要交税吗",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "near_domain"
+      ]
+    },
+    {
+      "id": "holdout_228",
+      "query": "能用别人的银行卡代付吗",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "near_domain"
+      ]
+    },
+    {
+      "id": "holdout_229",
+      "query": "店铺关店了，优惠券还能用吗",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "near_domain"
+      ]
+    },
+    {
+      "id": "holdout_230",
+      "query": "投诉商家会泄露我的个人信息吗",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "near_domain"
+      ]
+    },
+    {
+      "id": "holdout_231",
+      "query": "闪送能帮我代买代付吗",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "near_domain"
+      ]
+    },
+    {
+      "id": "holdout_232",
+      "query": "帮朋友砍价会消耗我的金币吗",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "near_domain"
+      ]
+    },
+    {
+      "id": "holdout_233",
+      "query": "618和双11哪个活动力度更大",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "near_domain"
+      ]
+    },
+    {
+      "id": "holdout_234",
+      "query": "搜索结果是怎么排序的",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "near_domain"
+      ]
+    },
+    {
+      "id": "holdout_235",
+      "query": "直播间看到的商品和收到的实物不一样怎么办",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "near_domain"
+      ]
+    },
+    {
+      "id": "holdout_236",
+      "query": "房贷利率下调后，月供会自动减少吗",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "out_of_domain"
+      ]
+    },
+    {
+      "id": "holdout_237",
+      "query": "银行卡被ATM机吞了怎么取回来",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "out_of_domain"
+      ]
+    },
+    {
+      "id": "holdout_238",
+      "query": "医保卡里的个人账户余额能取出来吗",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "out_of_domain"
+      ]
+    },
+    {
+      "id": "holdout_239",
+      "query": "退休金每个月几号发放",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "out_of_domain"
+      ]
+    },
+    {
+      "id": "holdout_240",
+      "query": "年终奖单独计税和并入综合所得哪个划算",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "out_of_domain"
+      ]
+    },
+    {
+      "id": "holdout_241",
+      "query": "汽车年检需要带哪些材料",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "out_of_domain"
+      ]
+    },
+    {
+      "id": "holdout_242",
+      "query": "火车票学生票的优惠区间怎么填写",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "out_of_domain"
+      ]
+    },
+    {
+      "id": "holdout_243",
+      "query": "公交卡丢了能补办吗",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "out_of_domain"
+      ]
+    },
+    {
+      "id": "holdout_244",
+      "query": "演唱会门票买多了能转卖吗",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "out_of_domain"
+      ]
+    },
+    {
+      "id": "holdout_245",
+      "query": "酒店订单可以免费取消吗",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "out_of_domain"
+      ]
+    },
+    {
+      "id": "holdout_246",
+      "query": "托运行李超重怎么收费",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "out_of_domain"
+      ]
+    },
+    {
+      "id": "holdout_247",
+      "query": "宠物疫苗在哪里打比较便宜",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "out_of_domain"
+      ]
+    },
+    {
+      "id": "holdout_248",
+      "query": "装修公司跑路了怎么维权",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "out_of_domain"
+      ]
+    },
+    {
+      "id": "holdout_249",
+      "query": "对交通事故责任认定不服怎么办",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "out_of_domain"
+      ]
+    },
+    {
+      "id": "holdout_250",
+      "query": "劳动仲裁需要准备什么材料",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "out_of_domain"
+      ]
+    }
+  ],
+  "frozen": true,
+  "_meta": {
+    "note": "v3 holdout 250（冻结一次性），与 dev 959 去重",
+    "dev_sha256": "01e98071182a7cbe7e8395a2286bcfa62a5214007bf327290df582a2a41015f5"
+  }
+}

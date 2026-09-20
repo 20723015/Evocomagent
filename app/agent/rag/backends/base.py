@@ -23,6 +23,9 @@ from app.agent.rag.chunker import Chunk
 class RetrievedChunk:
     chunk: Chunk
     score: float
+    # P1-4：精排分独立留痕（score 是最终分：挂精排时两者相同，多路 RRF 合并后
+    # score 变成秩融合分、rerank_score 仍保留该路精排分）。默认 None = 未精排。
+    rerank_score: float | None = None
 
 
 class VectorBackend(ABC):

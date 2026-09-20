@@ -88,7 +88,6 @@ def _checkpoint_manifest(path: Path) -> dict | None:
 def main() -> None:
     parser = argparse.ArgumentParser(description="弹性评估：全量跑 + error 自动重试合并")
     parser.add_argument("--dataset", default=settings.eval_dataset_path)
-    parser.add_argument("--mode", choices=["single", "multi"], default="single")
     parser.add_argument("--judge", dest="judge", action="store_true", default=settings.eval_use_judge)
     parser.add_argument("--no-judge", dest="judge", action="store_false")
     parser.add_argument("--judge-model", default="", help="不同于被测模型的 Judge 模型（3.2）")
@@ -112,7 +111,7 @@ def main() -> None:
         out_path = ROOT / settings.eval_output_dir / run_id / "report.json"
 
     cases = {c.id: c for c in load_dataset(dataset_path)}
-    log.info(f"数据集 {len(cases)} 条 | 模式 {args.mode} | judge {'开' if args.judge else '关'}")
+    log.info(f"数据集 {len(cases)} 条 | judge {'开' if args.judge else '关'}")
 
     # 断点续跑：已有报告 → 必须先通过 manifest 校验（experiment id + 配置 hash），
     # 不一致拒绝合并（配置漂移的旧结果不能与本次混合）
@@ -128,7 +127,7 @@ def main() -> None:
         if not verify_manifest_unchanged(
             prev_manifest, dataset_path=str(dataset_path),
             model=settings.model_name, judge_model=judge_model,
-            mode=args.mode, use_judge=args.judge,
+            use_judge=args.judge,
         ):
             raise ManifestMismatchError(
                 f"已存在报告 {out_path} 的配置指纹与本次不一致（数据集/模型/Judge/"
@@ -157,7 +156,7 @@ def main() -> None:
             log.info(f"等待 {args.retry_wait}s 后第 {attempt} 轮重试（剩 {len(pending_ids)} 条）…")
             time.sleep(args.retry_wait)
 
-        sandbox = Sandbox(mode=args.mode)
+        sandbox = Sandbox()
         evaluator = Evaluator(
             sandbox=sandbox,
             client=client,
@@ -189,7 +188,7 @@ def main() -> None:
             manifest = build_manifest(
                 dataset_path=str(dataset_path), num_cases=len(cases),
                 model=settings.model_name, judge_model=judge_model,
-                mode=args.mode, use_judge=args.judge,
+                use_judge=args.judge,
             )
             (out_path.parent / "manifest.json").write_text(
                 json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8"
@@ -206,7 +205,7 @@ def main() -> None:
         manifest = build_manifest(
             dataset_path=str(dataset_path), num_cases=len(cases),
             model=settings.model_name, judge_model=judge_model,
-            mode=args.mode, use_judge=args.judge,
+            use_judge=args.judge,
         )
         (out_path.parent / "manifest.json").write_text(
             json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8"

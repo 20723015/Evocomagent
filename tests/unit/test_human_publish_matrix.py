@@ -936,3 +936,43 @@ class TestBackfillScript(MatrixBase):
         assert self._candidate_row(store, int(cid))["evidence_state"] == (
             "legacy_evidence_missing"
         )
+
+
+class TestInRunAnswerSideDuplicate(MatrixBase):
+    def test_answer_side_near_duplicate_rejected(self, env, tmp_path):
+        """批内答案侧 pairwise（B2）：问题措辞不同、答案近同 → 低分候选被拒。
+
+        FakeEmbedder 实测：两条问题字符重叠极低（cos≈0.14，问题侧放行），
+        答案完全相同（cos=1.0 ≥ a_threshold）→ 答案侧淘汰低分候选。
+        """
+        from conftest import FakeBackend, FakeEmbedder
+
+        _engine, store = env
+        store, cand1 = self._prepared(env, tmp_path)
+        record2, _ = _ingest(store, external_conversation_id="conv-2")
+        cand2 = self._seed_extra(
+            store,
+            record2["id"],
+            "会员积分如何兑换成礼品？",
+            "拆封不影响二次销售的可以七天无理由退货退款。",
+            classification="new",
+            value=0.5,
+            dedup_target="",
+        )
+        embedder = FakeEmbedder()
+        backend = FakeBackend()  # 索引为空：最终去重无命中，仅批内互查
+        pub, _svc = _publisher(
+            tmp_path, store, dedup=_dedup_with_backend(backend, embedder)
+        )
+        batch, _i = store.create_publish_batch(
+            [
+                {"candidate_id": cand1["id"], "revision": 0},
+                {"candidate_id": cand2["id"], "revision": 0},
+            ],
+            requested_by="ops",
+        )
+        pub.process_once()
+        items = {it["candidate_id"]: it for it in store.get_batch(batch["id"])["items"]}
+        assert items[cand1["id"]]["status"] == "published"  # 高分（0.9）胜出
+        assert items[cand2["id"]]["status"] == "rejected"
+        assert items[cand2["id"]]["detail"] == "in_run_duplicate"

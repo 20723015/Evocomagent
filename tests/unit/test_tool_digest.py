@@ -2,7 +2,8 @@
 
 样本 JSON 逐一取自真实工具返回（docs/工具结果结构化精简计划.md 已核实）：
 query_order 嵌套在 order 下；query_product 字段在 products[] 内；物流字段名
-carrier；list_user_orders 项含中文 status；apply_refund 两段式 status=pending_confirmation。
+carrier；list_user_orders 项含中文 status；submit_refund_application 返回
+status=merchant_reviewing 时保留状态语义。
 """
 
 from __future__ import annotations
@@ -69,12 +70,14 @@ USER_ORDERS_JSON = json.dumps({
     ],
 }, ensure_ascii=False)
 
-REFUND_PENDING_JSON = json.dumps({
-    "success": True, "status": "pending_confirmation",
-    "refund_id": "16cde6619b5046228cab61100a68af59",
-    "confirmation_token": "ec9b33049da3468bae071ba9ccb90e7b",
-    "expires_in_seconds": 300,
-    "idempotency_key": "16cde6619b5046228cab61100a68af59",
+REFUND_JSON = json.dumps({
+    "success": True, "status": "merchant_reviewing",
+    "code": "REFUND_APPLICATION_EXISTS",
+    "application_id": "RA-16cde6619b50",
+    "order_id": "ORD-20240115-001",
+    "can_withdraw": True,
+    "internal_note": "非白名单字段不应出现在转录层",
+    "message": "该订单已有进行中的退款申请，返回现有申请",
 }, ensure_ascii=False)
 
 KNOWLEDGE_JSON = json.dumps({
@@ -136,19 +139,22 @@ def test_project_logistics_uses_carrier_and_last_event():
 
 
 def test_project_refund_states():
-    got = digest_tool_result("apply_refund", REFUND_PENDING_JSON)
+    got = digest_tool_result("submit_refund_application", REFUND_JSON)
     assert "success=True" in got
-    assert "status=pending_confirmation" in got
-    # 一次性凭证/幂等锚点不进转录层
-    assert "confirmation_token" not in got and "refund_id" not in got
+    assert "status=merchant_reviewing" in got
+    # 非白名单字段不进转录层
+    assert "internal_note" not in got
+    assert "can_withdraw" not in got
 
-    ok = json.dumps({"success": True, "message": "退款申请已提交。请等待审核。"},
+    ok = json.dumps({"success": True, "application_id": "RA-1",
+                     "status": "merchant_reviewing",
+                     "message": "退款申请已提交。请等待审核。"},
                     ensure_ascii=False)
-    assert "message=" in digest_tool_result("apply_refund", ok)
+    assert "message=" in digest_tool_result("submit_refund_application", ok)
 
     bad = json.dumps({"success": False, "error": "未找到订单 ORD-X，请核实订单号"},
                      ensure_ascii=False)
-    got_bad = digest_tool_result("apply_refund", bad)
+    got_bad = digest_tool_result("submit_refund_application", bad)
     assert "success=False" in got_bad and "error=" in got_bad
 
 
@@ -200,7 +206,7 @@ def test_list_user_orders_motivation_case_8th_item():
     ("query_logistics", LOGISTICS_JSON),
     ("list_user_orders", USER_ORDERS_JSON),
     ("search_knowledge", KNOWLEDGE_JSON),
-    ("apply_refund", REFUND_PENDING_JSON),
+    ("submit_refund_application", REFUND_JSON),
     ("load_skill", json.dumps({"success": True, "skill_name": "track-order",
                                "instructions": "x" * 500}, ensure_ascii=False)),
     ("recall_user_memory", json.dumps({"success": True, "long_term_facts": [

@@ -5,6 +5,7 @@
 - 全局 deadline（TurnBudget）与 token 预算；
 - 工具调用轨迹、检索证据、写操作状态（WriteOpTracker）；
 - Guardrail 结论、引用 verdict、事实校验结论、Handoff 原因；
+- 情绪分级结论（P1-1：level + source 归因）；
 - 各阶段耗时与 LLM 用量（调用次数 / token）。
 
 ContextVar 只保留底层兼容用途（turn_budget.py 的线程绑定）。
@@ -81,6 +82,10 @@ class AgentTurnContext:
     final_args: object | None = None       # FinalResponseArgs | None
     final_text: str = ""                       # 兼容路径的纯文本终答
     forced_finalize: bool = False              # 步数耗尽强制终答
+    # 步数余量提示是否已注入（收尾行为归因：早收尾是否为预告触发）
+    steps_margin_hint: bool = False
+    # 本轮纯文本协议纠错次数（PLAIN_TEXT_CORRECTION 回模型的次数）
+    protocol_corrections: int = 0
 
     # 工具轨迹与证据
     tool_trace: list[ToolTraceEntry] = field(default_factory=list)
@@ -91,14 +96,17 @@ class AgentTurnContext:
     # 收尾
     citation_verdict: dict | None = None
     fact_guard: dict | None = None
-    escalation: str | None = None             # complaint | purchase | None
+    escalation: str | None = None             # complaint | purchase | emotion | None
     escalation_cap: float | None = None       # 业务升级硬规则可靠度上限
+    # 情绪识别与分级（P1-1）：neutral | dissatisfied | angry | extreme；
+    # source 归因 rule | llm | fail（收尾时从轮次情绪结论落账，供观测/审计）
+    emotion: str = "neutral"
+    emotion_source: str = "rule"
     handoff_reason: str = ""                     # requires_human 时的归因
     handoff_emitted: bool = False
     reliability_signal: ReliabilitySignal = field(default_factory=ReliabilitySignal)
     reliability: float = 0.0
     guardrail_output_block: bool = False
-    refund_decision: object | None = None        # Review 修复：退款确认三态判定
 
     # 写操作与兜底
     budget_fallback: bool = False                # 预算耗尽确定性 fallback（可靠度 0.0）
@@ -108,7 +116,9 @@ class AgentTurnContext:
 
     # 消息窗口切片（本轮在 raw_messages 中的起止）
     slice_start: int = 0
-    full_turn_messages: list[dict] = field(default_factory=list)  # 含中间工具消息（审计）
+    # 含中间工具消息与 reasoning 附加字段（审计通道，T3）：窗口通道按画像剥离
+    # reasoning，审计通道始终留存 —— 两者从此同源不同内容，勿假设逐条相等
+    full_turn_messages: list[dict] = field(default_factory=list)
 
     timings: StageTimings = field(default_factory=StageTimings)
     started_at: float = field(default_factory=time.monotonic)
@@ -129,9 +139,16 @@ class AgentTurnContext:
             "react_steps": self.react_steps,
             "llm_calls": self.llm_calls,
             "tool_calls": len(self.tool_trace),
+            # 协议级观测：早收尾归因（是否收到步数余量预告）与纯文本纠错次数
+            "steps_margin_hint": self.steps_margin_hint,
+            "forced_finalize": self.forced_finalize,
+            "protocol_corrections": self.protocol_corrections,
             "context_tokens": self.context_tokens,
             "context_truncated": self.context_truncated,
             "truncation_stage": self.truncation_stage,
+            # P1-1：情绪分级归因（level + source），评估/审计可直接聚合
+            "emotion": self.emotion,
+            "emotion_source": self.emotion_source,
             "timings": self.timings.as_dict(),
             "latency_ms": round(self.elapsed_ms(), 1),
         }

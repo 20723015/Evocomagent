@@ -20,7 +20,13 @@ from sqlalchemy.exc import IntegrityError
 
 from app.config.settings import settings
 from app.stores.base import SessionConflictError, SessionState, StorageUnavailableError
-from app.stores.sql.schema import chat_messages, memory_jobs, outbox_rows, sessions
+from app.stores.sql.schema import (
+    chat_messages,
+    memory_jobs,
+    message_delete_outbox,
+    outbox_rows,
+    sessions,
+)
 
 
 def _parse_msg(row) -> dict:
@@ -45,8 +51,10 @@ def normalize_model_history(rows: list[tuple[str, dict]]) -> list[dict]:
     """
     groups: dict[str, list[dict]] = {}
     order: list[str] = []
-    for turn, msg in rows:
-        turn = str(turn or "")
+    for idx, (turn, msg) in enumerate(rows):
+        # 低危修复 B9：空 turn_id 的行各自独立成组（不再塌缩进同一组——
+        # 旧数据多轮 assistant 终答只保留一条的丢失）
+        turn = str(turn or "") or f"__norow_{idx}"
         if turn not in groups:
             groups[turn] = []
             order.append(turn)
@@ -168,7 +176,8 @@ class SqlSessionStore:
             messages=normalize_model_history(
                 [(row.turn_id, _parse_msg(row)) for row in msgs]
             ),
-            short_term_memory=json.loads(row["stm_json"]) if row["stm_json"] else None,
+            pending_turn=_pending_turn_of(row),
+            pending_write=_pending_write_of(row),
             version=int(row["version"]),
             consolidated_len=int(row["consolidated_len"] or 0),
             updated_at=row["updated_at"].isoformat(sep=" ", timespec="seconds")
@@ -199,8 +208,12 @@ class SqlSessionStore:
                         session_key=key, user_id=user_id,
                         session_uuid=state.session_id or session_id,
                         version=0, summary=state.summary,
-                        stm_json=json.dumps(state.short_term_memory, ensure_ascii=False)
-                        if state.short_term_memory else None,
+                        pending_turn_json=json.dumps(
+                            state.pending_turn, ensure_ascii=False,
+                        ) if state.pending_turn else None,
+                        pending_write_json=json.dumps(
+                            state.pending_write, ensure_ascii=False,
+                        ) if state.pending_write else None,
                         consolidated_len=state.consolidated_len,
                         status="active",
                     ))
@@ -209,7 +222,12 @@ class SqlSessionStore:
                     .where(chat_messages.c.session_key == key)
                 ).scalar_one()
                 created = datetime.now()
-                # 一轮一次 save() = 一轮对话：turn_id 轮次粒度（DDL 语义：一轮一个 turn）
+                # 一次 save() 一个 turn_id。注意：一轮对话现在会 save 两次
+                # （轮次开始落 user 消息 + pending_turn 草稿；收尾落终答并清
+                # 草稿），因此一轮的两条消息可能分属两个 turn_id——load 侧
+                # normalize_model_history 按组各取所需（user 组 + 终答组），
+                # 顺序仍由 seq 保证。崩溃在两次 save 之间 = 半截轮次（只有
+                # user，无终答），正是 pending_turn 要标记的状态。
                 turn_id = uuid.uuid4().hex[:32]
                 seq = int(max_seq)
                 for i, msg in enumerate(to_insert):
@@ -224,16 +242,23 @@ class SqlSessionStore:
                     if self._outbox:
                         conn.execute(outbox_rows.insert().values(
                             session_key=key, seq=seq,
+                            session_uuid=state.session_id or session_id,
                             payload=json.dumps(msg, ensure_ascii=False),
                         ))
                 # 阶段F：消息保存与 memory job 入队同一事务（唯一键
-                # session_key+through_seq 幂等；重复入队被唯一约束吸收）
+                # session_key+through_seq 幂等；低危修复 B4：SAVEPOINT 内入队，
+                # 重复入队的 IntegrityError 只回滚 savepoint——消息保存不受
+                # 影响，重复任务真正被唯一约束吸收，与原注释语义一致）
                 if enqueue_memory_job and to_insert:
-                    conn.execute(memory_jobs.insert().values(
-                        session_key=key, user_id=user_id,
-                        session_uuid=state.session_id or session_id,
-                        through_seq=seq, status="pending",
-                    ))
+                    try:
+                        with conn.begin_nested():
+                            conn.execute(memory_jobs.insert().values(
+                                session_key=key, user_id=user_id,
+                                session_uuid=state.session_id or session_id,
+                                through_seq=seq, status="pending",
+                            ))
+                    except IntegrityError:
+                        pass
                 # Review 修复：水位原子单调——数据库内 clamp（MAX(当前, 期望)），
                 # 旧 Agent 状态/历史压缩不得把 memory_consolidated_seq 写小；
                 # worker 与 save 并发时以数据库现值为准。
@@ -249,8 +274,12 @@ class SqlSessionStore:
                         version=state.version + 1,
                         session_uuid=state.session_id or session_id,
                         summary=state.summary,
-                        stm_json=json.dumps(state.short_term_memory, ensure_ascii=False)
-                        if state.short_term_memory else None,
+                        pending_turn_json=json.dumps(
+                            state.pending_turn, ensure_ascii=False,
+                        ) if state.pending_turn else None,
+                        pending_write_json=json.dumps(
+                            state.pending_write, ensure_ascii=False,
+                        ) if state.pending_write else None,
                         consolidated_len=case(
                             (sessions.c.consolidated_len > state.consolidated_len,
                              sessions.c.consolidated_len),
@@ -294,10 +323,47 @@ class SqlSessionStore:
         key = self._key(user_id, session_id)
         try:
             with self._engine.begin() as conn:
+                # 修复计划·二轮：读取重置前的会话实例，写唯一 ES 删除事件（同事务）。
+                # 三轮 P1-3：legacy 会话（存在但 session_uuid 为空）同样要写事件，
+                # 否则 UUID 为空/缺失的 ES legacy 文档永远删不掉；事件 UUID 允许
+                # 为空，删除事件会清理该 session 下的 legacy 文档。
+                row = conn.execute(
+                    select(sessions).where(sessions.c.session_key == key)
+                ).mappings().first()
+                stale_uuid = (row["session_uuid"] if row else "") or ""
+                if row is not None and settings.message_delete_outbox_enabled:
+                    try:
+                        with conn.begin_nested():
+                            conn.execute(message_delete_outbox.insert().values(
+                                session_key=key, session_uuid=stale_uuid,
+                                status="pending",
+                            ))
+                    except IntegrityError:
+                        # 同一会话实例的重复删除事件：唯一键吸收（幂等）
+                        pass
                 # Review 修复：reset 同事务删除该会话的 memory jobs
                 # （旧 worker 已领取的按 session_uuid 比对判 obsolete）
                 conn.execute(chat_messages.delete().where(chat_messages.c.session_key == key))
-                conn.execute(outbox_rows.delete().where(outbox_rows.c.session_key == key))
+                # 修复计划·二轮 3：不再直接删除全部 Outbox——
+                # pending 旧消息标 obsolete（无需再写 ES）；processing 行保留为
+                # 在途屏障（worker 结算前会做陈旧检查并转 obsolete），删除事件
+                # 需等这些行进入终态后才可领取，避免删完又有迟到写入。
+                conn.execute(
+                    outbox_rows.update()
+                    .where(
+                        outbox_rows.c.session_key == key,
+                        outbox_rows.c.session_uuid == stale_uuid,
+                        outbox_rows.c.status == "pending",
+                    )
+                    .values(
+                        status="obsolete",
+                        next_run_at=None,
+                        lease_owner="",
+                        lease_token="",
+                        lease_until=None,
+                        sync_error="session_reset",
+                    )
+                )
                 conn.execute(memory_jobs.delete().where(memory_jobs.c.session_key == key))
                 conn.execute(sessions.delete().where(sessions.c.session_key == key))
         except Exception as e:
@@ -321,6 +387,32 @@ class SqlSessionStore:
             else:
                 out.append((key, ""))
         return out
+
+
+def _pending_turn_of(row) -> dict | None:
+    """pending_turn_json 读侧容错：损坏/异形按「无草稿」处理（不毁会话加载）。"""
+    raw = row["pending_turn_json"] if "pending_turn_json" in row.keys() else None
+    if not raw:
+        return None
+    try:
+        parsed = json.loads(raw)
+    except (json.JSONDecodeError, TypeError):
+        return None
+    return parsed if isinstance(parsed, dict) else None
+
+
+def _pending_write_of(row) -> dict | None:
+    """pending_write_json 读侧容错：损坏/异形按「无待确认写」处理。"""
+    raw = (
+        row["pending_write_json"] if "pending_write_json" in row.keys() else None
+    )
+    if not raw:
+        return None
+    try:
+        parsed = json.loads(raw)
+    except (json.JSONDecodeError, TypeError):
+        return None
+    return parsed if isinstance(parsed, dict) else None
 
 
 def _tool_name_of(msg: dict) -> str | None:

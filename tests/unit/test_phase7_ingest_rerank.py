@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 
+import httpx
 import pytest
 
 from app.agent.rag.backends.base import RetrievedChunk
@@ -179,65 +180,83 @@ def test_http_reranker_tei_shape():
     assert out[0].chunk.text == "B"
 
 
-def test_http_reranker_fallback_on_network_error():
+def test_http_reranker_raises_unavailable_on_network_error():
+    """RAG 修复计划·1：网络失败不再静默回退原序，抛 RerankerUnavailable。"""
     import httpx
+
+    from app.agent.rag.rerank import RerankerUnavailable
 
     def handler(request: "httpx.Request") -> "httpx.Response":
         raise httpx.ConnectError("network down")
 
     r = HTTPReranker("cohere", client=_client_with(handler))
-    out = r.rerank("问", _hits("A", "B", "C"), top_k=2)
-    # 网络失败 → 原序前 top_k（持续可用，不向上抛）
-    assert [h.chunk.text for h in out] == ["A", "B"]
+    with pytest.raises(RerankerUnavailable):
+        r.rerank("问", _hits("A", "B", "C"), top_k=2)
 
 
-def test_http_reranker_missing_indices_kept_original_order():
+def test_http_reranker_partial_response_raises_unavailable():
+    """RAG-6：有效分不足 min(top_k,候选数) → RerankerUnavailable(partial_response)，
+    不得把未评分候选按旧分数补入。"""
     import httpx
+
+    from app.agent.rag.rerank import RerankerUnavailable
 
     def handler(request: "httpx.Request") -> "httpx.Response":
         return httpx.Response(200, json={"results": [{"index": 0, "relevance_score": 0.1}]})
 
     r = HTTPReranker("jina", client=_client_with(handler))
-    out = r.rerank("问", _hits("A", "B"), top_k=2)
-    assert [h.chunk.text for h in out] == ["A", "B"]  # index 0 保留，B 补位
+    with pytest.raises(RerankerUnavailable) as ei:
+        r.rerank("问", _hits("A", "B"), top_k=2)
+    assert ei.value.reason == "partial_response"
 
 
-def test_http_reranker_partial_scored_then_unscored_fill():
-    """部分索引有分：已评分项按分降序在前，未评分项按原召回顺序补位。"""
+def test_http_reranker_full_coverage_ok():
+    """有效分覆盖 min(top_k,候选数) → 只返回有精排分的候选（无补位）。"""
     import httpx
 
     def handler(request: "httpx.Request") -> "httpx.Response":
         return httpx.Response(200, json={"results": [
             {"index": 2, "relevance_score": 0.9},
             {"index": 0, "relevance_score": 0.3},
+            {"index": 1, "relevance_score": 0.5},
         ]})
 
     r = HTTPReranker("cohere", client=_client_with(handler))
     out = r.rerank("问", _hits("A", "B", "C"), top_k=3)
-    # 已评分：[2, 0]；未评分 1 补位 → [C, A, B]
-    assert [h.chunk.text for h in out] == ["C", "A", "B"]
-    # 分数写回 hit.score（负例拒绝依赖精排分）
-    assert out[0].score == 0.9
+    assert [h.chunk.text for h in out] == ["C", "B", "A"]
+    assert out[0].score == 0.9  # 分数写回 hit.score
 
 
 def test_http_reranker_ignores_bad_indices_and_nan():
-    """越界索引、重复索引、NaN/Inf 分数一律忽略；有效分数仍生效。"""
+    """越界/重复/NaN/Inf 一律忽略；忽略后有效分不足 → partial_response。"""
+    import json as _json
+
     import httpx
 
+    from app.agent.rag.rerank import RerankerUnavailable
+
+    payload = {"results": [
+        {"index": 99, "relevance_score": 1.0},   # 越界
+        {"index": 0, "relevance_score": 0.5},    # 有效
+        {"index": 0, "relevance_score": 0.99},   # 重复索引 → 首见保留
+        {"index": 1, "relevance_score": float("nan")},
+        {"index": 2, "relevance_score": float("inf")},
+    ]}
+
     def handler(request: "httpx.Request") -> "httpx.Response":
-        return httpx.Response(200, json={"results": [
-            {"index": 99, "relevance_score": 1.0},   # 越界
-            {"index": 0, "relevance_score": 0.5},    # 有效
-            {"index": 0, "relevance_score": 0.99},   # 重复索引 → 首见保留
-            {"index": 1, "relevance_score": float("nan")},
-            {"index": 2, "relevance_score": float("inf")},
-        ]})
+        # 手写 JSON 文本：json= 编码器会拒绝 NaN（本测试要模拟畸形分数的响应）
+        return httpx.Response(200, content=_json.dumps(payload))
 
     r = HTTPReranker("jina", client=_client_with(handler))
-    out = r.rerank("问", _hits("A", "B", "C"), top_k=3)
-    assert [h.chunk.text for h in out] == ["A", "B", "C"]  # 仅 0 有分，其余补位
+    # 3 个候选需 3 个有效分，实际仅 index 0 → 部分响应 → 不可用
+    with pytest.raises(RerankerUnavailable) as ei:
+        r.rerank("问", _hits("A", "B", "C"), top_k=3)
+    assert ei.value.reason == "partial_response"
+
+    # top_k=1 时只需 1 个有效分 → 允许，且只返回该候选（无补位）
+    out = r.rerank("问", _hits("A", "B", "C"), top_k=1)
+    assert [h.chunk.text for h in out] == ["A"]
     assert out[0].score == 0.5  # 首见分数保留而非被重复索引覆盖
-    assert out[1].score == 0.5  # B/C 未评分 → 补位原顺序、分不变
 
 
 def test_http_reranker_no_request_on_empty_or_zero_topk():
@@ -263,14 +282,14 @@ def test_http_reranker_batches_with_global_index_offset():
 
     def handler(request: "httpx.Request") -> "httpx.Response":
         body = json.loads(request.content)
-        base = requests.__len__() * 30
+        base = len(requests) * 30
         requests.append(body)
-        # 每批返回「批次内最后一个」分最高（分数唯一，避免并列歧义）→
+        # 每批返回全部索引、分数随全局序号递增（覆盖完整，满足严格精排语义）→
         # 全局末位应排到最前，验证批次偏移合并
         texts = body["documents"]
         return httpx.Response(200, json={"results": [
-            {"index": len(texts) - 1, "relevance_score": 1.0 + base / 100.0},
-            {"index": 0, "relevance_score": 0.1},
+            {"index": i, "relevance_score": (base + i) / 100.0}
+            for i in range(len(texts))
         ]})
 
     hits = _hits(*[f"t{i}" for i in range(35)])

@@ -33,7 +33,7 @@ from __future__ import annotations
 import hashlib
 import re
 import uuid
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 from app.agent.rag.job_store import JobLeaseLost
@@ -87,7 +87,8 @@ _ALIAS_PHASES = (PH_ACTIVATING, PH_ALIAS_ACTIVATED, PH_POINTER_UPDATED)
 BLOCKED_KEY = "kb_write_blocked"
 BLOCKED_VALUE = "reconcile-needed"
 
-_UPLOAD_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
+# fullmatch 语义（低危修复 B3：$+match 会放行尾部换行，如 "abc\n"）
+_UPLOAD_ID_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}")
 
 
 # ============================================================
@@ -653,6 +654,9 @@ class DocumentUploadService:
             "owner: ops\n"
             f"title: {title}\n"
             f"source_format: {fmt}\n"
+            "status: active\n"
+            "authority: platform\n"
+            f"effective_date: {date.today().isoformat()}\n"
             "---\n"
         )
         normalized = f"{frontmatter}# {title}\n\n{text}\n"
@@ -1631,7 +1635,7 @@ def _format_of(filename: str) -> str:
 
 
 def _validate_upload_id(upload_id: str) -> str:
-    if not _UPLOAD_ID_RE.match(upload_id or ""):
+    if not _UPLOAD_ID_RE.fullmatch(upload_id or ""):
         raise UploadError("upload_id 只允许字母/数字开头，[A-Za-z0-9._-]，≤64 字符")
     return upload_id
 

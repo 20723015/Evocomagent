@@ -33,6 +33,10 @@ class CrossHostLockError(Exception):
     """锁被其他主机持有，只能 --force-unlock 处理。"""
 
 
+class LockLostError(Exception):
+    """Redis 锁已丢失（token 为空或键值不匹配：TTL 过期/被抢占）。"""
+
+
 def _default_pid_alive(pid: int) -> bool:
     """检查 PID 是否存活：Windows 用 OpenProcess，POSIX 用 os.kill(pid, 0)。"""
     if os.name == "nt":
@@ -156,10 +160,31 @@ class LockGuard:
             return False
 
     def _read_holder(self) -> dict:
+        """读锁文件持有者。
+
+        文件不存在/为空 → {}（按无持有者走接管流程）；存在但损坏（JSON 解析
+        失败或识别不出持有者）→ LockHeldError fail-closed——低危修复 C4：
+        历史实现损坏时返回 {}，acquire 会误报 CrossHostLockError「跨主机持有」。
+        """
         try:
-            return json.loads(self._path.read_text(encoding="utf-8"))
-        except (json.JSONDecodeError, OSError):
+            raw = self._path.read_text(encoding="utf-8")
+        except (FileNotFoundError, OSError):
             return {}
+        if not raw.strip():
+            return {}
+        data = None
+        try:
+            data = json.loads(raw)
+        except json.JSONDecodeError:
+            pass
+        if not isinstance(data, dict) or (
+            not data.get("hostname") and not data.get("pid")
+        ):
+            raise LockHeldError(
+                f"锁文件损坏且无法识别持有者: {self._path}——"
+                "确认无进程持有后可 --force-unlock"
+            )
+        return data
 
     def release(self) -> None:
         if self._acquired:
@@ -257,6 +282,22 @@ class RedisLockGuard:
                 f"evolution 锁被其他运行者持有（{self._key}），本机跳过本次运行"
             )
         self._held = True
+
+    def assert_held(self) -> None:
+        """副作用前后校验锁仍被本进程持有（与 LockGuard/kb_write_lock 同接口）。
+
+        token 为空（未 acquire）或 Redis 键值不匹配（TTL 过期/被抢占）→
+        LockLostError（低危修复 C4：历史实现缺该校验）。
+        """
+        if not self._held or not self._token:
+            raise LockLostError("Redis 锁未被本进程持有")
+        try:
+            cur = self._redis.get(self._key)
+        except Exception as e:  # noqa: BLE001 —— 校验失败按丢失处理（fail-closed）
+            raise LockLostError(f"Redis 锁校验失败: {e}") from e
+        cur_str = cur.decode("utf-8") if isinstance(cur, bytes) else cur
+        if cur_str != self._token:
+            raise LockLostError("Redis 锁已丢失（键值不匹配：TTL 过期或被抢占）")
 
     def release(self) -> None:
         if not self._held:

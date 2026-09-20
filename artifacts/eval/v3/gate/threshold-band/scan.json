@@ -1,0 +1,71 @@
+{
+  "protocol": "threshold-band-scan-v1",
+  "dataset": {
+    "path": "E:\\ea\\app\\evaluation\\retrieval_cases_v3.json",
+    "sha256": "01e98071182a7cbe7e8395a2286bcfa62a5214007bf327290df582a2a41015f5",
+    "num_cases": 959,
+    "n_easy_positives": 504,
+    "n_negatives": 121
+  },
+  "top_k": 5,
+  "variant": "hybrid-rerank（冻结变体，_apply_variant 显式套用）",
+  "retrieval": {
+    "backend": "es",
+    "hybrid": true,
+    "hybrid_recall_k": 60,
+    "rerank": "none",
+    "rerank_endpoint": "http://127.0.0.1:8001",
+    "canary_top_score": 0.9995908
+  },
+  "negative_base": "数据集 expected=[] 负例（不含 CLI --calibrate 的黄金集 rag_no_hit_* 扩展）",
+  "raw_easy_recall": 0.9444444444444444,
+  "constraints": [
+    {
+      "min_positive_recall": 0.98,
+      "feasible": false,
+      "reason": "原始 easy recall 0.9444 < 0.98，不可达"
+    },
+    {
+      "min_positive_recall": 0.95,
+      "feasible": false,
+      "reason": "原始 easy recall 0.9444 < 0.95，不可达"
+    },
+    {
+      "min_positive_recall": 0.9,
+      "feasible": true,
+      "threshold": 0.2617081,
+      "easy_recall_at_threshold": 0.9007936507936508,
+      "negative_rejection_at_threshold": 0.6694214876033058
+    },
+    {
+      "min_positive_recall": 0.85,
+      "feasible": true,
+      "threshold": 0.3508661,
+      "easy_recall_at_threshold": 0.8501984126984127,
+      "negative_rejection_at_threshold": 0.6859504132231405
+    },
+    {
+      "min_positive_recall": 0.8,
+      "feasible": true,
+      "threshold": 0.4950792,
+      "easy_recall_at_threshold": 0.8005952380952381,
+      "negative_rejection_at_threshold": 0.743801652892562
+    },
+    {
+      "min_positive_recall": 0.7,
+      "feasible": true,
+      "threshold": 0.67640615,
+      "easy_recall_at_threshold": 0.7003968253968254,
+      "negative_rejection_at_threshold": 0.7851239669421488
+    },
+    {
+      "min_positive_recall": 0.5,
+      "feasible": true,
+      "threshold": 0.87245613,
+      "easy_recall_at_threshold": 0.5009920634920635,
+      "negative_rejection_at_threshold": 0.8760330578512396
+    }
+  ],
+  "timestamp": "2026-09-10T01:46:17.893998+00:00",
+  "git_commit": "b87ec1501f6d454a405ee46e1eb2eb78979cb832"
+}

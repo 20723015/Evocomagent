@@ -261,10 +261,27 @@ def calibrate_threshold(
     }
 
 
+def normalize_overlay_subqueries(query: str, extra: list) -> list[str]:
+    """与线上 _normalize_subqueries 同规：原 query 居首，补充子查询去重截断 ≤3。"""
+    out: list[str] = []
+    q = (query or "").strip()
+    if q:
+        out.append(q)
+    for item in extra or []:
+        text = str(item or "").strip()
+        if text and text not in out:
+            out.append(text)
+        if len(out) >= 3:
+            break
+    return out[:3]
+
+
 def evaluate(
     cases: list[dict], retriever, top_k: int = 5,
     min_score: float | None = None,
     min_score_hard: float | None = None,
+    multi_query_overlay: dict[str, list] | None = None,
+    query_normalizer=None,
 ) -> dict:
     """逐用例跑检索并聚合 recall@k / MRR / nDCG@k。
 
@@ -278,8 +295,20 @@ def evaluate(
     min_score / min_score_hard：相关度阈值分 easy/hard 两档。hard 用例默认
     使用与线上一致的 ``min_score``；只有调用方显式传入 ``min_score_hard``
     才采用非线上口径。这样评测不会在 hard 集悄悄绕过线上相关度门控。
+
+    multi_query_overlay（工作流 B）：{case_id: [补充子查询]}。命中的用例改走
+    retriever_factory.final_multi_search（原 query 居首、≤3 条，与线上
+    _normalize_subqueries 同规），逐路门控仍用本次阈值——理想拆解口径下
+    测量多子查询对多跳/双期望用例的召回增益。
+
+    query_normalizer（工作流 A 报告留痕）：QueryNormalizer 实例，**只用于
+    逐例记录改写结果**（normalized_query，未变化为 None）与汇总计数，不参与
+    检索本身——检索路径的规范化发生在 retriever 内部，两者同词表同算法、
+    幂等，结果一致。
     """
-    from app.agent.rag.retriever_factory import final_search
+    import time as _time
+
+    from app.agent.rag.retriever_factory import final_multi_search, final_search
 
     results: list[dict] = []
     for case in cases:
@@ -289,7 +318,25 @@ def evaluate(
                 "hard" in case.get("tags", []) and min_score_hard is not None
             ) else min_score
         )
-        outcome = final_search(retriever, case["query"], k, min_score=threshold)
+        overlay_extra = (multi_query_overlay or {}).get(case["id"])
+        subqueries = (
+            normalize_overlay_subqueries(case["query"], overlay_extra)
+            if overlay_extra else None
+        )
+        # 工作流 A 留痕：改写只记录不参与检索（检索器内部已规范化）
+        normalized_query = None
+        if query_normalizer is not None:
+            nres = query_normalizer.normalize(case["query"])
+            if nres.changed:
+                normalized_query = nres.text
+        _t0 = _time.perf_counter()
+        if subqueries and len(subqueries) > 1:
+            outcome = final_multi_search(
+                retriever, subqueries, k, min_score=threshold,
+            )
+        else:
+            outcome = final_search(retriever, case["query"], k, min_score=threshold)
+        latency_ms = (_time.perf_counter() - _t0) * 1000.0
         hits = outcome.hits
         hit_keys = _unique_keys(hits)
         expected = list(case["expected"])
@@ -299,6 +346,16 @@ def evaluate(
             "query": case["query"],
             "expected": expected,
             "tags": list(case.get("tags", [])),
+            "latency_ms": latency_ms,
+            # 工作流 B：多子查询用例标注（拆解口径审计）
+            "multi": bool(subqueries and len(subqueries) > 1),
+            "subqueries": subqueries or [],
+            # 工作流 A：表层规范化留痕（未装配/未改写为 None）
+            "normalized_query": normalized_query,
+            # RAG 修复计划·1/5：显式检索状态（分数来源/降级）
+            "score_source": outcome.score_source,
+            "degraded": outcome.degraded,
+            "degraded_reason": outcome.degraded_reason,
             "threshold_applied": threshold,
             "hit_keys": hit_keys,
             # 统一口径诊断：原始候选数 / 阈值过滤后候选数 / 折叠后命中键 /
@@ -321,6 +378,25 @@ def evaluate(
     hard = [r for r in positives if "hard" in r["tags"]]
     easy = [r for r in positives if "easy" in r["tags"]]
     negative_rejection = _mean(r["negative_rejected"] for r in negatives)
+    latencies = sorted(r["latency_ms"] for r in results)
+
+    # 工作流 B：多跳（多子查询 overlay 命中）用例双口径——
+    # strict = 全部期望文档都进 Top-K（recall==1.0）；
+    # lenient = 至少命中一份期望文档（recall>0）。仅统计 len(expected)≥2 用例。
+    multi_results = [
+        r for r in positives if r.get("multi") and len(r["expected"]) >= 2
+    ]
+    multi_hop = {
+        "cases": len(multi_results),
+        "strict_rate": _mean(r["recall_at_k"] == 1.0 for r in multi_results),
+        "lenient_rate": _mean(r["recall_at_k"] > 0 for r in multi_results),
+    }
+
+    def _p95(values: list[float]) -> float | None:
+        if not values:
+            return None
+        idx = min(len(values) - 1, int(round(0.95 * (len(values) - 1))))
+        return values[idx]
 
     return {
         "cases": results,
@@ -334,5 +410,14 @@ def evaluate(
                 "rejection_rate": negative_rejection,
                 "false_accept_rate": 1.0 - negative_rejection if negatives else 0.0,
             },
+            # RAG 修复计划·5：延迟与降级观测
+            "p95_latency_ms": _p95(latencies),
+            "degraded_cases": sum(1 for r in results if r.get("degraded")),
+            # 工作流 B：多跳双口径（严格=全命中 / 宽松=至少命中一份）
+            "multi_hop": multi_hop,
+            # 工作流 A：表层规范化改写的用例数（norm 臂审计：离线实测可从报告复核）
+            "query_normalize_rewrites": sum(
+                1 for r in results if r.get("normalized_query")
+            ),
         },
     }

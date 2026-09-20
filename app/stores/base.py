@@ -22,7 +22,15 @@ class SessionState:
     user_id: str = ""  # 阶段三 3.1：session 归属校验（旧数据为空串 → 不校验）
     summary: Optional[str] = None
     messages: list[dict] = field(default_factory=list)
-    short_term_memory: Optional[dict] = None
+    pending_turn: Optional[dict] = None
+    # 掉线恢复（记忆系统重构·Step6）：本轮进行中的草稿标记
+    # {turn_id, user_message, started_at}——轮次开始随 user 消息同事务落库，
+    # 成功收尾时清除；遗留非空 = 上次回复未完成（客户端可提示重发）
+    pending_write: Optional[dict] = None
+    # 写操作两阶段协议（P1-2）：待用户确认的写草稿
+    # {tool, client_request_id, arguments, display, created_at, confirmed_turn}
+    # ——首次调用不落库、只登记草稿；确认轮之后的调用复用同一 client_request_id
+    # 真正执行。随会话持久化（崩溃/重启后草稿仍有效），取消或 reset 时清除。
     version: int = 0  # 乐观锁版本号（乐观锁 CAS 依据）
     consolidated_len: int = 0  # 安全修复 P2：增量巩固水位（持久化防重启重复巩固）
     updated_at: str = ""

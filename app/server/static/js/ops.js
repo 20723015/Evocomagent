@@ -4,6 +4,7 @@
 
 const STATUS_LABELS = { pending: "待处理", resolved: "已处理" };
 const ROLE_LABELS = { user: "用户", assistant: "客服", tool: "工具" };
+const ACTION_LABELS = { claimed: "领取", note: "备注", resolved: "解决" };
 const HUMAN_STATUS_LABELS = {
   pending_review: "待审核", publish_queued: "发布中", published: "已发布",
   rejected: "已拒绝", superseded: "已过期", retired: "已下架",
@@ -17,6 +18,7 @@ const EVIDENCE_STATE_LABELS = {
 
 let opsUser = localStorage.getItem("xiaoxi.userId") || "web-user";
 let currentStatus = "pending";
+let currentScope = "all";  // all | mine（P2-3：我的工单 = 当前认证主体领取的）
 
 /* ---------- 工单看板 ---------- */
 
@@ -25,12 +27,15 @@ async function loadTickets() {
   box.innerHTML = "";
   box.appendChild(loadingHint("正在加载工单…"));
   try {
-    const data = await api(`/v1/handoffs?status=${encodeURIComponent(currentStatus)}`);
+    const mine = currentScope === "mine" ? "&mine=true" : "";
+    const data = await api(`/v1/handoffs?status=${encodeURIComponent(currentStatus)}${mine}`);
     const tickets = data.tickets || [];
     box.innerHTML = "";
     if (!tickets.length) {
-      box.appendChild(emptyState("📭", `暂无${STATUS_LABELS[currentStatus] || ""}工单`,
-        "对话中要求转人工 / guardrail 命中降级时自动生成"));
+      box.appendChild(emptyState("📭", currentScope === "mine"
+        ? "我的工单为空" : `暂无${STATUS_LABELS[currentStatus] || ""}工单`,
+        currentScope === "mine" ? "在「全部工单」里领取工单后，会出现在这里"
+          : "对话中要求转人工 / guardrail 命中降级时自动生成"));
       announce("暂无工单");
       return;
     }
@@ -46,14 +51,61 @@ async function loadTickets() {
   }
 }
 
+async function claimTicket(ticketId, btn) {
+  if (btn) btn.disabled = true;
+  try {
+    const result = await api(`/v1/handoffs/${encodeURIComponent(ticketId)}/claim`, {
+      method: "POST",
+    });
+    toast(result.already ? "该工单已在你名下" : "已领取，可在「我的工单」查看", "ok");
+    announce("工单已领取");
+    loadTickets();
+  } catch (e) {
+    toast("领取失败:" + e.message, "err");
+    announce("工单领取失败");
+    if (btn) btn.disabled = false;
+  }
+}
+
+async function submitNote(ticketId, btn) {
+  const wrap = btn ? btn.closest(".ticket-note") : null;
+  const input = wrap ? wrap.querySelector("textarea") : null;
+  const note = (input ? input.value : "").trim();
+  if (!note) { toast("请先填写处理备注", "err"); return; }
+  btn.disabled = true;
+  try {
+    await api(`/v1/handoffs/${encodeURIComponent(ticketId)}/notes`, {
+      method: "POST", body: JSON.stringify({ note }),
+    });
+    toast("备注已留痕", "ok");
+    announce("处理备注已保存");
+    loadTickets();
+  } catch (e) {
+    toast("备注失败:" + e.message, "err");
+    btn.disabled = false;
+  }
+}
+
 function renderTicket(t) {
   const card = document.createElement("div");
   card.className = "ticket-card";
+  const breached = t.sla_breached === true;
+  if (breached) card.className += " sla-breach";
   const intent = INTENT_LABELS[t.intent] || t.intent || "—";
+  const assigneeChip = t.assignee
+    ? `<span class="chip info">坐席 ${escapeHtml(t.assignee)}</span>`
+    : `<span class="chip">未领取</span>`;
+  const slaChip = breached
+    ? `<span class="chip err" title="超过 SLA 时限">SLA 超时</span>`
+    : (t.sla_due_at
+      ? `<span class="chip" title="SLA 截止时间">SLA ${escapeHtml(fmtTime(t.sla_due_at))}</span>`
+      : "");
   const head = `
     <div class="ticket-top">
       <span class="chip ${t.status === "pending" ? "warn" : "ok"}">${STATUS_LABELS[t.status] || t.status}</span>
       <span class="chip">${escapeHtml(intent)}</span>
+      ${assigneeChip}
+      ${slaChip}
       <span class="tid">${escapeHtml((t.ticket_id || "").slice(0, 12))}</span>
       <span class="t-time">${escapeHtml(fmtTime(t.created_at))}</span>
     </div>
@@ -62,6 +114,7 @@ function renderTicket(t) {
       ${t.question ? `<div class="t-field q"><span class="f-label">用户问题</span><span class="f-val">${renderMd(t.question)}</span></div>` : ""}
       ${t.reply ? `<div class="t-field"><span class="f-label">机器人话术</span><span class="f-val">${renderMd(t.reply)}</span></div>` : ""}
       ${t.summary ? `<div class="t-field"><span class="f-label">对话摘要</span><span class="f-val">${renderMd(t.summary)}</span></div>` : ""}
+      ${t.claimed_at ? `<div class="t-field"><span class="f-label">领取时间</span><span class="f-val">${escapeHtml(fmtTime(t.claimed_at))}</span></div>` : ""}
     </div>`;
   card.innerHTML = head;
 
@@ -81,6 +134,16 @@ function renderTicket(t) {
           <span class="f-val">${renderMd(typeof t.resolution === "string" ? t.resolution : prettyJson(t.resolution))}</span></div>
       </div>`);
   } else {
+    // P2-3：领取 + 处理备注（事件委托绑定，见文件底部 #ticketBox 监听）
+    const claimBtn = t.assignee ? "" : `
+        <button class="btn btn-outline btn-sm" data-claim="${escapeHtml(t.ticket_id)}">领取工单</button>`;
+    card.insertAdjacentHTML("beforeend", `
+      <div class="ticket-actions">${claimBtn}</div>
+      <div class="ticket-note" data-note-for="${escapeHtml(t.ticket_id)}">
+        <textarea aria-label="处理备注" placeholder="追加处理备注（留痕：谁在何时记录了什么）"></textarea>
+        <div class="resolve-row"><span class="spacer"></span>
+          <button class="btn btn-outline btn-sm" data-note-submit="${escapeHtml(t.ticket_id)}">添加备注</button></div>
+      </div>`);
     const form = document.createElement("div");
     form.className = "ticket-resolve";
     form.style.display = "none";
@@ -127,6 +190,14 @@ function renderTicket(t) {
       }
     });
   }
+  // P2-3：处理留痕（谁在何时领取/备注/解决）
+  if (t.events?.length) {
+    const rows = t.events.map(ev => `
+      <div class="t-field"><span class="f-label">${escapeHtml(ACTION_LABELS[ev.action] || ev.action)} · ${escapeHtml(ev.actor || "")} · ${escapeHtml(fmtTime(ev.at))}</span>
+        <span class="f-val">${escapeHtml(ev.note || "")}</span></div>`).join("");
+    card.insertAdjacentHTML("beforeend",
+      `<details class="ticket-trail"><summary>处理留痕（${t.events.length}）</summary>${rows}</details>`);
+  }
   return card;
 }
 
@@ -161,11 +232,17 @@ function renderHumanCandidate(candidate) {
     ? `<div class="t-field"><span class="f-label">评审</span><span class="f-val">${escapeHtml(candidate.eval_model || "—")} · 代际 ${escapeHtml(candidate.eval_kb_generation || "—")}</span></div>` : "";
   const disabledHtml = disabledReason
     ? `<div class="t-field"><span class="f-label">不可批准</span><span class="f-val err">${escapeHtml(disabledReason)}</span></div>` : "";
+  // 旧版本已发布候选（同会话更高版本已接入）：仅提示，不自动下架，人工决策
+  const staleBadge = candidate.version_stale
+    ? `<span class="chip warn" title="该会话已接入更高版本，此条为旧版本知识">新版本已到达</span>` : "";
+  const staleHint = candidate.version_stale && candidate.status === "published"
+    ? `<div class="t-field"><span class="f-label">版本提示</span><span class="f-val err">该会话已接入更高版本，此条仍为线上知识（系统不自动下架）；确认过时请用「下架」处理。</span></div>` : "";
   card.innerHTML = `
     <div class="ticket-top">
       ${selectable ? `<input type="checkbox" data-human-select="${candidate.id}" data-revision="${candidate.revision}" aria-label="选择候选 ${candidate.id}">` : ""}
       <span class="chip ${candidate.status === "pending_review" ? "warn" : "ok"}">${escapeHtml(HUMAN_STATUS_LABELS[candidate.status] || candidate.status)}</span>
       <span class="chip">${escapeHtml(candidate.classification || "未分类")}</span>
+      ${staleBadge}
       <span class="tid">#${candidate.id} · r${candidate.revision} · lc${candidate.lifecycle_revision ?? 0}</span>
     </div>
     <div class="ticket-fields">
@@ -175,6 +252,7 @@ function renderHumanCandidate(candidate) {
       ${reasonHtml}
       ${dedupPath}
       ${evalHtml}
+      ${staleHint}
       ${disabledHtml}
     </div>
     <details class="evidence-details" data-evidence-for="${candidate.id}">
@@ -202,6 +280,9 @@ async function toggleEvidenceDetails(detailsEl, candidateId) {
     const msgs = detail.evidence_snapshot || [];
     const source = detail.source_snapshot || {};
     const lines = [`来源：${escapeHtml(source.source || "—")} / ${escapeHtml(source.external_conversation_id || "—")} v${source.source_version ?? "—"}`];
+    if (detail.version_stale) {
+      lines.push(`<div class="t-field"><span class="f-label">版本提示</span><span class="f-val err">该会话已接入更高版本，此条为旧版本知识（系统不自动下架）；确认过时请用「下架」处理。</span></div>`);
+    }
     for (const m of msgs) {
       lines.push(`<div class="t-field"><span class="f-label">${escapeHtml(m.message_id)} · ${escapeHtml(m.sent_at || "")}</span><span class="f-val">${renderMd(m.content || "")}</span></div>`);
       if (m.prev_customer) lines.push(`<div class="t-field"><span class="f-label">前文(客户)</span><span class="f-val">${escapeHtml(String(m.prev_customer.content || "").slice(0, 200))}</span></div>`);
@@ -399,7 +480,18 @@ $("#statusFilter").addEventListener("change", e => {
   currentStatus = e.target.value;
   loadTickets();
 });
+$("#ticketScope").addEventListener("change", e => {
+  currentScope = e.target.value;
+  loadTickets();
+});
 $("#refreshTickets").addEventListener("click", loadTickets);
+// P2-3：领取 / 备注走事件委托（工单卡片整体重渲染，不逐卡绑定）
+$("#ticketBox").addEventListener("click", e => {
+  const claim = e.target.closest("[data-claim]");
+  if (claim) { claimTicket(claim.dataset.claim, claim); return; }
+  const note = e.target.closest("[data-note-submit]");
+  if (note) submitNote(note.dataset.noteSubmit, note);
+});
 $("#refreshHumanKnowledge").addEventListener("click", loadHumanKnowledge);
 $("#humanKnowledgeStatus").addEventListener("change", loadHumanKnowledge);
 $("#publishHumanKnowledge").addEventListener("click", publishSelectedHumanKnowledge);

@@ -142,3 +142,27 @@ def test_grounding_fallback_and_failure():
     judge2 = GroundingJudge(client2, "fake-model")
     result2 = judge2.judge("答案内容" * 10, _sources())
     assert result2["reason"] == "judge_failed"  # 剧本耗尽 → 全失败分支
+
+
+# ============================================================
+# 低危修复 C3：文本降级路径类型/区间校验
+# ============================================================
+def test_value_judge_text_fallback_coerces_types():
+    """文本路径 `"false"` 字符串不再被 bool() 误判为真；越界质量分钳制到
+    [0,1]（模型可能返回 0-10 分制）。"""
+    client = FakeChatClient()
+    client.enqueue_error(ValueError("parse 不支持"))  # 强制走文本降级
+    client.enqueue_chat('{"worth_saving": "false", "quality_score": 1.7, '
+                        '"reason": "文本路径"}')
+    decision = ValueJudge(client, "fake-model").judge(_qa(), _sources())
+    assert decision.worth_saving is False
+    assert decision.quality_score == 1.0
+
+
+def test_grounding_judge_text_fallback_coerces_types():
+    client = FakeChatClient()
+    client.enqueue_error(ValueError("parse 不支持"))
+    client.enqueue_chat('{"grounded": "false", "unsupported": ["时效 3 天"], '
+                        '"reason": "r"}')
+    verdict = GroundingJudge(client, "fake-model").judge("答案", _sources())
+    assert verdict["grounded"] is False

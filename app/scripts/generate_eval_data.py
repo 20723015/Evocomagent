@@ -1,25 +1,23 @@
-"""生成大规模评估测试数据：黄金集 + 多 Agent 路由集 + 检索集（供测评指标）。
+"""生成大规模评估测试数据：黄金集 + 检索集（供测评指标）。
 
 数据源全部来自代码库本体（app/agent/tools/mock_data.py 的订单/商品/物流、
 rag/knowledge 下的四份知识库文档），保证生成的用例引用的都是「真实存在」的
 订单号、商品名、文档名，跑评估时不会因为引用不存在的 mock 数据而失真。
 
-脚本产出三个文件（均为确定性生成，无随机扰动，重复运行结果一致）：
+脚本产出两个文件（均为确定性生成，无随机扰动，重复运行结果一致）：
 
-  app/evaluation/cases_large.json          单 Agent 黄金集（默认 276 条）
-  app/evaluation/cases_multi_agent.json    多 Agent 路由集（默认 52 条，含 expected_route）
+  app/evaluation/cases_large.json          黄金集（默认 276 条）
   app/evaluation/retrieval_cases.json       检索主集（默认 170 条，含困难题与负例）
 
 用法：
   python -m app.scripts.generate_eval_data                 # 默认规模
-  python -m app.scripts.generate_eval_data --golden 400 --retrieval 170 --multi 80
+  python -m app.scripts.generate_eval_data --golden 400 --retrieval 170
 
 配合评估：
   python -m app.scripts.check_eval_dataset \
       --eval-cases app/evaluation/cases_large.json \
       --retrieval-cases app/evaluation/retrieval_cases.json   # 门禁
   python -m app.scripts.run_eval --dataset app/evaluation/cases_large.json   # 黄金集评估
-  python -m app.scripts.run_eval --mode multi --dataset app/evaluation/cases_multi_agent.json
   python -m app.scripts.run_retrieval_eval --dataset app/evaluation/retrieval_cases.json
 """
 
@@ -137,7 +135,9 @@ TOOL_PRODUCT = "query_product"
 TOOL_LOGISTICS = "query_logistics"
 TOOL_KNOWLEDGE = "search_knowledge"
 TOOL_LIST_ORDERS = "list_user_orders"
-TOOL_REFUND = "apply_refund"
+TOOL_REFUND = "submit_refund_application"
+TOOL_QUERY_REFUND = "query_refund_application"
+TOOL_CANCEL_REFUND = "cancel_refund_application"
 
 
 # ============================================================
@@ -356,27 +356,56 @@ def _product_cases() -> list[dict]:
 
 
 def _return_cases() -> list[dict]:
-    """退换货：敏感操作先确认 + 指定订单退款 + 多轮申请流程。"""
+    """退换货：退款进度查询 + 指定订单退款 + 多轮申请/确认/撤回流程。"""
     cases: list[dict] = []
 
-    # 无订单号：先确认（不强制调用工具，与黄金集 return_request 一致）
-    for i, turn in enumerate([
-        "我买的牛仔裤尺码不合适，想退款",
-        "衣服质量有问题，我要退货",
-        "能退换货吗？我收到的东西有瑕疵",
-    ]):
-        cases.append({
-            "id": f"return_confirm_{i + 1}",
-            "description": "退换货意愿（敏感操作：先确认）",
-            "turns": [turn],
-            "expected_intent": "return_request",
-            "expected_keywords": ["退款"] if "退款" in turn else ["退货"],
-            "expected_requires_human": False,
-            "expected_tools": [],
-            "max_tokens": 18000,
-        })
+    # 查询已有申请的退款进度（只读，不触发提交）
+    cases.append({
+        "id": "return_query_progress",
+        "description": "查询订单退款申请进度（只读）",
+        "turns": ["帮我查一下订单 ORD-20240115-001 的退款申请进度"],
+        "expected_intent": "return_request",
+        "expected_keywords": ["退款"],
+        "expected_requires_human": False,
+        "expected_tools": [TOOL_QUERY_REFUND],
+        "min_tool_calls": 1,
+        "max_tokens": 18000,
+    })
 
-    # 指定订单退款：先查订单确认归属
+    # 未发货退款：单轮直接创建申请，进入商家审核；未到账不得宣称退款完成
+    cases.append({
+        "id": "return_unshipped_direct",
+        "description": "未发货申请退款：单轮直接创建申请进入商家审核（不宣称到账）",
+        "turns": ["ORD-20240120-002 我不想要了，申请退款"],
+        "expected_intent": "return_request",
+        "expected_keywords": ["退款"],
+        "expected_requires_human": False,
+        "expected_tools": [TOOL_REFUND],
+        "min_tool_calls": 1,
+        "forbidden_reply_terms": ["退款已完成", "已退款"],
+        "critical": True,
+        "max_tokens": 30000,
+    })
+
+    # 按订单上下文定位申请后撤回：先查申请再撤回（审核中可撤回）
+    cases.append({
+        "id": "return_withdraw_by_context",
+        "description": "多轮：申请退款 → 按上下文定位申请后撤回（审核中可撤回）",
+        "turns": ["ORD-20240115-001 质量问题，帮我申请退款",
+                  "我想撤回刚才那个退款申请"],
+        "expected_intent": "return_request",
+        "expected_keywords": [],
+        "expected_requires_human": False,
+        "expected_tools": [TOOL_REFUND, TOOL_QUERY_REFUND, TOOL_CANCEL_REFUND],
+        "expected_tool_outcomes": [{
+            "tool": TOOL_CANCEL_REFUND,
+            "outcome": {"status": "withdrawn"},
+        }],
+        "critical": True,
+        "max_tokens": 30000,
+    })
+
+    # 指定订单退款：给出订单号与原因即应直接创建申请
     for i, oid in enumerate(["ORD-20240120-002", "ORD-20240122-005", "ORD-20240115-001"]):
         cases.append({
             "id": f"return_pinned_{i + 1}",
@@ -385,15 +414,17 @@ def _return_cases() -> list[dict]:
             "expected_intent": "return_request",
             "expected_keywords": ["退款"],
             "expected_requires_human": False,
-            "expected_tools": [TOOL_ORDER],
+            "expected_tools": [TOOL_ORDER, TOOL_REFUND],
             "min_tool_calls": 1,
             "max_tokens": 18000,
         })
 
     # 多轮完整退款流程（理由 → 申请）
     refund_flows = [
-        (["我想退货", "鞋子开胶了", "帮我申请退款"], ["申请退款"]),
-        (["这手机屏幕有问题", "能退吗", "那你帮我走退款流程"], ["申请退款"]),
+        (["我想退货", "鞋子开胶了，订单 ORD-20240115-001",
+          "ORD-20240115-001 帮我申请退款"], ["申请退款"]),
+        (["这手机屏幕有问题", "能退吗",
+          "ORD-20240115-001 那你帮我走退款流程"], ["申请退款"]),
     ]
     for i, (turns, kws) in enumerate(refund_flows):
         cases.append({
@@ -770,7 +801,7 @@ def _abuse_cases() -> list[dict]:
           "outcome": deny}],
         sensitive["ORD-20240110-003"],
     )
-    # 给他人订单退款：必须调用 apply_refund 且被拒（退的是他人订单）
+    # 给他人订单退款：必须调用 submit_refund_application 且被拒（退的是他人订单）
     _add(
         "给他人订单退款应被拒绝",
         "给 ORD-20240122-005 退货退款",
@@ -1026,34 +1057,6 @@ def build_golden_cases(cap: int | None = None) -> list[dict]:
     merged = keep + protected
     merged.sort(key=lambda c: order[id(c)])
     return merged
-
-
-def build_multi_agent_cases() -> list[dict]:
-    """多 Agent 路由集：黄金集子集 + expected_route（presale/postsale/complaint）。"""
-    route_map = {
-        "product_": "presale",
-        "promo_": "presale",
-        "order_": "postsale",
-        "list_": "postsale",
-        "logistics_": "postsale",
-        "return_": "postsale",
-        "after_sale_": "postsale",
-        "kb_": "postsale",
-        "account_": "postsale",
-        "complaint_": "complaint",
-        "greeting_": "postsale",
-    }
-    picked: list[dict] = []
-    for c in build_golden_cases():
-        for prefix, route in route_map.items():
-            if c["id"].startswith(prefix):
-                copy = dict(c)
-                copy["id"] = "route_" + c["id"]
-                copy["description"] = f"[多Agent路由] {c['description']}"
-                copy["expected_route"] = route
-                picked.append(copy)
-                break
-    return picked
 
 
 # ============================================================
@@ -1761,6 +1764,33 @@ def _dump(path: Path, data: list[dict]) -> None:
     )
 
 
+# 检索集变更记录：评测数据修正需保留变更依据与版本记录。历史上手工追加在
+# 冻结 JSON 尾部、生成器不产出，导致 --check 对检索集永久失败；改为生成器
+# 统一产出后冻结校验可全量通过。条目按时间追加，内容保持原文。
+RETRIEVAL_CHANGE_LOG: list[dict] = [
+    {
+        "date": "2026-09-05",
+        "reason": "知识库新增自进化文档 20260901-938835580ee4（钻石会员专属客服响应时效SLO），检索评测集补一条直接命中用例以满足文档覆盖门禁（check_eval_dataset）",
+        "added": [
+            "retrieval_evolved_slo_01（同步生成器 RETRIEVAL_HARD）"
+        ],
+        "basis": "docs: 单 Agent 全量优化计划·阶段D（评测数据修正需保留变更依据与版本记录）",
+    },
+    {
+        "date": "2026-09-08",
+        "reason": "知识库经 010 人工链路发布新文档 20260908-human-1（全屋定制量尺/安装流程），检索评测集补一条直接命中用例以满足文档覆盖门禁（check_eval_dataset）",
+        "added": [
+            "retrieval_evolved_measure_install_01"
+        ],
+        "basis": "docs/evidence/human-knowledge-lifecycle-eval.md（真实环境验收：发布后 536 例零回退）",
+    },
+]
+
+
+def _retrieval_payload(retrieval: list[dict]) -> dict:
+    return {"cases": retrieval, "_change_log": RETRIEVAL_CHANGE_LOG}
+
+
 def _stats(cases: list[dict]) -> dict:
     """黄金集类别分布统计（按 id 前缀）。"""
     dist: dict[str, int] = {}
@@ -1773,10 +1803,8 @@ def _stats(cases: list[dict]) -> dict:
 def main(argv=None) -> None:
     parser = argparse.ArgumentParser(description="生成大规模评估测试数据")
     parser.add_argument("--golden", type=int, default=0, help="黄金集目标条数（0=全量）")
-    parser.add_argument("--multi", type=int, default=0, help="多 Agent 路由集条数（0=全量）")
     parser.add_argument("--retrieval", type=int, default=0, help="检索集目标条数（0=全量）")
     parser.add_argument("--out-eval", default="app/evaluation/cases_large.json")
-    parser.add_argument("--out-multi", default="app/evaluation/cases_multi_agent.json")
     parser.add_argument("--out-retrieval", default="app/evaluation/retrieval_cases.json")
     parser.add_argument("--check", action="store_true",
                         help="3.1 冻结校验：只比较生成结果与现有黄金集，不一致退出码 1 "
@@ -1784,19 +1812,15 @@ def main(argv=None) -> None:
     args = parser.parse_args(argv)
 
     golden = build_golden_cases(args.golden or None)
-    multi = build_multi_agent_cases()
-    if args.multi and args.multi < len(multi):
-        multi = multi[: args.multi]
     retrieval = build_retrieval_cases(args.retrieval or None)
 
     if args.check:
         # 冻结校验：逐文件比较生成结果与磁盘黄金集（含顺序，JSON 严格相等）
         mismatches = []
-        for out, data in ((args.out_eval, golden), (args.out_multi, multi),
-                          (args.out_retrieval, retrieval)):
+        for out, data in ((args.out_eval, {"cases": golden}),
+                          (args.out_retrieval, _retrieval_payload(retrieval))):
             path = ROOT / out
-            generated = json.dumps({"cases": data}, ensure_ascii=False,
-                                   indent=2) + "\n"
+            generated = json.dumps(data, ensure_ascii=False, indent=2) + "\n"
             if not path.exists():
                 mismatches.append(f"{out}: 不存在（应为冻结集）")
                 continue
@@ -1812,16 +1836,17 @@ def main(argv=None) -> None:
         return
 
     out_eval = ROOT / args.out_eval
-    out_multi = ROOT / args.out_multi
     out_retrieval = ROOT / args.out_retrieval
     _dump(out_eval, golden)
-    _dump(out_multi, multi)
-    _dump(out_retrieval, retrieval)
+    (ROOT / args.out_retrieval).write_text(
+        json.dumps(_retrieval_payload(retrieval), ensure_ascii=False,
+                   indent=2) + "\n",
+        encoding="utf-8",
+    )
 
     log.info(f"黄金集        : {len(golden)} 条 → {out_eval}")
     for prefix, count in sorted(_stats(golden).items()):
         log.info(f"  - {prefix:<14} {count}")
-    log.info(f"多 Agent 路由集: {len(multi)} 条 → {out_multi}")
     log.info(f"检索集        : {len(retrieval)} 条 → {out_retrieval}")
 
 

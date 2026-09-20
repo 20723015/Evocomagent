@@ -22,9 +22,11 @@ from sqlalchemy.pool import StaticPool
 from app.config.settings import settings
 from app.evolution.human_store import (
     CAND_PENDING_REVIEW,
+    CAND_PUBLISHED,
     CAND_PUBLISH_QUEUED,
     CAND_REJECTED,
     CAND_SUPERSEDED,
+    BATCH_OP_RETIRE,
     HumanKnowledgeConflict,
     HumanKnowledgeStore,
     HumanLeaseLost,
@@ -1151,7 +1153,7 @@ class TestLedgerMigration:
 class _FakeComponents:
     redis = None
     db_engine = None
-    es_client = None
+    es_provider = None
     message_index = ""
     tool_executor = None
     mcp_client = None
@@ -1487,3 +1489,145 @@ class TestPublishBatchApi:
         )
         assert r.status_code == 409
         assert store.get_candidate(cand["id"])["status"] == CAND_PENDING_REVIEW
+
+
+# ============================================================
+# P2-3：旧版本已发布候选 stale 标记（标记可见、不自动下架）
+# ============================================================
+def _seed_lifecycle_candidate(
+    store,
+    conversation_id,
+    *,
+    candidate_id=601,
+    status="published",
+    lifecycle_revision=1,
+    filename="evolved/stale.md",
+):
+    """直接播种指定状态的候选（stale 语义只需行状态与会话关联）。"""
+    from app.stores.sql.schema import human_knowledge_candidates as _C
+
+    with store._engine.begin() as conn:
+        conn.execute(
+            _C.insert().values(
+                id=candidate_id,
+                conversation_id=conversation_id,
+                status=status,
+                question="拆封的耳机能不能退货？",
+                answer="拆封不影响二次销售的可以七天无理由退货退款。",
+                evidence_state="ok",
+                classification="new",
+                value_score=0.9,
+                published_filename=filename if status == "published" else "",
+                published_at=datetime.now() if status == "published" else None,
+                lifecycle_revision=lifecycle_revision,
+            )
+        )
+
+
+class TestVersionStale:
+    def test_higher_version_marks_old_published_stale(self, env):
+        """更高版本接入：旧 published 候选置 stale=1 且不自动下架。"""
+        _engine, store = env
+        record1, _ = _ingest(store)
+        _seed_lifecycle_candidate(store, record1["id"])
+        assert store.get_candidate(601)["version_stale"] == 0
+        assert store.stats()["stale_published"] == 0
+
+        _ingest(store, source_version=2)
+
+        fresh = store.get_candidate(601)
+        assert fresh["status"] == CAND_PUBLISHED
+        assert fresh["version_stale"] == 1
+        assert store.stats()["stale_published"] == 1
+
+        # v2 幂等重放不重复计数（标记 WHERE version_stale=0 保证）
+        _ingest(store, source_version=2)
+        assert store.stats()["stale_published"] == 1
+
+    def test_higher_version_supersedes_pending_and_marks_published(self, env):
+        """旧版本 pending 候选仍走 superseded（原行为），published 候选打标。"""
+        _engine, store = env
+        record1, _ = _ingest(store)
+        _seed_lifecycle_candidate(
+            store, record1["id"], candidate_id=602, status=CAND_PENDING_REVIEW
+        )
+        _seed_lifecycle_candidate(store, record1["id"], candidate_id=603)
+        _ingest(store, source_version=2)
+        pending = store.get_candidate(602)
+        assert pending["status"] == CAND_SUPERSEDED
+        published = store.get_candidate(603)
+        assert published["status"] == CAND_PUBLISHED
+        assert published["version_stale"] == 1
+
+    def test_stale_cleared_on_replacement_settlement(self, env):
+        _engine, store = env
+        record1, _ = _ingest(store)
+        _seed_lifecycle_candidate(store, record1["id"])
+        _ingest(store, source_version=2)
+        assert store.get_candidate(601)["version_stale"] == 1
+        assert store.mark_candidate_superseded_by(601, replaced_by=999) is True
+        fresh = store.get_candidate(601)
+        assert fresh["status"] == CAND_SUPERSEDED
+        assert fresh["version_stale"] == 0
+        assert store.stats()["stale_published"] == 0
+
+    def test_stale_cleared_on_retire_settlement(self, env):
+        """retire CAS 结算清零（与发布 Worker 同一路径 _settle_result_candidate）。"""
+        _engine, store = env
+        record1, _ = _ingest(store)
+        _seed_lifecycle_candidate(store, record1["id"], lifecycle_revision=1)
+        _ingest(store, source_version=2)
+        assert store.get_candidate(601)["version_stale"] == 1
+        with store._engine.begin() as conn:
+            misses = store._settle_result_candidate(
+                conn,
+                {"id": 1, "reason": "manual_retire"},
+                BATCH_OP_RETIRE,
+                {
+                    "candidate_id": 601,
+                    "status": "retired",
+                    "lifecycle_revision": 1,
+                    "filename": "evolved/stale.md",
+                },
+                "gen-x",
+            )
+        assert misses == []
+        fresh = store.get_candidate(601)
+        assert fresh["status"] == "retired"
+        assert fresh["version_stale"] == 0
+        assert store.stats()["stale_published"] == 0
+
+    def test_stale_cleared_on_revalidation_reset(self, env):
+        _engine, store = env
+        record1, _ = _ingest(store)
+        _seed_lifecycle_candidate(store, record1["id"])
+        _ingest(store, source_version=2)
+        assert store.get_candidate(601)["version_stale"] == 1
+        assert store.reset_candidate_revalidation_failed(601, "revalidate_failed")
+        fresh = store.get_candidate(601)
+        assert fresh["status"] == CAND_PENDING_REVIEW
+        assert fresh["version_stale"] == 0
+
+
+class TestEnqueueRetireBatchSkipRetired:
+    def test_compensation_replay_skips_retired_candidates(self, env):
+        """补偿恢复重放：已 retired 候选跳过——不建项也不计 document_missing。"""
+        _engine, store = env
+        record1, _ = _ingest(store)
+        _seed_lifecycle_candidate(store, record1["id"], candidate_id=701)
+        _seed_lifecycle_candidate(
+            store, record1["id"], candidate_id=702, status="retired"
+        )
+        batch_id = store.enqueue_retire_batch(
+            [{"candidate_id": 701}, {"candidate_id": 702}],
+            reason="compensation-replay",
+        )
+        assert batch_id is not None
+        items = store.get_batch(batch_id)["items"]
+        assert [it["candidate_id"] for it in items] == [701]
+
+        # 只剩 retired 候选 → 整批不建
+        assert (
+            store.enqueue_retire_batch([{"candidate_id": 702}], reason="replay")
+            is None
+        )

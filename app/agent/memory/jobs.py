@@ -134,9 +134,19 @@ class SqlMemoryJobStore:
                     rows = list(rows) + list(stale)
                 claimed: list[dict] = []
                 for row in rows:
-                    conn.execute(
+                    # 低危修复 B7：CAS 领取——UPDATE 带状态前置条件并检查
+                    # rowcount。SQLite 无行锁（FOR UPDATE 被忽略），双 worker
+                    # 都会 SELECT 到同一批，后提交者必须抢输（rowcount=0）
+                    if row["status"] == "processing":
+                        precondition = (
+                            memory_jobs.c.status == "processing",
+                            memory_jobs.c.lease_until < now,
+                        )
+                    else:
+                        precondition = (memory_jobs.c.status == "pending",)
+                    updated = conn.execute(
                         memory_jobs.update()
-                        .where(memory_jobs.c.id == row["id"])
+                        .where(memory_jobs.c.id == row["id"], *precondition)
                         .values(
                             status="processing",
                             leased_by=worker_id,
@@ -144,7 +154,8 @@ class SqlMemoryJobStore:
                             updated_at=now,
                         )
                     )
-                    claimed.append(dict(row))
+                    if updated.rowcount:
+                        claimed.append(dict(row))
                 return claimed
         except Exception as e:  # noqa: BLE001 —— 领取失败下轮再试
             log.warning("memory_job.claim_failed err=%s", type(e).__name__)
@@ -242,6 +253,13 @@ class SqlMemoryJobStore:
                 out.append(json.loads(raw))
             except (json.JSONDecodeError, TypeError):
                 continue
+        if rows and not out:
+            # 低危修复 B7：增量行非空但全部解析失败 → 抛异常走 job 失败路径
+            # （保留消息待重试/告警），不得静默按「无消息」推进水位标 done
+            raise RuntimeError(
+                f"memory job 增量消息全部损坏（session={session_key}, "
+                f"rows={len(rows)}, seq=({watermark}, {through_seq}]）"
+            )
         return out
 
     def watermark(self, session_key: str) -> int:
@@ -322,7 +340,9 @@ class FileMemoryJobStore:
                 os.write(fd, f"{os.getpid()}\n".encode("ascii"))
                 os.close(fd)
                 fd = -1
-            except FileExistsError:
+            except (FileExistsError, PermissionError):
+                # Windows 并发 O_EXCL 建锁偶发 PermissionError（创建/删除窗口），
+                # 与 FileExistsError 同义：视为竞争，退避重试
                 try:
                     age = time.time() - self._lock.stat().st_mtime
                     if age > 120.0:
@@ -581,17 +601,25 @@ def build_memory_job_store(engine=None, redis=None):
 # ============================================================
 def build_memory_job_worker(components) -> MemoryJobWorker:
     """按 pod 组件装配 worker：SQL 正本优先，否则文件轻量队列。"""
+    from app.agent.memory.embeddings import build_memory_embedding_store
     from app.agent.memory.long_term import LongTermMemory
 
     engine = getattr(components, "db_engine", None)
     store = build_memory_job_store(engine, redis=getattr(components, "redis", None))
+    # 记忆系统重构·阶段2：嵌入派生存储与正本同介质（SQL>Redis>文件）
+    embedding_store = build_memory_embedding_store(
+        engine=engine, redis=getattr(components, "redis", None),
+        memory_dir=settings.memory_dir,
+    )
 
-    def _ltm_factory(user_id: str) -> LongTermMemory:
+    def _ltm_factory(user_id: str, session_id: str) -> LongTermMemory:
         return LongTermMemory(
             user_id=user_id,
             memory_dir=settings.memory_dir,
             max_facts=settings.max_ltm_facts,
             store=getattr(components, "ltm_store", None),
+            source_session=session_id,
+            embedding_store=embedding_store,
         )
 
     return MemoryJobWorker(
@@ -609,29 +637,122 @@ class MemoryJobWorker:
     def __init__(self, store, ltm_factory, llm_client, model: str,
                  worker_id: str = ""):
         self._store = store
-        self._ltm_factory = ltm_factory  # callable(user_id) -> LongTermMemory
+        # 批次3（Review #4）：工厂签名 (user_id, session_id)——worker 巩固的
+        # 事实/摘要必须携带 source_session（provenance + 跨会话去重键）
+        self._ltm_factory = ltm_factory  # callable(user_id, session_id) -> LongTermMemory
         self._client = llm_client
         self._model = model
         self._worker_id = worker_id or "worker-1"
 
+    def backfill_embeddings(self, user_id: str) -> int:
+        """记忆系统重构·阶段2.2：对该用户 active 事实补算嵌入（一次性，量小）。
+
+        内容寻址：content_hash 未变（内容/模型均未变）自动跳过，可安全重复
+        调用；嵌入是派生数据，失败只记日志不抛出。
+        """
+        from app.llm.embeddings import get_memory_embedder
+        from app.agent.memory.embeddings import backfill_embeddings as _backfill
+
+        embedder = get_memory_embedder()
+        if embedder is None:
+            return 0
+        try:
+            ltm = self._ltm_factory(user_id, "")
+            ltm.load()
+            store = getattr(ltm, "_embedding_store", None)
+            return _backfill(
+                user_id, ltm.active_facts, embedder, store,
+            )
+        except Exception as e:  # noqa: BLE001 —— 派生数据，失败不阻塞
+            log.info(
+                "memory.embedding_backfill_failed user=%s err=%s",
+                user_id, type(e).__name__,
+            )
+            return 0
+
+    def run_sweep(self, user_id: str) -> dict:
+        """记忆系统重构·阶段3：巩固清理 sweep（观察期手动触发入口）。
+
+        开关默认关；即使开启也要求 active 事实数超阈值才执行（事实少
+        无清理必要）。返回统计字典（观测/验收用）。
+        """
+        if not settings.memory_sweep_enabled:
+            return {"skipped": "disabled"}
+        try:
+            ltm = self._ltm_factory(user_id, "sweep")
+            ltm.load()
+            if len(ltm.active_facts) <= settings.memory_sweep_active_threshold:
+                return {"skipped": "below_threshold",
+                        "active": len(ltm.active_facts)}
+            from app.agent.memory.sweep import run_sweep
+            from app.llm.embeddings import get_memory_embedder
+
+            return run_sweep(
+                user_id, ltm, self._client, self._model,
+                embedder=get_memory_embedder(),
+            )
+        except Exception as e:  # noqa: BLE001 —— sweep 失败不影响 worker
+            log.info(
+                "memory.sweep_failed user=%s err=%s", user_id, type(e).__name__,
+            )
+            return {"skipped": "error", "error": type(e).__name__}
+
+    def _embed_facts_after_consolidation(self, ltm, user_id: str) -> None:
+        """阶段2.3：嵌入随巩固生成（写侧）。
+
+        extract_and_save 成功后，对新增/变更（content_hash 未命中）的
+        active 事实补算嵌入并写派生存储。**失败只记日志，不 fail job**——
+        嵌入可后补（backfill），事实正本不丢。
+        """
+        from app.llm.embeddings import get_memory_embedder
+        from app.agent.memory.embeddings import backfill_embeddings as _backfill
+
+        embedder = get_memory_embedder()
+        if embedder is None:
+            return
+        try:
+            store = getattr(ltm, "_embedding_store", None)
+            _backfill(user_id, ltm.active_facts, embedder, store, stage="write")
+        except Exception as e:  # noqa: BLE001
+            log.info(
+                "memory.embedding_write_failed user=%s err=%s",
+                user_id, type(e).__name__,
+            )
+
     def process_once(self, limit: int = 5) -> int:
-        """处理一批任务；返回完成数（供循环/测试断言）。"""
+        """处理一批任务；返回完成数（供循环/测试断言）。
+
+        修复计划·二轮 7：每个任务用任务自身 user_id 建立预算作用域（空 user_id
+        的异常任务不得以匿名方式绕过预算），退出时恢复原 ContextVar。
+        """
+        from app.security.ratelimit import budget_user_scope
+
         claimed = self._store.claim(self._worker_id, limit=limit)
         done = 0
         for job in claimed:
+            job_user = str(job.get("user_id", "") or "")
+            if not job_user:
+                # 无用户归属的异常任务：拒绝处理（否则 LLM 调用会匿名绕过预算）
+                log.warning(
+                    "memory_job.missing_user session=%s seq=%s",
+                    job.get("session_key"), job.get("through_seq"),
+                )
+                self._store.fail(job, ValueError("missing user_id：拒绝匿名计费"))
+                continue
             try:
-                if self._store.is_duplicate(job):
-                    # 至少一次投递：重复任务按水位直接确认（幂等）
+                with budget_user_scope(job_user):
+                    if self._store.is_duplicate(job):
+                        # 至少一次投递：重复任务按水位直接确认（幂等）
+                        self._store.complete(job)
+                        done += 1
+                        continue
+                    processed = self._process_job(job)
+                    if processed is False:
+                        # Review 修复：obsolete 任务状态已由 store 落库，
+                        # 绝不确认完成（避免把新会话水位误推进）
+                        continue
                     self._store.complete(job)
                     done += 1
-                    continue
-                processed = self._process_job(job)
-                if processed is False:
-                    # Review 修复：obsolete 任务状态已由 store 落库，
-                    # 绝不确认完成（避免把新会话水位误推进）
-                    continue
-                self._store.complete(job)
-                done += 1
             except Exception as e:  # noqa: BLE001 —— 单任务失败不拖垮 worker
                 log.warning(
                     "memory_job.failed session=%s seq=%s err=%s",
@@ -675,7 +796,10 @@ class MemoryJobWorker:
             if advance is not None:
                 advance(session_key, through_seq)
             return True
-        ltm = self._ltm_factory(user_id)
+        # 批次3（Review #4）：从 session_key（user/session）partition 出
+        # session_id 传入工厂——provenance 与摘要去重键不再丢失
+        session_id = session_key.partition("/")[2]
+        ltm = self._ltm_factory(user_id, session_id)
         summary_text = ""
         from app.agent.tools.digest import render_tool_result_line, tool_call_name_map
 
@@ -693,6 +817,20 @@ class MemoryJobWorker:
             else:
                 transcript.append(msg)
         ltm.extract_and_save(self._client, self._model, transcript, summary_text)
+        # 阶段2.3：嵌入随巩固生成（失败不 fail job——嵌入可后补，事实不丢）
+        self._embed_facts_after_consolidation(ltm, user_id)
+        # 阶段3：巩固后顺带 sweep（active 数阈值门；sweep 与门槛求值一并
+        # 纳入 try——门槛读 ltm.active_facts，任何异常都不得影响本 job 的
+        # 巩固成果与水位推进）
+        try:
+            if (settings.memory_sweep_enabled
+                    and len(ltm.active_facts) > settings.memory_sweep_active_threshold):
+                self.run_sweep(user_id)
+        except Exception as e:  # noqa: BLE001
+            log.info(
+                "memory.sweep_after_consolidation_failed user=%s err=%s",
+                user_id, type(e).__name__,
+            )
         advance = getattr(self._store, "advance_watermark", None)
         if advance is not None:
             advance(session_key, through_seq)

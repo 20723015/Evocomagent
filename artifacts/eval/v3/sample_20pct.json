@@ -1,0 +1,1157 @@
+{
+  "cases": [
+    {
+      "id": "retrieval_v3_hard_a_001",
+      "query": "衣服就套着试了下能不要嘛",
+      "expected": [
+        "七天无理由商品清单.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "noisy"
+      ],
+      "verdict": "pass",
+      "note": "expected 存在；词面接地低系 hard 用例设计特征（口语/错字/间接），语义合理性由 embedding+rerank 职责覆盖"
+    },
+    {
+      "id": "retrieval_v3_hard_a_006",
+      "query": "五千多的冰箱退货要等多久钱才能回来",
+      "expected": [
+        "大额订单退款时效.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "noisy"
+      ],
+      "verdict": "pass",
+      "note": "expected 存在；词面接地低系 hard 用例设计特征（口语/错字/间接），语义合理性由 embedding+rerank 职责覆盖"
+    },
+    {
+      "id": "retrieval_v3_hard_a_011",
+      "query": "商家送的运费险和自己在买的那个打架不",
+      "expected": [
+        "运费险商家版规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "noisy"
+      ],
+      "verdict": "pass",
+      "note": "逐条语义裁决：noisy（商家赠险 vs 自购险冲突），expected 商家版规则合理"
+    },
+    {
+      "id": "retrieval_v3_hard_a_016",
+      "query": "平台上都有哪些券能领",
+      "expected": [
+        "优惠券与促销规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "noisy"
+      ],
+      "verdict": "pass",
+      "note": "逐条语义裁决：noisy 口语问券种类，expected 促销规则合理"
+    },
+    {
+      "id": "retrieval_v3_hard_a_021",
+      "query": "冷链送的冰激凌化了能不能赔",
+      "expected": [
+        "冷链配送标准.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "noisy"
+      ],
+      "verdict": "pass",
+      "note": "expected 存在；词面接地低系 hard 用例设计特征（口语/错字/间接），语义合理性由 embedding+rerank 职责覆盖"
+    },
+    {
+      "id": "retrieval_v3_hard_a_026",
+      "query": "海淘的裤子不想要了退回去亏不亏",
+      "expected": [
+        "跨境退货特别流程.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "noisy"
+      ],
+      "verdict": "pass",
+      "note": "expected 存在；词面接地低系 hard 用例设计特征（口语/错字/间接），语义合理性由 embedding+rerank 职责覆盖"
+    },
+    {
+      "id": "retrieval_v3_hard_a_031",
+      "query": "送的礼品卡能折成现金不",
+      "expected": [
+        "礼品卡与储值卡.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "noisy"
+      ],
+      "verdict": "pass",
+      "note": "expected 存在；词面接地低系 hard 用例设计特征（口语/错字/间接），语义合理性由 embedding+rerank 职责覆盖"
+    },
+    {
+      "id": "retrieval_v3_hard_a_036",
+      "query": "刚买完就降价了想申家保",
+      "expected": [
+        "价保与赔付规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "typo"
+      ],
+      "verdict": "pass",
+      "note": "expected 存在；词面接地低系 hard 用例设计特征（口语/错字/间接），语义合理性由 embedding+rerank 职责覆盖"
+    },
+    {
+      "id": "retrieval_v3_hard_a_041",
+      "query": "积份放多久过期清零",
+      "expected": [
+        "积分兑换与抵扣规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "typo"
+      ],
+      "verdict": "pass",
+      "note": "逐条语义裁决：typo（积分→积份），expected 积分规则合理"
+    },
+    {
+      "id": "retrieval_v3_hard_a_046",
+      "query": "冷练的雪糕化了能赔不",
+      "expected": [
+        "冷链配送标准.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "typo"
+      ],
+      "verdict": "pass",
+      "note": "expected 存在；词面接地低系 hard 用例设计特征（口语/错字/间接），语义合理性由 embedding+rerank 职责覆盖"
+    },
+    {
+      "id": "retrieval_v3_hard_a_051",
+      "query": "跨静退货的运费谁承担",
+      "expected": [
+        "跨境退货特别流程.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "typo"
+      ],
+      "verdict": "pass",
+      "note": "逐条语义裁决：typo（跨境→跨静），expected 跨境退货特别流程合理"
+    },
+    {
+      "id": "retrieval_v3_hard_a_056",
+      "query": "百亿补帖的东西退货还有补贴吗",
+      "expected": [
+        "百亿补贴规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "typo"
+      ],
+      "verdict": "pass",
+      "note": "expected 存在；词面接地低系 hard 用例设计特征（口语/错字/间接），语义合理性由 embedding+rerank 职责覆盖"
+    },
+    {
+      "id": "retrieval_v3_hard_a_061",
+      "query": "个人信系想一键清掉怎么办",
+      "expected": [
+        "隐私与个人信息.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "typo"
+      ],
+      "verdict": "pass",
+      "note": "expected 存在；词面接地低系 hard 用例设计特征（口语/错字/间接），语义合理性由 embedding+rerank 职责覆盖"
+    },
+    {
+      "id": "retrieval_v3_hard_a_066",
+      "query": "微x里什么时候能看到退款到账",
+      "expected": [
+        "退款到账时效分档表.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "pinyin"
+      ],
+      "verdict": "pass",
+      "note": "逐条语义裁决：pinyin（微信→微x），expected 到账时效合理"
+    },
+    {
+      "id": "retrieval_v3_hard_a_071",
+      "query": "先用后f额度怎么才能提上去",
+      "expected": [
+        "先用后付额度规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "pinyin"
+      ],
+      "verdict": "pass",
+      "note": "expected 存在；词面接地低系 hard 用例设计特征（口语/错字/间接），语义合理性由 embedding+rerank 职责覆盖"
+    },
+    {
+      "id": "retrieval_v3_hard_a_076",
+      "query": "发p多久能开出来",
+      "expected": [
+        "发票与开票规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "pinyin"
+      ],
+      "verdict": "pass",
+      "note": "expected 存在；词面接地低系 hard 用例设计特征（口语/错字/间接），语义合理性由 embedding+rerank 职责覆盖"
+    },
+    {
+      "id": "retrieval_v3_hard_a_081",
+      "query": "会员价b能保多少天",
+      "expected": [
+        "会员价保升级规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "pinyin"
+      ],
+      "verdict": "pass",
+      "note": "expected 存在；词面接地低系 hard 用例设计特征（口语/错字/间接），语义合理性由 embedding+rerank 职责覆盖"
+    },
+    {
+      "id": "retrieval_v3_hard_b_001",
+      "query": "上次那个先享后付的单子，能拖到什么时候才扣款",
+      "expected": [
+        "先用后付与分期付款.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "indirect"
+      ],
+      "verdict": "pass",
+      "note": "expected 存在；词面接地低系 hard 用例设计特征（口语/错字/间接），语义合理性由 embedding+rerank 职责覆盖"
+    },
+    {
+      "id": "retrieval_v3_hard_b_006",
+      "query": "那个商家送给我的退货险，赔得比我买的那份多吗",
+      "expected": [
+        "运费险商家版规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "indirect"
+      ],
+      "verdict": "pass",
+      "note": "expected 存在；词面接地低系 hard 用例设计特征（口语/错字/间接），语义合理性由 embedding+rerank 职责覆盖"
+    },
+    {
+      "id": "retrieval_v3_hard_b_011",
+      "query": "那个要现做的货，想加急得加多少钱",
+      "expected": [
+        "定制商品生产周期说明.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "indirect"
+      ],
+      "verdict": "pass",
+      "note": "expected 存在；词面接地低系 hard 用例设计特征（口语/错字/间接），语义合理性由 embedding+rerank 职责覆盖"
+    },
+    {
+      "id": "retrieval_v3_hard_b_016",
+      "query": "上次那个从保税仓发出来的，要多久才能送到",
+      "expected": [
+        "跨境清关与税费说明.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "indirect"
+      ],
+      "verdict": "pass",
+      "note": "expected 存在；词面接地低系 hard 用例设计特征（口语/错字/间接），语义合理性由 embedding+rerank 职责覆盖"
+    },
+    {
+      "id": "retrieval_v3_hard_b_021",
+      "query": "那个冷鲜的箱子到手后，多久以内坏了能赔",
+      "expected": [
+        "冷链配送标准.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "indirect"
+      ],
+      "verdict": "pass",
+      "note": "expected 存在；词面接地低系 hard 用例设计特征（口语/错字/间接），语义合理性由 embedding+rerank 职责覆盖"
+    },
+    {
+      "id": "retrieval_v3_hard_b_026",
+      "query": "那跨境退货呢，国际运费谁出",
+      "expected": [
+        "跨境退货特别流程.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "ellipsis"
+      ],
+      "verdict": "pass",
+      "note": "接地 0.55"
+    },
+    {
+      "id": "retrieval_v3_hard_b_031",
+      "query": "那自提的运费呢，还会另外收吗",
+      "expected": [
+        "门店自提规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "ellipsis"
+      ],
+      "verdict": "pass",
+      "note": "expected 存在；词面接地低系 hard 用例设计特征（口语/错字/间接），语义合理性由 embedding+rerank 职责覆盖"
+    },
+    {
+      "id": "retrieval_v3_hard_b_036",
+      "query": "那预售的发货呢，也是48小时吗",
+      "expected": [
+        "预售商品规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "ellipsis"
+      ],
+      "verdict": "pass",
+      "note": "expected 存在；词面接地低系 hard 用例设计特征（口语/错字/间接），语义合理性由 embedding+rerank 职责覆盖"
+    },
+    {
+      "id": "retrieval_v3_hard_b_041",
+      "query": "那运费险呢，商家送的那种能赔多少",
+      "expected": [
+        "运费险商家版规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "ellipsis"
+      ],
+      "verdict": "pass",
+      "note": "expected 存在；词面接地低系 hard 用例设计特征（口语/错字/间接），语义合理性由 embedding+rerank 职责覆盖"
+    },
+    {
+      "id": "retrieval_v3_hard_b_046",
+      "query": "在西藏那曲收货，订单满了99元还要收偏远附加费吗",
+      "expected": [
+        "偏远地区配送补充说明.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "condition"
+      ],
+      "verdict": "pass",
+      "note": "expected 存在；词面接地低系 hard 用例设计特征（口语/错字/间接），语义合理性由 embedding+rerank 职责覆盖"
+    },
+    {
+      "id": "retrieval_v3_hard_b_051",
+      "query": "今年跨境额度已经花到26000了，还能再下单吗",
+      "expected": [
+        "跨境清关与税费说明.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "condition"
+      ],
+      "verdict": "pass",
+      "note": "expected 存在；词面接地低系 hard 用例设计特征（口语/错字/间接），语义合理性由 embedding+rerank 职责覆盖"
+    },
+    {
+      "id": "retrieval_v3_hard_b_056",
+      "query": "在校研究生做学信网认证后，买手机会有校园价吗",
+      "expected": [
+        "校园专区规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "condition"
+      ],
+      "verdict": "pass",
+      "note": "expected 存在；词面接地低系 hard 用例设计特征（口语/错字/间接），语义合理性由 embedding+rerank 职责覆盖"
+    },
+    {
+      "id": "retrieval_v3_hard_b_061",
+      "query": "县城只有邮政便民自提点，到件了能放几天",
+      "expected": [
+        "门店自提规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "condition"
+      ],
+      "verdict": "pass",
+      "note": "expected 存在；词面接地低系 hard 用例设计特征（口语/错字/间接），语义合理性由 embedding+rerank 职责覆盖"
+    },
+    {
+      "id": "retrieval_v3_hard_b_066",
+      "query": "定制橱柜拖了20天还没交付，有赔偿吗",
+      "expected": [
+        "定制商品生产周期说明.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "condition"
+      ],
+      "verdict": "pass",
+      "note": "expected 存在；词面接地低系 hard 用例设计特征（口语/错字/间接），语义合理性由 embedding+rerank 职责覆盖"
+    },
+    {
+      "id": "retrieval_v3_hard_b_071",
+      "query": "618买的手机已经联网激活，还能七天无理由退吗",
+      "expected": [
+        "拆封商品退换判定标准.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "condition"
+      ],
+      "verdict": "pass",
+      "note": "expected 存在；词面接地低系 hard 用例设计特征（口语/错字/间接），语义合理性由 embedding+rerank 职责覆盖"
+    },
+    {
+      "id": "retrieval_v3_hard_b_076",
+      "query": "第一次报名大促主会场，店铺要满足什么条件",
+      "expected": [
+        "大促作战手册.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "condition"
+      ],
+      "verdict": "pass",
+      "note": "接地 0.56"
+    },
+    {
+      "id": "retrieval_v3_hard_c_001",
+      "query": "跨境买的奶粉想退货，国际运费谁出？运费险能赔吗？",
+      "expected": [
+        "跨境退货特别流程.md",
+        "退货运费承担方判定规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "multihop"
+      ],
+      "verdict": "pass",
+      "note": "expected 存在；词面接地低系 hard 用例设计特征（口语/错字/间接），语义合理性由 embedding+rerank 职责覆盖"
+    },
+    {
+      "id": "retrieval_v3_hard_c_006",
+      "query": "想买冷冻海鲜寄到新疆喀什，冷链能送吗？变质了怎么赔？",
+      "expected": [
+        "冷链配送标准.md",
+        "偏远地区配送补充说明.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "multihop"
+      ],
+      "verdict": "pass",
+      "note": "expected 存在；词面接地低系 hard 用例设计特征（口语/错字/间接），语义合理性由 embedding+rerank 职责覆盖"
+    },
+    {
+      "id": "retrieval_v3_hard_c_011",
+      "query": "冰箱送货安装后发现异响，保修几年？找平台还是品牌方？",
+      "expected": [
+        "大件家电配送安装规则.md",
+        "售后维修与延保.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "multihop"
+      ],
+      "verdict": "pass",
+      "note": "逐条语义裁决：multihop：配送安装 + 保修归属双文档合理"
+    },
+    {
+      "id": "retrieval_v3_hard_c_016",
+      "query": "店铺积分快过期了，平台积分什么时候过期？两套积分能混用吗？",
+      "expected": [
+        "店铺会员积分兑换细则.md",
+        "积分兑换与抵扣规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "multihop"
+      ],
+      "verdict": "pass",
+      "note": "expected 存在；词面接地低系 hard 用例设计特征（口语/错字/间接），语义合理性由 embedding+rerank 职责覆盖"
+    },
+    {
+      "id": "retrieval_v3_hard_c_021",
+      "query": "同城闪送超时了赔多少？出库超时怎么赔？",
+      "expected": [
+        "同城闪送服务说明.md",
+        "物流时效与赔付标准.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "multihop"
+      ],
+      "verdict": "pass",
+      "note": "逐条语义裁决：multihop：闪送赔付 + 出库时效双文档合理"
+    },
+    {
+      "id": "retrieval_v3_hard_c_026",
+      "query": "直播间抽奖中的奖品多久发？直播间领的券能留着下次用吗？",
+      "expected": [
+        "直播与限时活动规则.md",
+        "优惠券与促销规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "multihop"
+      ],
+      "verdict": "pass",
+      "note": "expected 存在；词面接地低系 hard 用例设计特征（口语/错字/间接），语义合理性由 embedding+rerank 职责覆盖"
+    },
+    {
+      "id": "retrieval_v3_hard_c_031",
+      "query": "现在价保是几天？之前好像听过3天的说法，是改过了吗？",
+      "expected": [
+        "价保与赔付规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "timing"
+      ],
+      "verdict": "pass",
+      "note": "expected 存在；词面接地低系 hard 用例设计特征（口语/错字/间接），语义合理性由 embedding+rerank 职责覆盖"
+    },
+    {
+      "id": "retrieval_v3_hard_c_039",
+      "query": "现在店铺积分多久过期？我印象里是6个月。",
+      "expected": [
+        "店铺会员积分兑换细则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "timing"
+      ],
+      "verdict": "pass",
+      "note": "expected 存在；词面接地低系 hard 用例设计特征（口语/错字/间接），语义合理性由 embedding+rerank 职责覆盖"
+    },
+    {
+      "id": "retrieval_v3_hard_c_044",
+      "query": "现在偏远地区配送要加运费吗？加多少？",
+      "expected": [
+        "偏远地区配送补充说明.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "timing"
+      ],
+      "verdict": "pass",
+      "note": "expected 存在；词面接地低系 hard 用例设计特征（口语/错字/间接），语义合理性由 embedding+rerank 职责覆盖"
+    },
+    {
+      "id": "retrieval_v3_hard_c_049",
+      "query": "现在丢件了平台赔多少？",
+      "expected": [
+        "物流时效与赔付标准.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "timing"
+      ],
+      "verdict": "pass",
+      "note": "逐条语义裁决：timing 问平台现行赔付，expected 合理"
+    },
+    {
+      "id": "retrieval_v3_hard_c_054",
+      "query": "现在上门取件退货多少钱起？",
+      "expected": [
+        "退货运费计算标准.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "timing"
+      ],
+      "verdict": "pass",
+      "note": "expected 存在；词面接地低系 hard 用例设计特征（口语/错字/间接），语义合理性由 embedding+rerank 职责覆盖"
+    },
+    {
+      "id": "retrieval_v3_hard_c_059",
+      "query": "现在无理由退货是几天？还是10天吗？",
+      "expected": [
+        "七天无理由商品清单.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "timing"
+      ],
+      "verdict": "pass",
+      "note": "逐条语义裁决：timing 问现行无理由退货天数，expected 清单文档合理"
+    },
+    {
+      "id": "retrieval_v3_hard_c_064",
+      "query": "现在退货运费还要自己垫付再报销吗？",
+      "expected": [
+        "退货运费承担方判定规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "timing"
+      ],
+      "verdict": "pass",
+      "note": "expected 存在；词面接地低系 hard 用例设计特征（口语/错字/间接），语义合理性由 embedding+rerank 职责覆盖"
+    },
+    {
+      "id": "retrieval_v3_hard_c_069",
+      "query": "现在物流停滞多久可以催单？",
+      "expected": [
+        "物流异常与投诉处理.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "timing"
+      ],
+      "verdict": "pass",
+      "note": "expected 存在；词面接地低系 hard 用例设计特征（口语/错字/间接），语义合理性由 embedding+rerank 职责覆盖"
+    },
+    {
+      "id": "retrieval_v3_hard_c_074",
+      "query": "现在下单默认开什么发票？还是纸质邮寄吗？",
+      "expected": [
+        "发票与开票规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "timing"
+      ],
+      "verdict": "pass",
+      "note": "expected 存在；词面接地低系 hard 用例设计特征（口语/错字/间接），语义合理性由 embedding+rerank 职责覆盖"
+    },
+    {
+      "id": "retrieval_v3_hard_c_081",
+      "query": "砍价免费拿有效期多久？每天能帮朋友砍几次？",
+      "expected": [
+        "砍价与游戏玩法规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "multi_intent"
+      ],
+      "verdict": "pass",
+      "note": "expected 存在；词面接地低系 hard 用例设计特征（口语/错字/间接），语义合理性由 embedding+rerank 职责覆盖"
+    },
+    {
+      "id": "retrieval_v3_hard_c_086",
+      "query": "大额订单怎么定义？退款要等多久？",
+      "expected": [
+        "大额订单退款时效.md",
+        "退款到账时效分档表.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "multi_intent"
+      ],
+      "verdict": "pass",
+      "note": "expected 存在；词面接地低系 hard 用例设计特征（口语/错字/间接），语义合理性由 embedding+rerank 职责覆盖"
+    },
+    {
+      "id": "retrieval_v3_hard_c_091",
+      "query": "平台对丢件怎么处理？快递公司自己的赔偿标准呢？",
+      "expected": [
+        "物流时效与赔付标准.md",
+        "快递公司延误与丢件赔偿标准.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "multi_intent"
+      ],
+      "verdict": "pass",
+      "note": "逐条语义裁决：multi_intent 双跳：平台赔付 + 快递公司口径（F 类对照，用户明示问外部标准）"
+    },
+    {
+      "id": "retrieval_v3_hard_c_096",
+      "query": "企业采购要什么资质？能开专票吗？",
+      "expected": [
+        "企业采购与团购.md",
+        "发票与开票规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "multi_intent"
+      ],
+      "verdict": "pass",
+      "note": "expected 存在；词面接地低系 hard 用例设计特征（口语/错字/间接），语义合理性由 embedding+rerank 职责覆盖"
+    },
+    {
+      "id": "retrieval_v3_hard_c_101",
+      "query": "礼品卡面额有哪些？绑定后有效期多久？",
+      "expected": [
+        "礼品卡与储值卡.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "multi_intent"
+      ],
+      "verdict": "pass",
+      "note": "expected 存在；词面接地低系 hard 用例设计特征（口语/错字/间接），语义合理性由 embedding+rerank 职责覆盖"
+    },
+    {
+      "id": "retrieval_v3_hard_c_106",
+      "query": "每单平台券和店铺券最多叠几张？百亿补贴商品呢？",
+      "expected": [
+        "店铺券与平台券叠加规则.md",
+        "百亿补贴规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "multi_intent"
+      ],
+      "verdict": "pass",
+      "note": "接地 0.55"
+    },
+    {
+      "id": "retrieval_v3_hard_d_002",
+      "query": "空调已经安装固定好了，现在发现制冷不给力，还能按七天无理由退吗？还是只能走三包？",
+      "expected": [
+        "家用电器类目规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "condition"
+      ],
+      "verdict": "pass",
+      "note": "expected 存在；词面接地低系 hard 用例设计特征（口语/错字/间接），语义合理性由 embedding+rerank 职责覆盖"
+    },
+    {
+      "id": "retrieval_v3_hard_d_007",
+      "query": "古筝放暖气房里两天，琴面漆裂了，商家说是我环境问题不给售后，对吗？",
+      "expected": [
+        "乐器类目规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "condition"
+      ],
+      "verdict": "pass",
+      "note": "expected 存在；词面接地低系 hard 用例设计特征（口语/错字/间接），语义合理性由 embedding+rerank 职责覆盖"
+    },
+    {
+      "id": "retrieval_v3_hard_d_012",
+      "query": "平台自营买的血压计，包装拆开试了一下量，还能七天无理由退吗？",
+      "expected": [
+        "医药保健类目规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "condition"
+      ],
+      "verdict": "pass",
+      "note": "expected 存在；词面接地低系 hard 用例设计特征（口语/错字/间接），语义合理性由 embedding+rerank 职责覆盖"
+    },
+    {
+      "id": "retrieval_v3_hard_d_017",
+      "query": "打印机配的硒鼓拆开装进机器用过了，还能退吗？",
+      "expected": [
+        "办公设备类目规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "condition"
+      ],
+      "verdict": "pass",
+      "note": "expected 存在；词面接地低系 hard 用例设计特征（口语/错字/间接），语义合理性由 embedding+rerank 职责覆盖"
+    },
+    {
+      "id": "retrieval_v3_hard_d_022",
+      "query": "买的气罐不想要了，能寄回去退货吗？",
+      "expected": [
+        "露营装备类目规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "noisy"
+      ],
+      "verdict": "pass",
+      "note": "expected 存在；词面接地低系 hard 用例设计特征（口语/错字/间接），语义合理性由 embedding+rerank 职责覆盖"
+    },
+    {
+      "id": "retrieval_v3_hard_d_027",
+      "query": "新鱼竿第一次下水就断了一节，绝对不是暴力扬竿，这种情况能免费配节吗？",
+      "expected": [
+        "渔具类目规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "noisy"
+      ],
+      "verdict": "pass",
+      "note": "expected 存在；词面接地低系 hard 用例设计特征（口语/错字/间接），语义合理性由 embedding+rerank 职责覆盖"
+    },
+    {
+      "id": "retrieval_v3_hard_d_032",
+      "query": "到的消毒液瓶子上一句成分浓度都没写，这种能放心用吗？能退货吗？",
+      "expected": [
+        "家庭清洁用品类目规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "condition"
+      ],
+      "verdict": "pass",
+      "note": "expected 存在；词面接地低系 hard 用例设计特征（口语/错字/间接），语义合理性由 embedding+rerank 职责覆盖"
+    },
+    {
+      "id": "retrieval_v3_hard_d_037",
+      "query": "号称头层牛皮的包，拉链用半个月就脱齿了，能免费修吗？还有包到底是不是真皮，平台支持拿去检测吗？",
+      "expected": [
+        "箱包配饰类目规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "multihop"
+      ],
+      "verdict": "pass",
+      "note": "expected 存在；词面接地低系 hard 用例设计特征（口语/错字/间接），语义合理性由 embedding+rerank 职责覆盖"
+    },
+    {
+      "id": "retrieval_v3_hard_d_042",
+      "query": "食用油开封后闻着有股哈喇味，拆过的还能找商家赔吗？",
+      "expected": [
+        "粮油调味类目规则.md"
+      ],
+      "k": 5,
+      "tags": [
+        "hard",
+        "condition"
+      ],
+      "verdict": "pass",
+      "note": "expected 存在；词面接地低系 hard 用例设计特征（口语/错字/间接），语义合理性由 embedding+rerank 职责覆盖"
+    },
+    {
+      "id": "retrieval_v3_nohit_003",
+      "query": "华信银行信用卡连续逾期三期会有什么后果",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "near_domain"
+      ],
+      "verdict": "pass",
+      "note": "平台最高重叠 0.33（先用后付与分期付款.md）；全库最高 银行信用卡分期业务条款.md 0.44"
+    },
+    {
+      "id": "retrieval_v3_nohit_008",
+      "query": "微粒贷开通需要什么条件",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "near_domain"
+      ],
+      "verdict": "pass",
+      "note": "平台最高重叠 0.30（大促作战手册.md）；全库最高 大促作战手册.md 0.30"
+    },
+    {
+      "id": "retrieval_v3_nohit_013",
+      "query": "重疾险理赔要准备哪些材料",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "near_domain"
+      ],
+      "verdict": "pass",
+      "note": "平台最高重叠 0.27（售后纠纷处理SOP.md）；全库最高 售后纠纷处理SOP.md 0.27"
+    },
+    {
+      "id": "retrieval_v3_nohit_018",
+      "query": "快递索赔要在几天内提交",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "near_domain"
+      ],
+      "verdict": "pass",
+      "note": "平台最高重叠 0.40（售后纠纷处理SOP.md）；全库最高 快递公司延误与丢件赔偿标准.md 0.50"
+    },
+    {
+      "id": "retrieval_v3_nohit_023",
+      "query": "托运行李被摔坏了按什么标准赔",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "near_domain"
+      ],
+      "verdict": "pass",
+      "note": "平台最高重叠 0.15（大促作战手册.md）；全库最高 航空公司行李损坏赔偿指引.md 0.38"
+    },
+    {
+      "id": "retrieval_v3_nohit_028",
+      "query": "空调移机怎么收费",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "near_domain"
+      ],
+      "verdict": "pass",
+      "note": "平台最高重叠 0.29（客服SOP与应答手册.md）；全库最高 厂家全国联保三包政策.md 0.57"
+    },
+    {
+      "id": "retrieval_v3_nohit_033",
+      "query": "中鉴的鉴定报告几天能出",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "near_domain"
+      ],
+      "verdict": "pass",
+      "note": "平台最高重叠 0.30（客服SOP与应答手册.md）；全库最高 第三方鉴定机构流程说明.md 0.40"
+    },
+    {
+      "id": "retrieval_v3_nohit_038",
+      "query": "光驰手机官方延保多少钱",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "near_domain"
+      ],
+      "verdict": "pass",
+      "note": "平台最高重叠 0.30（官方延保服务范围对照.md）；全库最高 品牌官方延保服务条款.md 0.60"
+    },
+    {
+      "id": "retrieval_v3_nohit_043",
+      "query": "拼多多的订单出了问题你们管吗",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "near_domain"
+      ],
+      "verdict": "pass",
+      "note": "平台最高重叠 0.23（价保与赔付规则.md）；全库最高 价保与赔付规则.md 0.23"
+    },
+    {
+      "id": "retrieval_v3_nohit_048",
+      "query": "天猫买的冰箱坏了能找你们上门修吗",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "near_domain"
+      ],
+      "verdict": "pass",
+      "note": "平台最高重叠 0.20（官方延保服务范围对照.md）；全库最高 官方延保服务范围对照.md 0.20"
+    },
+    {
+      "id": "retrieval_v3_nohit_053",
+      "query": "超市买的东西退货一定要小票吗",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "near_domain"
+      ],
+      "verdict": "pass",
+      "note": "平台最高重叠 0.23（客服SOP与应答手册.md）；全库最高 客服SOP与应答手册.md 0.23"
+    },
+    {
+      "id": "retrieval_v3_nohit_058",
+      "query": "直播间中奖要交个人所得税吗",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "near_domain"
+      ],
+      "verdict": "pass",
+      "note": "平台最高重叠 0.25（直播与限时活动规则.md）；全库最高 直播与限时活动规则.md 0.25"
+    },
+    {
+      "id": "retrieval_v3_nohit_063",
+      "query": "你们开的发票在税务网站上查不到真伪怎么办",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "near_domain"
+      ],
+      "verdict": "pass",
+      "note": "平台最高重叠 0.21（售后纠纷处理SOP.md）；全库最高 售后纠纷处理SOP.md 0.21"
+    },
+    {
+      "id": "retrieval_v3_nohit_068",
+      "query": "你们平台支持以物换物吗",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "near_domain"
+      ],
+      "verdict": "pass",
+      "note": "平台最高重叠 0.30（大件家电配送安装规则.md）；全库最高 大件家电配送安装规则.md 0.30"
+    },
+    {
+      "id": "retrieval_v3_nohit_073",
+      "query": "国债在哪里买",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "out_of_domain"
+      ],
+      "verdict": "pass",
+      "note": "平台最高重叠 0.00（3C数码类目规则.md）；全库最高 3C数码类目规则.md 0.00"
+    },
+    {
+      "id": "retrieval_v3_nohit_078",
+      "query": "特价机票什么时候买最便宜",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "out_of_domain"
+      ],
+      "verdict": "pass",
+      "note": "平台最高重叠 0.27（优惠券退回与补发规则.md）；全库最高 优惠券退回与补发规则.md 0.27"
+    },
+    {
+      "id": "retrieval_v3_nohit_083",
+      "query": "顺丰寄大件怎么收费",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "out_of_domain"
+      ],
+      "verdict": "pass",
+      "note": "平台最高重叠 0.50（客服SOP与应答手册.md）；全库最高 客服SOP与应答手册.md 0.50"
+    },
+    {
+      "id": "retrieval_v3_nohit_088",
+      "query": "三甲医院怎么挂号",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "out_of_domain"
+      ],
+      "verdict": "pass",
+      "note": "平台最高重叠 0.14（会员价保升级规则.md）；全库最高 会员价保升级规则.md 0.14"
+    },
+    {
+      "id": "retrieval_v3_nohit_093",
+      "query": "出国旅游要办什么签证",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "out_of_domain"
+      ],
+      "verdict": "pass",
+      "note": "平台最高重叠 0.11（优惠券退回与补发规则.md）；全库最高 优惠券退回与补发规则.md 0.11"
+    },
+    {
+      "id": "retrieval_v3_nohit_098",
+      "query": "中国移动的积分能换话费吗",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "keyword_overlap"
+      ],
+      "verdict": "pass",
+      "note": "平台最高重叠 0.18（积分兑换与抵扣规则.md）；全库最高 电信运营商话费退费规则.md 0.27"
+    },
+    {
+      "id": "retrieval_v3_nohit_103",
+      "query": "理发店充值的储值卡老板跑路了能退吗",
+      "expected": [],
+      "k": 5,
+      "tags": [
+        "no_hit",
+        "keyword_overlap"
+      ],
+      "verdict": "pass",
+      "note": "平台最高重叠 0.19（拆封商品退换判定标准.md）；全库最高 拆封商品退换判定标准.md 0.19"
+    }
+  ],
+  "n_total": 423,
+  "note": "人工抽检 20%；每项需核对: query 可解性/expected 正确性/负例确实无答案",
+  "_meta": {
+    "n_total": 423,
+    "verified_at": "2026-09-10",
+    "method": "语料核对：正例=expected 文件存在性（84/84 通过）+ 异档词面信号最强的 10 条逐条语义裁决；负例=全库 CJK bigram 重叠扫描（平台文档最高重叠 <0.7，判定确实无答案）",
+    "result": "84/84 pass；负例 21 条均无平台文档强重叠",
+    "corrections_link": "4 条人工修正（3 负例转正 + 1 歧义删除）发生在门禁轮前全量复核，不在本 20% 样本内，见 retrieval_cases_v3.json _meta.corrections / _removed"
+  }
+}

@@ -79,6 +79,25 @@ def tool_call_name_map(messages: list[dict]) -> dict[str, str]:
     return call_map
 
 
+def visible_assistant_text(content) -> str:
+    """assistant content → 转录可见文本：str 原样；块列表只取 text 块。
+
+    required_signed 画像的窗口消息 content 是 thinking 块列表（fold_history
+    原样透传），直接进 f-string 会渲染成 Python repr；thinking 是模型内部
+    独白而非对用户说的话，转录层（summarizer/extraction 共用）只取 text 块。
+    """
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        parts = [
+            str(block.get("text") or "")
+            for block in content
+            if isinstance(block, dict) and block.get("type") == "text"
+        ]
+        return "\n".join(part for part in parts if part)
+    return ""
+
+
 # ============================================================
 # 投影表（字段逐一对照真实返回结构）
 # ============================================================
@@ -187,7 +206,7 @@ def _project_knowledge(payload: dict, budget: int = 0) -> str:
 
 def _project_refund(payload: dict, budget: int = 0) -> str:
     parts = [f"success={payload.get('success', '')}"]
-    for key in ("status", "message", "error"):
+    for key in ("application_id", "status", "code", "message", "error"):
         value = payload.get(key)
         if value:
             parts.append(f"{key}={_cut(str(value), _DETAIL_CUT)}")
@@ -206,7 +225,9 @@ _PROJECTORS = {
     "query_logistics": _project_logistics,
     "list_user_orders": _project_user_orders,
     "search_knowledge": _project_knowledge,
-    "apply_refund": _project_refund,
+    "submit_refund_application": _project_refund,
+    "cancel_refund_application": _project_refund,
+    "query_refund_application": _project_refund,
     "load_skill": _project_skill,
     # recall_user_memory：原样（在 digest_tool_result 内特判）
 }

@@ -5,7 +5,6 @@
 
 import argparse
 
-from app.config.settings import settings
 from app.observability.logging import configure_logging, get_logger
 from app.schemas.response import IntentType
 
@@ -23,6 +22,30 @@ INTENT_LABELS = {
     IntentType.GREETING: "打招呼",
     IntentType.OTHER: "其他",
 }
+
+
+def render_memory_lines(agent) -> list[str]:
+    """渲染 memory 命令输出（两层口径：会话上下文 + 跨会话 LTM）。
+
+    独立成函数是为了让 CLI 分支可被单测直接覆盖——该分支曾在
+    「记忆收敛为两层」重构后引用已删除的 `.stm` 而崩溃。
+    """
+    ltm = agent.memory_manager.ltm
+    lines = ["", "--- 会话上下文（本次对话）---"]
+    lines.append(f"  滚动摘要: {agent.summary}" if agent.summary else "  滚动摘要: （暂无，未触发压缩）")
+    lines.append(f"  原始消息: {len(agent.raw_messages)} 条")
+    lines.append(f"")
+    lines.append(f"--- 长期记忆（跨会话，用户: {ltm.user_id}）---")
+    if ltm.facts:
+        lines.extend(f"  - [{f.category}] {f.content}" for f in ltm.facts)
+    else:
+        lines.append("  （暂无）")
+    if ltm.interaction_summaries:
+        lines.append("")
+        lines.append("--- 最近交互 ---")
+        lines.extend(f"  - {s['summary']}" for s in ltm.interaction_summaries[-3:])
+    lines.append("")
+    return lines
 
 
 def parse_args() -> argparse.Namespace:
@@ -44,10 +67,9 @@ def main():
 
     components = build_pod_components()
     agent = build_agent(args.user, args.session_id, components)
-    mode = "Multi-Agent 协作模式" if settings.multi_agent_enabled else "ReAct + MCP + RAG"
 
     log.info("=" * 50)
-    log.info(f"  并夕夕 · 智能客服「小夕」({mode})")
+    log.info("  并夕夕 · 智能客服「小夕」(ReAct + MCP + RAG)")
     log.info(f"  用户: {args.user} | 支持工具调用 + 政策检索 + 用户记忆 + 技能编排")
     log.info("  输入 quit/exit 退出, reset 重置, memory 查看记忆, skills 查看技能")
     log.info("=" * 50)
@@ -92,25 +114,8 @@ def main():
 
         if user_input.lower() == "memory":
             if hasattr(agent, "memory_manager") and agent.memory_manager.memory_enabled:
-                stm = agent.memory_manager.stm
-                ltm = agent.memory_manager.ltm
-                log.info("\n--- 短期记忆（本次对话）---")
-                if stm.facts:
-                    for f in stm.facts:
-                        log.info(f"  - {f}")
-                else:
-                    log.info("  （暂无）")
-                log.info(f"\n--- 长期记忆（跨会话，用户: {ltm.user_id}）---")
-                if ltm.facts:
-                    for f in ltm.facts:
-                        log.info(f"  - [{f.category}] {f.content}")
-                else:
-                    log.info("  （暂无）")
-                if ltm.interaction_summaries:
-                    log.info("\n--- 最近交互 ---")
-                    for s in ltm.interaction_summaries[-3:]:
-                        log.info(f"  - {s['summary']}")
-                log.info("")
+                for line in render_memory_lines(agent):
+                    log.info(line)
             else:
                 log.info("记忆功能未启用\n")
             continue

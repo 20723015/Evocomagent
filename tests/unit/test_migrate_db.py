@@ -41,11 +41,11 @@ def test_migration_files_sorted_and_filtered(tmp_path):
 
 
 def test_repository_schema_gate_matches_highest_migration():
-    """生产 gate 必须覆盖 007 任务表迁移，且 error 保持 NOT NULL。"""
+    """生产 gate 必须覆盖最高编号迁移，且 error 保持 NOT NULL。"""
     sql_dir = Path(__file__).parents[2] / "deploy" / "sql"
     files = migration_files(sql_dir)
     assert files
-    assert max(v for v, _ in files) == EXPECTED_SCHEMA_VERSION == 10
+    assert max(v for v, _ in files) == EXPECTED_SCHEMA_VERSION == 15
     ddl = (sql_dir / "007_kb_index_jobs.sql").read_text(encoding="utf-8")
     assert "error              TEXT         NOT NULL" in ddl
 

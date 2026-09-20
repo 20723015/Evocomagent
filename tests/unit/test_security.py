@@ -1,9 +1,8 @@
-"""阶段三 3.1/3.3/3.5/3.7 单测：JWT、guardrails、退款两段式、限流配额。"""
+"""阶段三 3.1/3.5/3.7 单测：JWT、guardrails、限流配额。"""
 
 from __future__ import annotations
 
 import time
-from datetime import timedelta
 
 import fakeredis
 import pytest
@@ -13,17 +12,10 @@ from app.security.guardrails import (
     check_input,
     check_output,
     fence_kb_text,
-    kb_chunk_tainted,
     search_result_fence_check,
 )
 from app.security.jwt import TokenValidationError, create_token, decode_token
 from app.security.ratelimit import UsageTracker, UserLimiter
-from app.security.refunds import (
-    ConfirmationInvalid,
-    InProcessConfirmationStore,
-    RefundConfirmation,
-    RedisConfirmationStore,
-)
 
 
 def _make_redis():
@@ -143,215 +135,6 @@ def test_kb_tainted_chunk_blocked():
     assert "【参考资料】" in out[0]["text"]
     assert out[1]["tainted"] is True
     assert "已拦截" in out[1]["text"]  # 投毒块不进模型上下文
-
-
-# ============================================================
-# 3.3 退款两段式（安全修复 P1：refund_id 幂等状态机 + 共享账本）
-# ============================================================
-class _Executor:
-    """记录调用的 mock 执行器。
-
-    注意（评审·坑2）：mock 没有下游去重语义——验收只断言「executor 收到的
-    幂等键一致」「状态机拒绝并发双确认」「重放不重复执行」，不断言
-    「下游只执行一次」。
-    """
-
-    def __init__(self):
-        self.calls: list[tuple[str, str, str]] = []
-
-    def __call__(self, order_id: str, reason: str, idempotency_key: str = "") -> dict:
-        self.calls.append((order_id, reason, idempotency_key))
-        return {"success": True, "message": f"已退款 {order_id}"}
-
-
-def test_refund_two_phase_in_process():
-    store = InProcessConfirmationStore()
-    controller = RefundConfirmation(store, ttl_seconds=300)
-    req = controller.request("ORD-20240115-001", "尺码不合适")
-    assert req["status"] == "pending_confirmation"
-    assert req["confirmation_token"] and req["idempotency_key"] == req["refund_id"]
-
-    ex = _Executor()
-    out = controller.confirm(
-        req["confirmation_token"], ex,
-        order_id="ORD-20240115-001", reason="尺码不合适", refund_id=req["refund_id"],
-    )
-    assert out["confirmed"] is True
-    assert "已退款" in out["message"]
-    # executor 收到的幂等键 = refund_id（真实后端按它做下游去重）
-    assert ex.calls == [("ORD-20240115-001", "尺码不合适", req["refund_id"])]
-
-
-def test_refund_two_phase_redis_single_use():
-    store = RedisConfirmationStore(_make_redis())
-    controller = RefundConfirmation(store, ttl_seconds=300)
-    req = controller.request("ORD-20240115-001", "质量问题")
-    out = controller.confirm(
-        req["confirmation_token"], _Executor(),
-        order_id="ORD-20240115-001", reason="质量问题", refund_id=req["refund_id"],
-    )
-    assert out["confirmed"] is True
-    # token 已单次失效：复用同一 token → 重放被拒（并发双确认状态机）
-    with pytest.raises(ConfirmationInvalid):
-        controller.confirm(
-            req["confirmation_token"], _Executor(),
-            order_id="ORD-20240115-001", reason="质量问题",
-            refund_id="attacker-key",
-        )
-
-
-def test_refund_two_phase_idempotent_replay():
-    """同一 refund_id 重复 confirm（网络重试）→ 返回首次结果，不重复执行。"""
-    store = InProcessConfirmationStore()
-    controller = RefundConfirmation(store, ttl_seconds=300)
-    req = controller.request("ORD-20240115-001", "不想要了")
-    ex = _Executor()
-    out1 = controller.confirm(
-        req["confirmation_token"], ex,
-        order_id="ORD-20240115-001", reason="不想要了", refund_id=req["refund_id"],
-    )
-    out2 = controller.confirm(
-        req["confirmation_token"], ex,
-        order_id="ORD-20240115-001", reason="不想要了", refund_id=req["refund_id"],
-    )
-    assert out2["replayed"] is True
-    assert out2["message"] == out1["message"]
-    assert ex.calls == [("ORD-20240115-001", "不想要了", req["refund_id"])]
-
-
-def test_refund_replay_across_controller_instances():
-    """安全修复 P1 回归：幂等账本在共享 store——换控制器实例仍然重放。
-
-    历史缺陷：账本是控制器实例字段，apply_refund 每次新建控制器 →
-    幂等从未生效。
-    """
-    store = InProcessConfirmationStore()
-    req = RefundConfirmation(store, ttl_seconds=300).request("ORD-1", "r")
-    ex = _Executor()
-    RefundConfirmation(store).confirm(
-        req["confirmation_token"], ex, order_id="ORD-1", reason="r",
-        refund_id=req["refund_id"],
-    )
-    out = RefundConfirmation(store).confirm(
-        req["confirmation_token"], ex, order_id="ORD-1", reason="r",
-        refund_id=req["refund_id"],
-    )
-    assert out["replayed"] is True
-    assert len(ex.calls) == 1
-
-
-def test_refund_new_request_same_order_reason_allowed():
-    """幂等键不再由订单+原因派生：同单同因的正当二次退款不被误判重放。"""
-    store = InProcessConfirmationStore()
-    controller = RefundConfirmation(store, ttl_seconds=300)
-    ex = _Executor()
-    req1 = controller.request("ORD-1", "运费险")
-    req2 = controller.request("ORD-1", "运费险")
-    assert req1["refund_id"] != req2["refund_id"]
-    out1 = controller.confirm(
-        req1["confirmation_token"], ex, order_id="ORD-1", reason="运费险",
-        refund_id=req1["refund_id"],
-    )
-    out2 = controller.confirm(
-        req2["confirmation_token"], ex, order_id="ORD-1", reason="运费险",
-        refund_id=req2["refund_id"],
-    )
-    assert out1["confirmed"] and out2["confirmed"]
-    assert out2.get("replayed") is not True
-    assert len(ex.calls) == 2
-
-
-def test_refund_token_refund_id_mismatch_rejected():
-    store = InProcessConfirmationStore()
-    controller = RefundConfirmation(store, ttl_seconds=300)
-    req = controller.request("ORD-1", "r")
-    with pytest.raises(ConfirmationInvalid):
-        controller.confirm(
-            req["confirmation_token"], _Executor(),
-            order_id="ORD-1", reason="r", refund_id="forged-refund-id",
-        )
-
-
-def test_refund_concurrent_double_confirm_rejected():
-    """并发双确认：同一 token/同一 refund_id 绝不重复执行。
-
-    状态机两条路径都算「拒绝重复执行」：输者要么 ConfirmationInvalid
-    （token 抢占失败），要么 replayed=true（命中首次结果账本）。
-    """
-    import threading
-
-    store = InProcessConfirmationStore()
-    controller = RefundConfirmation(store, ttl_seconds=300)
-    req = controller.request("ORD-1", "r")
-    ex = _Executor()
-    barrier = threading.Barrier(2)
-    results: list = []
-
-    def _worker():
-        barrier.wait()
-        try:
-            results.append(controller.confirm(
-                req["confirmation_token"], ex,
-                order_id="ORD-1", reason="r", refund_id=req["refund_id"],
-            ))
-        except ConfirmationInvalid as e:
-            results.append(e)
-
-    threads = [threading.Thread(target=_worker) for _ in range(2)]
-    for t in threads:
-        t.start()
-    for t in threads:
-        t.join()
-
-    executed = [r for r in results
-                if isinstance(r, dict) and not r.get("replayed")]
-    deduped = [r for r in results
-               if (isinstance(r, ConfirmationInvalid))
-               or (isinstance(r, dict) and r.get("replayed"))]
-    assert len(executed) == 1 and len(deduped) == 1
-    # 状态机语义的硬验收：执行器恰好收到一次调用
-    assert len(ex.calls) == 1
-
-
-def test_confirmation_store_token_single_use_race():
-    """store 层：同一 token 并发 take 只有一个成功（单次语义）。"""
-    import threading
-
-    store = InProcessConfirmationStore()
-    store.put("t1", "payload", ttl_seconds=300)
-    barrier = threading.Barrier(2)
-    taken: list = []
-
-    def _worker():
-        barrier.wait()
-        taken.append(store.take("t1"))
-
-    threads = [threading.Thread(target=_worker) for _ in range(2)]
-    for t in threads:
-        t.start()
-    for t in threads:
-        t.join()
-    assert sorted(x is not None for x in taken) == [False, True]
-
-
-def test_refund_confirmation_expired():
-    controller = RefundConfirmation(InProcessConfirmationStore(), ttl_seconds=1)
-    req = controller.request("ORD-20240115-001", "问题")
-    time.sleep(1.1)
-    with pytest.raises(ConfirmationInvalid):
-        controller.confirm(
-            req["confirmation_token"], _Executor(),
-            order_id="ORD-20240115-001", reason="问题", refund_id=req["refund_id"],
-        )
-
-
-def test_refund_wrong_token_rejected():
-    controller = RefundConfirmation(InProcessConfirmationStore(), ttl_seconds=300)
-    with pytest.raises(ConfirmationInvalid):
-        controller.confirm(
-            "bad-token", _Executor(),
-            order_id="ORD-1", reason="r", refund_id="key-1",
-        )
 
 
 # ============================================================
@@ -545,3 +328,21 @@ def test_usage_tracker_sweeps_stale_pending_buckets(monkeypatch):
         tracker._sweep_stale()
     assert tracker.snapshot("stale") == 0      # 陈旧桶被清
     assert tracker.snapshot("fresh") == 5      # 新桶保留
+
+
+def test_ratelimit_inprocess_window_and_budget_sweep(monkeypatch):
+    """低危修复 C8：过期窗口键被删除、跨日预算键被清扫（进程内结构不无界增长）。"""
+    from app.security.ratelimit import UserLimiter, _InProcessWindow
+
+    w = _InProcessWindow()
+    assert w.allow("k", 5, 0.05)
+    time.sleep(0.06)
+    w.allow("k", 5, 0.05)  # 触发清理：全过期键删除后重建
+    assert len(w._hits["k"]) == 1
+
+    limiter = UserLimiter(None, max_rps=0, daily_token_budget=100)
+    limiter._budgets["u1:20200101"] = 50
+    limiter._budgets["u1:20200102"] = 60
+    monkeypatch.setattr(UserLimiter, "_day", staticmethod(lambda: "20200103"))
+    limiter.consume_tokens("u1", 10)
+    assert limiter._budgets == {"u1:20200103": 10}  # 隔日键被清扫

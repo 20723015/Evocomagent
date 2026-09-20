@@ -114,7 +114,7 @@ def test_metrics_rule_based():
 # ---------- 测试 3：沙箱采集 ----------
 def test_sandbox_trace():
     print("\n[3/6] 沙箱采集测试（E2E，需要 API）")
-    sandbox = Sandbox(mode="single")
+    sandbox = Sandbox()
     case = EvalCase(
         id="trace_probe",
         description="探针：查询订单",
@@ -150,7 +150,7 @@ def test_sandbox_trace():
 # ---------- 测试 4：沙箱隔离 ----------
 def test_sandbox_isolation():
     print("\n[4/6] 沙箱隔离测试（无需 API）")
-    sandbox = Sandbox(mode="single")
+    sandbox = Sandbox()
 
     p1 = sandbox.session_path_for("case_a")
     p2 = sandbox.session_path_for("case_b")
@@ -234,7 +234,7 @@ def test_evaluator_two_tier():
     ]
 
     # 含 judge
-    sandbox = Sandbox(mode="single")
+    sandbox = Sandbox()
     evaluator = Evaluator(sandbox=sandbox, client=_client(), model=settings.model_name, use_judge=True)
     report = evaluator.run_all(cases)
 
@@ -257,7 +257,7 @@ def test_evaluator_two_tier():
         _fail("过程指标未采集到 token")
 
     # --no-judge 模式
-    sandbox2 = Sandbox(mode="single")
+    sandbox2 = Sandbox()
     evaluator2 = Evaluator(sandbox=sandbox2, client=_client(), model=settings.model_name, use_judge=False)
     report2 = evaluator2.run_all([cases[0]])
     c = report2["cases"][0]

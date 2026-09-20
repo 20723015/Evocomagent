@@ -219,15 +219,6 @@ function addThought(dom, text) {
   scrollBottom();
 }
 
-function addRoute(dom, target) {
-  ensureTrace(dom);
-  const line = document.createElement("div");
-  line.className = "trace-line";
-  line.innerHTML = `<span class="t-ico">🧭</span><span class="route-chip">转交「${escapeHtml(target)}」</span>`;
-  dom.traceBody.appendChild(line);
-  scrollBottom();
-}
-
 function addToolCall(dom, ev) {
   ensureTrace(dom);
   dom.counts.tools++;
@@ -269,21 +260,56 @@ function fillToolResult(dom, ev) {
 }
 
 function applyTraceEvent(dom, type, data) {
-  if (type === "route") addRoute(dom, data.target || "");
-  else if (type === "thought") addThought(dom, data.text || "");
+  if (type === "thought") addThought(dom, data.text || "");
   else if (type === "tool_call") addToolCall(dom, data);
   else if (type === "tool_result") fillToolResult(dom, data);
   else if (type === "error") dom.errorText = data.detail || "本轮处理失败";
+}
+
+/**
+ * 掉线恢复:上次回复未完成(服务端 pending_turn 草稿非空)。
+ * 展示未完成的用户消息 + 一键重发入口。
+ */
+function addPendingTurnNotice(dom, pending) {
+  const text = (pending && pending.user_message) || "";
+  const box = document.createElement("div");
+  box.className = "pending-notice";
+  box.innerHTML =
+    `<span class="pn-ico">⚠️</span>
+     <span class="pn-text">上次回复未完成${text ? ":" : ""}</span>
+     <span class="pn-quote">${escapeHtml(text)}</span>`;
+  if (text) {
+    const btn = document.createElement("button");
+    btn.className = "pn-resend";
+    btn.textContent = "重发这条";
+    btn.title = "重新发送上次未完成的用户消息";
+    btn.addEventListener("click", () => {
+      if (state.streaming) { toast("小夕正在回复中,请稍候…"); return; }
+      box.remove();
+      send(text);
+    });
+    box.appendChild(btn);
+  }
+  dom.turn.appendChild(box);
+  scrollBottom();
+}
+
+/** 转人工 chip 文案：有工单号时带上（用户可凭号与坐席对账）。 */
+function handoffChipText(handoff) {
+  const id = handoff && handoff.ticket_id ? String(handoff.ticket_id) : "";
+  if (!id) return "⚠ 已转人工";
+  return `⚠ 已转人工 · 工单 ${escapeHtml(id)}`;
 }
 
 function addMetaChips(dom, r) {
   dom.meta = document.createElement("div");
   dom.meta.className = "meta";
   const intent = INTENT_LABELS[r.intent] || r.intent || "—";
+  const handoff = r.handoff || dom.handoff || null;
   dom.meta.innerHTML =
     `<span class="chip">意图:${escapeHtml(intent)}</span>
      <span class="chip">置信度:${Math.round((r.confidence || 0) * 100)}%</span>` +
-    (r.requires_human ? `<span class="chip warn">⚠ 已转人工</span>` : "");
+    (r.requires_human ? `<span class="chip warn">${handoffChipText(handoff)}</span>` : "");
   dom.turn.appendChild(dom.meta);
   if (r.follow_up_question) {
     const fu = document.createElement("button");
@@ -297,6 +323,32 @@ function addMetaChips(dom, r) {
     });
     dom.meta.appendChild(fu);
   }
+}
+
+/** handoff 事件到达:把工单号落到本轮（两种到达顺序都要正确）。
+
+服务端两条路径都先发 reply：护栏路径的 reply 事件内联 handoff 字段、随后再补发
+独立 handoff 事件；主流程路径 reply 先、handoff 事件后。故此处先暂存到 dom，
+再按当前进度更新：
+- 回复已渲染 → 直接改写 meta 上的转人工 chip；
+- 回复未到 → 先在过程卡挂提示，addMetaChips 稍后会用 dom.handoff 补上。
+*/
+function applyHandoffChip(dom, data) {
+  if (!dom) return;
+  dom.handoff = data;
+  const text = handoffChipText(data);
+  if (dom.meta) {
+    const chip = dom.meta.querySelector(".chip.warn");
+    if (chip) { chip.textContent = text; return; }
+  }
+  if (!dom.trace) return;
+  let chip = dom.trace.querySelector(".handoff-chip");
+  if (!chip) {
+    chip = document.createElement("div");
+    chip.className = "handoff-chip";
+    dom.trace.appendChild(chip);
+  }
+  chip.textContent = text;
 }
 
 /** 回复到达:填正文、挂 chips、收起过程卡。 */
@@ -332,8 +384,7 @@ function renderTranscript(sid) {
     if (t.role === "user") { addUserTurn(t.text, t.ts); continue; }
     const dom = beginBotTurn();
     for (const ev of t.trace || []) {
-      if (ev.t === "route") applyTraceEvent(dom, "route", { target: ev.target });
-      else if (ev.t === "thought") applyTraceEvent(dom, "thought", { text: ev.text });
+      if (ev.t === "thought") applyTraceEvent(dom, "thought", { text: ev.text });
       else if (ev.t === "tool_call") applyTraceEvent(dom, "tool_call", ev);
       else if (ev.t === "tool_result") applyTraceEvent(dom, "tool_result", ev);
       else if (ev.t === "error") dom.errorText = ev.detail || "";
@@ -341,7 +392,8 @@ function renderTranscript(sid) {
     if (t.error && !t.text) { showErrorInTurn(dom, t.error); continue; }
     finalizeBotTurn(dom, {
       reply: t.text, intent: t.intent, confidence: t.confidence,
-      requires_human: t.requiresHuman, follow_up_question: t.followUp,
+      requires_human: t.requiresHuman, handoff: t.handoff || null,
+      follow_up_question: t.followUp,
     });
   }
   scrollBottom(true);
@@ -458,6 +510,7 @@ async function send(preset) {
   setSendMode("stop");
   announce("正在处理您的消息");
   let replyData = null;
+  let handoffData = null;
 
   try {
     await streamChat(
@@ -469,9 +522,22 @@ async function send(preset) {
             // 服务端归一化后的 session_id(当前实现保持传入值)
             state.activeId = data.session_id;
           }
+          // 掉线恢复:上次回复未完成 → 提示 + 重发入口
+          if (data.pending_turn) addPendingTurnNotice(dom, data.pending_turn);
           return;
         }
-        if (type === "reply") { replyData = data; finalizeBotTurn(dom, data); return; }
+        if (type === "handoff") {
+          // 服务端在转人工时先发 handoff（工单号），reply 随后到达——
+          // 存下来给 addMetaChips 用，并即时升级过程卡上的转人工提示
+          handoffData = data;
+          applyHandoffChip(dom, data);
+          return;
+        }
+        if (type === "reply") {
+          replyData = handoffData ? Object.assign({}, data, { handoff: handoffData }) : data;
+          finalizeBotTurn(dom, replyData);
+          return;
+        }
         if (type === "end") return;
         traceLog.push(normalizeTrace(type, data));
         applyTraceEvent(dom, type, data);
@@ -481,6 +547,7 @@ async function send(preset) {
       appendTurn({
         role: "bot", text: replyData.reply, intent: replyData.intent,
         confidence: replyData.confidence, requiresHuman: !!replyData.requires_human,
+        handoff: replyData.handoff || null,
         followUp: replyData.follow_up_question || "", trace: traceLog,
         ts: new Date().toISOString(),
       });
@@ -513,7 +580,6 @@ async function send(preset) {
 
 /* 过程事件 → 可缓存的精简结构(转写还原用)。 */
 function normalizeTrace(type, data) {
-  if (type === "route") return { t: "route", target: data.target || "" };
   if (type === "thought") return { t: "thought", text: data.text || "" };
   if (type === "tool_call") {
     return { t: "tool_call", tool_call_id: data.tool_call_id, name: data.name, arguments: data.arguments };

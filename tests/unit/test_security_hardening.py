@@ -83,10 +83,13 @@ def test_ops_endpoints_accept_ops_scope(monkeypatch, reset_settings):
         resp = c.post("/v1/handoffs", json={"user_id": "u1", "session_id": "s1"},
                       headers=_auth(ops))
         assert resp.status_code == 200
-        # message_search：无 ES → 200 + degraded（鉴权先于业务）
-        resp = c.get("/v1/messages/search", params={"q": "订单"}, headers=_auth(ops))
-        assert resp.status_code == 200
-        assert resp.json()["degraded"] is True
+        # message_search：目标 user_id 必填；无 ES → 503（鉴权先于业务）
+        resp = c.get("/v1/messages/search",
+                     params={"user_id": "u1", "q": "订单"}, headers=_auth(ops))
+        assert resp.status_code == 503
+        # 缺目标用户 → 422
+        assert c.get("/v1/messages/search", params={"q": "订单"},
+                     headers=_auth(ops)).status_code == 422
 
 
 def test_ops_endpoints_require_token_when_auth_on(monkeypatch, reset_settings):
@@ -224,12 +227,11 @@ def test_ownership_fail_closed_without_ctx(reset_settings):
 
 def test_refund_fail_closed_without_ctx(reset_settings):
     from app.agent.tools.mock_data import ORDERS
-    from app.agent.tools.refund import apply_refund
+    from app.agent.tools.refund import submit_refund_application
 
     settings.enforce_order_ownership = True
-    settings.refund_confirmation_required = False
     order_id = next(iter(ORDERS))
-    out = apply_refund(order_id, "原因", None)
+    out = submit_refund_application(order_id, "原因", None)
     assert out["success"] is False
     assert "身份" in out["error"]
 
@@ -322,6 +324,42 @@ def test_mcp_tools_carry_actor_identity(reset_settings):
                                 ttl_seconds=1, now_utc=past)
     with pytest.raises(ValueError):
         mcp_srv._actor_ctx(fake_ctx(expired))
+
+
+def test_mcp_submit_creates_application_without_confirmation_meta(reset_settings):
+    """MCP 路径提交退款：可信系统调用方由包装层声明确认，结果不含授权凭证字段。
+
+    P1-2：Agent 侧两阶段协议依赖会话状态，ToolManager 已把需确认的写工具固定
+    本地执行；MCP 面只服务持有 refund:write actor token 的可信系统调用方。
+    """
+    from types import SimpleNamespace
+
+    from app.integrations.commerce import get_gateway, set_gateway
+    from app.integrations.commerce.mock import MockCommerceGateway
+    from app.mcp_client.actor import SCOPE_REFUND_WRITE, issue_actor_token
+    from mcp_server import server as mcp_srv
+
+    settings.mcp_actor_secret = "actor-secret-0123456789-abcdefghijklmnop"
+    set_gateway(MockCommerceGateway())
+    try:
+        token = issue_actor_token("u1", "s1", (SCOPE_REFUND_WRITE,))
+        ctx = SimpleNamespace(
+            request_context=SimpleNamespace(meta=SimpleNamespace(actor=token))
+        )
+        raw = mcp_srv.submit_refund_application(
+            "ORD-20240115-001", "尺码不合适", ctx,
+        )
+        assert isinstance(raw, str)
+        payload = json.loads(raw)
+        assert payload["success"] is True
+        assert payload["status"] == "merchant_reviewing"
+        assert payload["can_withdraw"] is True
+        assert "authorization" not in raw.lower() and "token" not in raw.lower()
+        # 订单状态不做前置流转
+        order = get_gateway().get_order("u1", "ORD-20240115-001").data
+        assert order["status"] == "shipped"
+    finally:
+        set_gateway(None)
 
 
 # ============================================================
@@ -419,17 +457,27 @@ def test_disconnected_finalize_closes_agent_when_work_done():
     asyncio.run(_drive())
 
 
-def test_disconnected_finalize_bounded_wait_skips_close(monkeypatch):
-    """评审·坑1：断连等待有上限——超时不再 close（线程仍持有 agent），
-    已发生的用量仍按 request 入账（评审二轮 B2）。"""
+def test_disconnected_finalize_overdue_keeps_waiting_then_releases(monkeypatch):
+    """修复计划·一：等待上限只记 overdue 告警，不再代表放弃/放锁；
+    Agent 真正结束后才 close + 入账 + 释放会话租约。"""
     import app.server.main as main_mod
     from app.security.ratelimit import UsageTracker, UserLimiter
 
     closed: list[bool] = []
+    released: list[bool] = []
 
     class _Agent:
         def close(self):
             closed.append(True)
+
+    class _Lease:
+        abandoned = False
+
+        def release(self):
+            released.append(True)
+
+        def stop_renew(self):
+            pass
 
     class _Comps:
         usage_tracker = UsageTracker()
@@ -443,19 +491,23 @@ def test_disconnected_finalize_bounded_wait_skips_close(monkeypatch):
         comps.usage_tracker._totals["req-timeout"] = [123, time.time()]
 
         async def _work():
-            await asyncio.sleep(30)  # 模拟不可中断的长工作
+            await asyncio.sleep(0.3)  # 超过 0.05s 软上限 → overdue 告警但仍等待
 
         task = asyncio.create_task(_work())
         await asyncio.sleep(0)
         limiter = UserLimiter(None, max_rps=0, daily_token_budget=0)
         main_mod._schedule_disconnected_finalize(
-            task, agent, comps, "u1", limiter, "req-timeout",
+            task, agent, comps, "u1", limiter, "req-timeout", lease=_Lease(),
         )
-        await asyncio.sleep(0.3)  # 远小于 30s 工作，但大于 0.05s 上限
-        assert closed == []  # 超时分支：不 close
+        await asyncio.sleep(0.15)  # 已超软上限，但 Agent 尚未结束
+        assert closed == []  # 不提前 close
+        assert released == []  # 不提前放锁（否则第二个请求会并发写）
+        assert comps.usage_tracker.snapshot("req-timeout") == 123  # 不提前入账
+        await asyncio.sleep(0.5)  # Agent 真正结束 → 收尾完成
+        assert closed == [True]
+        assert released == [True]
         # 已发生用量照常入账（end_request 幂等配对）
         assert comps.usage_tracker.end_request("req-timeout") == 0  # 已被收尾取走
-        task.cancel()  # 清理测试任务
 
     asyncio.run(_drive())
 
@@ -526,7 +578,25 @@ def test_backend_redis_uses_redis(monkeypatch, reset_settings):
     settings.session_store_backend = "redis"
     comps = deps.build_pod_components()
     assert type(comps.session_store) is RedisSessionStore
-    assert type(comps.ltm_store) is RedisLTMStore
+    # 记忆系统重构：Redis 不再作为 LTM 唯一主存储（eviction 静默丢记忆），
+    # backend=redis 时记忆随文件走
+    assert type(comps.ltm_store) is LocalFileLTMStore
+
+
+def test_sql_engine_wraps_ltm_in_cache_aside(monkeypatch, reset_settings, tmp_path):
+    """db_url 配置 → LTM 正本在 SQL，Redis 只做 cache-aside 读缓存。"""
+    import app.server.deps as deps
+    from app.stores.memory_store import CachedLTMStore
+    from app.stores.sql.memory_store import SqlLTMStore
+
+    monkeypatch.setattr(
+        "app.stores.sql.engine.get_engine",
+        lambda: create_engine(f"sqlite:///{tmp_path / 'ecom.sqlite'}"),
+    )
+    monkeypatch.setattr("app.stores.redis_client.get_redis", lambda: _fake_redis())
+    comps = deps.build_pod_components()
+    assert type(comps.ltm_store) is CachedLTMStore
+    assert type(comps.ltm_store._inner) is SqlLTMStore
 
 
 def test_backend_auto_prefers_redis(monkeypatch, reset_settings):

@@ -121,3 +121,43 @@ def test_journal_entry_shape():
     assert entry["phase"] == "publish"
     assert entry["index"]["generation_id"] == "g1"
     assert entry["backend"] == "numpy"
+
+
+# ============================================================
+# 低危修复 C4：损坏锁 fail-closed / RedisLockGuard.assert_held
+# ============================================================
+def test_file_lock_corrupt_holder_fails_closed(tmp_path):
+    """半截 JSON / 无持有者字段的锁文件 → LockHeldError（提示 --force-unlock），
+    不再误报 CrossHostLockError「跨主机持有」。"""
+    path = tmp_path / "evolution.lock"
+    path.write_text('{"pid": 12', encoding="utf-8")  # 半截 JSON
+    with pytest.raises(LockHeldError, match="损坏"):
+        LockGuard(path, stale_seconds=1000).acquire(phase="run")
+
+    path.write_text("{}", encoding="utf-8")  # 合法 JSON 但识别不出持有者
+    with pytest.raises(LockHeldError, match="损坏"):
+        LockGuard(path, stale_seconds=1000).acquire(phase="run")
+
+    # 正常流程不回归（文件不存在 → O_EXCL 创建）
+    path.unlink()
+    guard = LockGuard(path, stale_seconds=1000)
+    guard.acquire(phase="run")
+    guard.release()
+
+
+def test_redis_lock_guard_assert_held():
+    """RedisLockGuard 补 assert_held：未持有 / 键值不匹配（TTL 过期或被抢占）
+    → LockLostError；持有时通过。"""
+    import fakeredis
+
+    from app.evolution.lock import LockLostError, RedisLockGuard
+
+    r = fakeredis.FakeRedis(server=fakeredis.FakeServer())
+    guard = RedisLockGuard(r, "evolution", ttl_seconds=300)
+    with pytest.raises(LockLostError):
+        guard.assert_held()  # 未持有
+    guard.acquire(phase="run")
+    guard.assert_held()  # 持有 → 通过
+    r.set(guard._key, "other-token")  # 模拟被抢占
+    with pytest.raises(LockLostError):
+        guard.assert_held()

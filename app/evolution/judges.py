@@ -49,6 +49,24 @@ def _parse_json(raw: str) -> dict:
     return json.loads(raw)
 
 
+def _coerce_bool(value, default: bool = False) -> bool:
+    """文本降级路径的布尔解析（低危修复 C3）：bool 原样；字符串按常见真值词
+    解析——`bool("false") == True` 会把模型输出 "false" 误判为真。"""
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value.strip().lower() in {"true", "1", "yes", "y", "是"}
+    return default
+
+
+def _clamp01(value) -> float:
+    """质量分钳制到 [0, 1]（文本路径可能返回 0-10 分制或越界值）。"""
+    try:
+        return max(0.0, min(1.0, float(value)))
+    except (TypeError, ValueError):
+        return 0.0
+
+
 @dataclass
 class ValueDecision:
     """价值 Judge 的判决结果。failed=True 表示 Judge 完全失败（只能进 pending）。"""
@@ -129,8 +147,8 @@ class ValueJudge:
         )
         data = _parse_json(response.choices[0].message.content or "")
         return ValueDecision(
-            worth_saving=bool(data["worth_saving"]),
-            quality_score=float(data["quality_score"]),
+            worth_saving=_coerce_bool(data["worth_saving"]),
+            quality_score=_clamp01(data["quality_score"]),
             question=data.get("question") or qa.question,
             answer=data.get("answer") or qa.answer,
             reason=data.get("reason", ""),
@@ -202,7 +220,7 @@ class GroundingJudge:
         )
         data = _parse_json(response.choices[0].message.content or "")
         return {
-            "grounded": bool(data["grounded"]),
+            "grounded": _coerce_bool(data["grounded"]),
             "unsupported": list(data.get("unsupported", [])),
             "reason": data.get("reason", ""),
         }

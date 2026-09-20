@@ -1,6 +1,14 @@
-"""记忆管理器：统一管理短期记忆和长期记忆。
+"""记忆管理器：长期记忆门面。
 
-EcomAgent 和 MultiAgentOrchestrator 通过此管理器与记忆系统交互。
+EcomAgent 通过此管理器与记忆系统交互。
+
+记忆系统重构后收敛为业界两层：
+- 会话内上下文 = 对话历史 + rolling 摘要（Agent 自身承担，不经本模块）；
+- 跨会话个性化 = per-user LTM 事实库（注入 + 异步巩固，本模块唯一职责）。
+
+原会话内「槽位层」（ShortTermMemory/stm_rules 确定性规则提取）已整体删除：
+槽位是历史/摘要的冗余副本，且与 LTM 单值键冲突（改名后新旧值同屏）；
+身份类信息由 LTM identity 单值键每轮必注入承担（见 long_term.py）。
 """
 
 from __future__ import annotations
@@ -8,11 +16,32 @@ from __future__ import annotations
 from openai import OpenAI
 
 from app.agent.memory.long_term import LongTermMemory
-from app.agent.memory.short_term import ShortTermMemory
+
+
+def _derive_embedding_store(ltm_store, memory_dir: str):
+    """记忆系统重构·阶段2：按 LTM 存储后端派生嵌入存储（同介质，不混写）。
+
+    语义关闭时返回 None 也无妨——LongTermMemory._semantic_active() 已
+    短路；这里常驻构建只是让开启语义的部署零额外接线。
+
+    cache-aside 包装层（CachedLTMStore）自身不持有介质信息，先解包到正本，
+    否则 SQL 部署会因 engine 缺失而把嵌入落到 Redis（与事实正本异介质）。
+    """
+    from app.agent.memory.embeddings import build_memory_embedding_store
+
+    base = getattr(ltm_store, "_inner", ltm_store)
+    engine = getattr(base, "_engine", None)
+    redis = getattr(base, "_redis", None)
+    try:
+        return build_memory_embedding_store(
+            engine=engine, redis=redis, memory_dir=memory_dir,
+        )
+    except Exception:  # noqa: BLE001 —— 派生失败 = 无语义路（降级词面）
+        return None
 
 
 class MemoryManager:
-    """记忆管理器：统一管理短期记忆和长期记忆。"""
+    """记忆管理器：长期记忆门面。"""
 
     def __init__(
         self,
@@ -24,18 +53,23 @@ class MemoryManager:
         max_ltm_facts: int = 50,
         ltm_store=None,  # 阶段二 2.3：LTMStore（Redis 外置）
         session_id: str = "",
+        embedding_store=None,  # 记忆系统重构·阶段2：显式嵌入存储（可选，缺省按 ltm_store 派生）
     ):
         self.client = client
         self.model = model
         self.memory_enabled = memory_enabled
 
-        self.stm = ShortTermMemory()
         self.ltm = LongTermMemory(
             user_id=user_id,
             memory_dir=memory_dir,
             max_facts=max_ltm_facts,
             store=ltm_store,
             source_session=session_id,
+            embedding_store=(
+                embedding_store
+                if embedding_store is not None
+                else _derive_embedding_store(ltm_store, memory_dir)
+            ),
         )
 
         if self.memory_enabled:
@@ -45,54 +79,23 @@ class MemoryManager:
         """Bind the current session for memory audit provenance."""
         self.ltm.source_session = session_id
 
-    def update_short_term(self, recent_messages: list[dict]) -> None:
-        """每轮对话后更新短期记忆（LLM 路径；阶段F后仅离线工具使用）。
-
-        主链路已切换为 update_short_term_deterministic（零 LLM）。
-        """
-        if not self.memory_enabled:
-            return
-        self.stm.update(self.client, self.model, recent_messages)
-
-    def update_short_term_deterministic(
-        self, recent_messages: list[dict], query: str = "",
-    ) -> None:
-        """阶段F：确定性规则即时提取会话槽位（零 LLM，不抛错）。"""
-        if not self.memory_enabled:
-            return
-        from app.agent.memory.stm_rules import extract_stm_slots
-
-        changes = extract_stm_slots(
-            recent_messages,
-            [fact for fact in self.stm.records if fact.status == "active"],
-        )
-        if not changes:
-            return
-        from app.agent.memory.models import MemoryMutation, apply_memory_mutations
-
-        if all(isinstance(item, MemoryMutation) for item in changes):
-            self.stm.records = apply_memory_mutations(
-                self.stm.records, changes, max_active=50,
-            )
-        else:
-            self.stm.facts = changes
-
-    def build_memory_prompt_sections(self, query: str = "") -> list[dict]:
+    def build_memory_prompt_sections(
+        self, query: str = "", query_embedding: list[float] | None = None,
+    ) -> list[dict]:
         """生成所有记忆相关的 system prompt 消息列表。
 
         改造四：query = 本轮原始 user_input（chat() 显式传入，不从消息尾部
-        猜测）；LTM 注入按相关性筛选（严格 ≤8 条 + 保底），STM/交互摘要不变。
+        猜测）；LTM 注入按相关性筛选（严格 ≤8 条 + identity 单值键保底）。
+        阶段2：query_embedding 由 ContextBuilder 每轮至多计算一次传入。
         """
         if not self.memory_enabled:
             return []
-
         sections = []
-        ltm_section = self.ltm.build_prompt_section(query)
+        ltm_section = self.ltm.build_prompt_section(
+            query, query_embedding=query_embedding,
+        )
         if ltm_section:
             sections.append({"role": "system", "content": ltm_section})
-        stm_section = self.stm.build_prompt_section()
-        if stm_section:
-            sections.append({"role": "system", "content": stm_section})
         return sections
 
     def consolidate_to_long_term(
@@ -105,17 +108,6 @@ class MemoryManager:
             self.client, self.model, messages, summary,
         )
 
-    def reset_short_term(self) -> None:
-        """重置短期记忆（会话内重置时调用）。"""
-        self.stm.reset()
-
     def reset_all(self) -> None:
-        """重置所有记忆（短期+长期）。"""
-        self.stm.reset()
+        """重置长期记忆（会话 reset 时调用）。"""
         self.ltm.reset()
-
-    def stm_to_dict(self) -> dict:
-        return self.stm.to_dict()
-
-    def restore_stm(self, data: dict) -> None:
-        self.stm = ShortTermMemory.from_dict(data)

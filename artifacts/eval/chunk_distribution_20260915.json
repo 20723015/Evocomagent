@@ -1,0 +1,39 @@
+{
+  "kb_dir": "C:\\ea\\app\\agent\\rag\\knowledge",
+  "baseline": {
+    "chunks": 809,
+    "docs": 137,
+    "chunk_chars_mean": 170.4,
+    "chunk_chars_median": 158.0,
+    "body_chars_mean": 129.4,
+    "body_chars_p90": 191.0,
+    "body_lt_200_ratio": 0.9147,
+    "prefix_chars_mean": 41.0,
+    "prefix_chars_median": 39.0,
+    "parent_coverage": 0.0,
+    "parent_chars_median": 0.0,
+    "parent_chars_max": 0,
+    "generation_units": 809,
+    "units_per_doc_mean": 5.91,
+    "chunks_with_index_text": 2,
+    "table_chunks": 32
+  },
+  "current": {
+    "chunks": 809,
+    "docs": 137,
+    "chunk_chars_mean": 155.2,
+    "chunk_chars_median": 143.0,
+    "body_chars_mean": 129.4,
+    "body_chars_p90": 191.0,
+    "body_lt_200_ratio": 0.9147,
+    "prefix_chars_mean": 25.8,
+    "prefix_chars_median": 23.0,
+    "parent_coverage": 1.0,
+    "parent_chars_median": 692.0,
+    "parent_chars_max": 1940,
+    "generation_units": 151,
+    "units_per_doc_mean": 1.1,
+    "chunks_with_index_text": 2,
+    "table_chunks": 32
+  }
+}

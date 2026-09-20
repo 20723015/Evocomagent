@@ -20,6 +20,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
     func,
+    text,
 )
 from sqlalchemy.dialects.sqlite import INTEGER as SQLITE_INTEGER
 
@@ -38,7 +39,13 @@ sessions = Table(
     Column(
         "summary", Text, nullable=True
     ),  # 历史压缩摘要（正本永续，摘要只是 LLM 窗口）
-    Column("stm_json", Text, nullable=True),  # 短期记忆序列化
+    Column("stm_json", Text, nullable=True),  # 短期记忆序列化（历史列，保留不写）
+    Column(
+        "pending_turn_json", Text, nullable=True
+    ),  # 掉线恢复：进行中轮次草稿 {turn_id,user_message,started_at}；非空=上次回复未完成
+    Column(
+        "pending_write_json", Text, nullable=True
+    ),  # 写确认两阶段（P1-2）：待确认写草稿 {tool,client_request_id,arguments,...}；非空=有待确认写操作
     Column(
         "consolidated_len", Integer, nullable=False, default=0
     ),  # 安全修复 P2：增量巩固水位（防重启/兜底重复巩固）
@@ -109,6 +116,28 @@ interaction_summaries = Table(
     Column("summary", Text, nullable=False),
     Column("source_session", String(64), nullable=False, default=""),
     Column("created_at", DateTime, nullable=False, server_default=func.now()),
+)
+
+# 记忆系统重构·阶段2.2：记忆嵌入（派生数据，与 memory_facts 正本分离；
+# 可按 model + content_hash 重建；不引入向量扩展，应用侧暴力余弦）
+memory_fact_embeddings = Table(
+    "memory_fact_embeddings",
+    metadata,
+    Column(
+        "id",
+        BigInteger().with_variant(SQLITE_INTEGER, "sqlite"),
+        primary_key=True,
+        autoincrement=True,
+    ),
+    Column("user_id", String(64), nullable=False, index=True),
+    Column("fact_id", String(64), nullable=False, default=""),
+    Column("model", String(128), nullable=False, default=""),
+    Column("content_hash", String(64), nullable=False, default=""),
+    Column("vector", Text, nullable=False),  # JSON 数组
+    Column("updated_at", DateTime, nullable=False, server_default=func.now()),
+    UniqueConstraint(
+        "user_id", "fact_id", "model", name="uq_memory_fact_embedding",
+    ),
 )
 
 # KB 控制表：全局阻塞标记等（值走 SQL，不依赖 Redis/文件，避免多 Pod 分裂）
@@ -307,6 +336,10 @@ human_knowledge_candidates = Table(
     Column("published_generation", String(64), nullable=False, default=""),
     Column("retired_at", DateTime, nullable=True),
     Column("retire_reason", String(255), nullable=False, default=""),
+    # 迁移 013：同会话更高 source_version 接入后，旧版本 published 候选置 1
+    # （审核台可见、不自动下架；替换/下架结算或重审失败重置时清零）。
+    # server_default 对齐迁移 DDL（NOT NULL DEFAULT 0），裸 SQL 插入缺列可用。
+    Column("version_stale", Integer, nullable=False, default=0, server_default=text("0")),
     Column("replaced_by_candidate_id", BigInteger, nullable=True),
     Column("created_at", DateTime, nullable=False, server_default=func.now()),
 )
@@ -365,7 +398,8 @@ human_publish_items = Table(
     Index("idx_human_pub_item", "batch_id"),
 )
 
-# Outbox：消息 INSERT 同事务写入；后台任务搬去 ES 后标记 synced_at
+# Outbox：消息 INSERT 同事务写入；后台任务短事务领取搬去 ES 后结算
+# （迁移 011：session_uuid + 状态/尝试/退避/租约/dead-letter）
 outbox_rows = Table(
     "outbox_rows",
     metadata,
@@ -378,10 +412,52 @@ outbox_rows = Table(
     Column("session_key", String(200), nullable=False),
     Column("seq", Integer, nullable=False),
     Column("payload", Text, nullable=False),  # 完整消息 JSON
+    Column(
+        "session_uuid", String(32), nullable=False, default=""
+    ),  # 写入时的会话实例（删除事件按 UUID 精确匹配）
+    Column("status", String(16), nullable=False, default="pending"),
+    Column("attempts", Integer, nullable=False, default=0),
+    Column("next_run_at", DateTime, nullable=True),
+    Column("lease_owner", String(64), nullable=False, default=""),
+    Column("lease_token", String(64), nullable=False, default=""),
+    Column("lease_until", DateTime, nullable=True),
+    Column("dead_lettered_at", DateTime, nullable=True),
     Column("created_at", DateTime, nullable=False, server_default=func.now()),
     Column("synced_at", DateTime, nullable=True),
     Column("sync_error", Text, nullable=True),
-    UniqueConstraint("session_key", "seq", name="uq_outbox_session_seq"),
+    # 唯一键含 session_uuid：Reset 后新会话可重新使用 seq（旧行按 UUID 区分）
+    UniqueConstraint("session_key", "session_uuid", "seq", name="uq_outbox_session_seq"),
+)
+Index("idx_outbox_status_next", outbox_rows.c.status, outbox_rows.c.next_run_at)
+
+# Reset 后 ES 删除事件（迁移 011）：与 reset 事务同提交；删除事件延迟执行也不会
+# 误删重置后的新消息（新会话用新 session_uuid）。
+message_delete_outbox = Table(
+    "message_delete_outbox",
+    metadata,
+    Column(
+        "id",
+        BigInteger().with_variant(SQLITE_INTEGER, "sqlite"),
+        primary_key=True,
+        autoincrement=True,
+    ),
+    Column("session_key", String(200), nullable=False),
+    Column("session_uuid", String(32), nullable=False),
+    Column("status", String(16), nullable=False, default="pending"),
+    Column("attempts", Integer, nullable=False, default=0),
+    Column("next_run_at", DateTime, nullable=True),
+    Column("lease_owner", String(64), nullable=False, default=""),
+    Column("lease_token", String(64), nullable=False, default=""),
+    Column("lease_until", DateTime, nullable=True),
+    Column("error", Text, nullable=True),
+    Column("created_at", DateTime, nullable=False, server_default=func.now()),
+    Column("finished_at", DateTime, nullable=True),
+    UniqueConstraint("session_key", "session_uuid", name="uq_delete_outbox_session_uuid"),
+)
+Index(
+    "idx_delete_outbox_status_next",
+    message_delete_outbox.c.status,
+    message_delete_outbox.c.next_run_at,
 )
 
 # 记忆巩固任务（单 Agent 全量优化计划·阶段F）：消息保存同事务入队；

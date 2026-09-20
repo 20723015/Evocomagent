@@ -1,0 +1,19 @@
+{{- $appEnv := lower (toString (default "" (index .Values.env "APP_ENV"))) -}}
+{{- /*
+  RAG 生产阈值校验。
+
+  硬校验只在「发布激活」后生效（env.RAG_RELEASE_ACTIVATED=true）：该开关与
+  重校准产出的 RAG_MIN_RELEVANCE_SCORE 必须同时写入（发布顺序第 4–5 步）。
+  未激活时允许渲染（文档治理/重建 generation/重校准阶段），此时运行时
+  /readyz 的 rag 能力仍对 prod 缺阈值返回 503（chat unavailable）——
+  不会静默上线无阈值配置。
+*/ -}}
+{{- if eq $appEnv "prod" -}}
+{{- $activated := lower (toString (default "false" (index .Values.env "RAG_RELEASE_ACTIVATED"))) -}}
+{{- if eq $activated "true" -}}
+{{- $threshold := trim (toString (default "" (index .Values.env "RAG_MIN_RELEVANCE_SCORE"))) -}}
+{{- if not (regexMatch "^-?([0-9]+(\\.[0-9]*)?|\\.[0-9]+)([eE][+-]?[0-9]+)?$" $threshold) -}}
+{{- fail "RAG_RELEASE_ACTIVATED=true 要求通过本轮 RAG 发布包配置有效的 env.RAG_MIN_RELEVANCE_SCORE（先完成重校准）" -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}

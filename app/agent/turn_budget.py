@@ -9,8 +9,11 @@
 - ContextVar 不能中断已在运行的调用——工具提交侧的预算规则在
   ToolBatchExecutor（提交前查剩余 / 只读到期弃等 / 写工具同步等幂等结果）。
 
-口径：turn_budget_seconds=120 是安全熔断值，与 15s P95 SLO 无关；
-SSE 断连等待上限由它推导（server/main._disconnect_wait_bound_seconds）。
+口径：`turn_budget_seconds` 是安全熔断值（推理模型适配 T8 由 120 抬到 300：
+推理模型单调用可达 30–60s，8 步 × 单调用延迟会撞旧值）；SSE 断连等待上限
+由它推导（server/main._disconnect_wait_bound_seconds）。**旧的「整轮完成
+< 15s (P95)」SLO 在推理主模型下作废**，新基线由 T0 实测延迟 + T9 评测重建
+产出（见 docs/推理模型适配-实施记录.md）。
 """
 
 from __future__ import annotations
@@ -40,12 +43,6 @@ class TurnBudget:
 
     def expired(self) -> bool:
         return self.remaining() <= 0
-
-    def remaining_or(self, fallback: float) -> float:
-        """有预算返回剩余（下限 0），无预算返回 fallback。"""
-        if self.expired():
-            return 0.0
-        return self.remaining()
 
 
 _CURRENT: ContextVar[TurnBudget | None] = ContextVar("turn_budget", default=None)

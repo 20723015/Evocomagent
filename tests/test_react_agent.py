@@ -119,7 +119,7 @@ def test_product_search():
 
 # ---------- 测试 5：退款申请 ----------
 def test_refund():
-    print("\n[5/7] 退款申请测试（应调用 apply_refund）")
+    print("\n[5/7] 退款申请测试（应调用 submit_refund_application）")
     _clean()
     agent = _fresh_agent()
     resp = agent.chat("我要退掉订单 ORD-20240110-003，质量有问题")

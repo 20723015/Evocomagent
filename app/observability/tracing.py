@@ -66,7 +66,8 @@ def span(name: str, **attributes):
 
 
 def record_llm_call(model: str, purpose: str, latency_ms: float,
-                    prompt_tokens: int = 0, completion_tokens: int = 0) -> None:
+                    prompt_tokens: int = 0, completion_tokens: int = 0,
+                    reasoning_tokens: int = 0) -> None:
     """LLM 调用落 span 属性（嵌入缺省 span：无活动时 no-op）。"""
     from opentelemetry import trace
 
@@ -78,3 +79,6 @@ def record_llm_call(model: str, purpose: str, latency_ms: float,
     current.set_attribute("llm.latency_ms", latency_ms)
     current.set_attribute("llm.prompt_tokens", prompt_tokens)
     current.set_attribute("llm.completion_tokens", completion_tokens)
+    # 推理模型适配 T7：思考 token 单列（与 metrics 的 completion 拆分口径一致）
+    current.set_attribute("llm.reasoning_tokens", reasoning_tokens)
+

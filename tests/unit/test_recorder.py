@@ -119,7 +119,7 @@ def test_record_failure_returns_none_and_does_not_raise(tmp_state_dir):
 
 
 # ============================================================
-# 两类 Agent 挂载点
+# Agent 挂载点
 # ============================================================
 def test_ecom_agent_mount_records_turn(monkeypatch, tmp_state_dir, tmp_path,
                                        reset_settings):
@@ -148,35 +148,6 @@ def test_ecom_agent_mount_records_turn(monkeypatch, tmp_state_dir, tmp_path,
     # 会话文件 v2：session_id 贯通
     loaded = __import__("app.agent.storage", fromlist=["load_session"]).load_session(session_path)
     assert loaded["session_id"] == agent.session_id
-
-
-def test_multi_agent_mount_records_turn(monkeypatch, tmp_state_dir, tmp_path,
-                                        reset_settings):
-    from app.config.settings import settings as s
-    from app.multi_agent.orchestrator import MultiAgentOrchestrator
-
-    s.evolve_capture_enabled = True
-    s.evolve_turns_dir = str(tmp_state_dir["turns"])
-    session_path = str(tmp_path / "session.json")
-
-    agent = MultiAgentOrchestrator(session_path=session_path)
-    agent.router.route = lambda user_input, messages: list(agent.agents.keys())[0]
-    for sub in agent.agents.values():
-        sub.handle = lambda messages, ctx=None, max_steps=5, executor=None, state=None, budget=None: (
-            "这是客服回复内容。", [], 1,
-        )
-    agent._extract_structured_response = lambda text: sample_response(
-        reply="这是客服回复内容。"
-    )
-    agent.memory_manager.update_short_term = lambda *a, **k: None
-    agent.history_threshold = 1000
-
-    agent.chat("退货运费谁出？")
-    files = list(tmp_state_dir["turns"].rglob("*.json"))
-    assert len(files) == 1
-    data = json.loads(files[0].read_text(encoding="utf-8"))
-    assert data["mode"] == "multi"
-    assert data["session_id"] == agent.session_id
 
 
 def test_compress_history_does_not_lose_candidates(monkeypatch, tmp_state_dir,

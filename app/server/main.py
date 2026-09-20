@@ -26,10 +26,19 @@ from fastapi.responses import JSONResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.config.settings import settings
-from app.handoff.board import HandoffConflict, HandoffNotFound
+from app.handoff.board import HandoffConflict, HandoffNotFound, HandoffTicket
 from app.security.identifiers import InvalidIdentifier, validate_identifier
-from app.security.principal import SCOPE_OPS, authorize_scopes
+from app.security.principal import SCOPE_HUMAN_INGEST, SCOPE_OPS, authorize_scopes
+from app.security.ratelimit import BudgetStoreUnavailable
 from app.server import runtime
+from app.server.channels import (
+    InvalidChannel,
+    build_channel_outbox,
+    channel_user_id,
+    normalize_inbound,
+    outbound_payload,
+    validate_channel_id,
+)
 from app.server.deps import (
     PodComponents,
     authenticate_user,
@@ -37,8 +46,12 @@ from app.server.deps import (
     build_pod_components,
 )
 from app.server.schema import (
+    ChannelMessageRequest,
+    ChannelMessageResponse,
+    ChannelOutboundResponse,
     ChatRequest,
     ChatResponse,
+    HandoffNoteRequest,
     HandoffResolveRequest,
     HealthResponse,
     SessionResetRequest,
@@ -49,7 +62,11 @@ from app.stores.base import (
     SessionOwnershipError,
     StorageUnavailableError,
 )
-from app.stores.locks import SessionLease
+from app.stores.locks import (
+    SessionLease,
+    SessionLockBackendUnavailable,
+    SessionLockLost,
+)
 
 logger = logging.getLogger("app.server")
 
@@ -76,13 +93,32 @@ SSE_DEPRECATION_EVENT = {
     "sunset": "2026-09-01",
 }
 
+# P2-3：SLA 超时扫描间隔（秒）。模块级常量（不新增 settings 开关）——
+# 后台兜底扫描保证即使无人轮询看板，超时工单也会被首次观测并计入指标。
+HANDOFF_SLA_SCAN_SECONDS = 60
+
 
 def _sse(event_type: str, data: dict) -> str:
     """SSE 帧：`event: <type>\ndata: <json>\n\n`。"""
     return f"event: {event_type}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
 
 
-def _safe_fallback(session_id: str) -> ChatResponse:
+def _handoff_meta(ticket: HandoffTicket | None) -> dict | None:
+    """P2-3：用户可见的转人工状态（会话 meta / 响应字段 / 渠道出站共用）。
+
+    「已转人工，工单号 X」随 ChatResponse.handoff、SSE handoff 事件与渠道
+    出站消息透出，用户可凭工单号与坐席对账。
+    """
+    if ticket is None:
+        return None
+    return {
+        "ticket_id": ticket.ticket_id,
+        "status": ticket.status,
+        "message": f"已转人工，工单号 {ticket.ticket_id}，请等待坐席接入。",
+    }
+
+
+def _safe_fallback(session_id: str, handoff: dict | None = None) -> ChatResponse:
     return ChatResponse(
         session_id=session_id,
         reply=SAFE_FALLBACK_REPLY,
@@ -90,6 +126,7 @@ def _safe_fallback(session_id: str) -> ChatResponse:
         confidence=0.0,
         requires_human=True,
         follow_up_question=None,
+        handoff=handoff,
     )
 
 
@@ -120,15 +157,16 @@ def _input_prefilter(message: str):
     return decision.text, decision.action == "guardrail_block"
 
 
-def _complete_handoff(
+async def _complete_handoff(
     components: PodComponents, agent, result, reply: str, requires_human: bool
-) -> None:
+) -> HandoffTicket | None:
     """共享响应完成器：普通与 SSE 接口统一的 Handoff 工单创建（阶段A）。
 
     requires_human 时生成 handoff 包推坐席；工单失败不阻断已完成的对话。
+    返回工单（成功时）供用户侧状态（工单号）透出；失败/无需转人工 → None。
     """
     if not requires_human:
-        return
+        return None
     from app.observability.metrics import record_handoff
 
     record_handoff()
@@ -137,9 +175,214 @@ def _complete_handoff(
             result.reply = reply  # 输出侧纵深防御替换同步进工单内容
         from app.handoff.board import build_handoff_ticket
 
-        components.handoff_board.create(build_handoff_ticket(agent, result))
+        ticket = build_handoff_ticket(agent, result)
+        # board.create 是同步 Redis 调用（C1：不阻塞事件循环）
+        await asyncio.to_thread(components.handoff_board.create, ticket)
+        return ticket
     except Exception:
         logger.warning("handoff ticket 创建失败", exc_info=True)
+        return None
+
+
+async def _create_guardrail_handoff(
+    components: PodComponents, user_id: str, session_id: str, message: str
+) -> HandoffTicket | None:
+    """输入护栏命中 → 建转人工工单（reply 已是安全话术，仍需坐席复核原始输入）。
+
+    blocked 发生在 build_agent 之前（无 agent/result 上下文），直构最小工单；
+    建单失败不阻断降级响应（与 _complete_handoff 同口径）。返回工单供
+    用户侧状态（工单号）透出。
+    """
+    from app.observability.metrics import record_handoff
+
+    record_handoff("guardrail_blocked")
+    try:
+        from app.handoff.board import HandoffTicket, _now
+
+        ticket = HandoffTicket(
+            ticket_id=uuid.uuid4().hex,
+            user_id=user_id,
+            session_id=session_id,
+            intent="other",
+            question=message,
+            reply=SAFE_FALLBACK_REPLY,
+            suggested_actions=["输入命中注入护栏，请人工确认原始输入"],
+            created_at=_now(),
+        )
+        await asyncio.to_thread(components.handoff_board.create, ticket)
+        return ticket
+    except Exception:
+        logger.warning("guardrail handoff ticket 创建失败", exc_info=True)
+        return None
+
+
+async def _run_chat_turn(
+    components: PodComponents,
+    user_id: str,
+    session_id: str,
+    message: str,
+    *,
+    credentials: dict | None = None,
+):
+    """共享 chat 管线（/v1/chat 与渠道 webhook 复用，P2-2）。
+
+    限流（RPS/日预算）→ 会话租约（同 session 单写入者）→ build_agent →
+    runtime.run_agent_turn → close；异常映射与历史 /v1/chat 完全一致：
+    429（限流）/ 409（锁冲突、CAS 冲突）/ 403（会话归属）/ 503（锁后端、
+    租约失效、预算存储、外置存储故障）。返回 (agent, result)。
+
+    写确认协议（pending_write / 工具状态机）全部在 Agent 内，本函数不复制。
+    """
+    from app.observability.metrics import (
+        RATE_LIMITED,
+        REACT_STEPS,
+        record_chat_latency,
+        record_conflict,
+    )
+
+    limiter = components.limiter
+    limiter.bind_user(user_id)  # 修复计划·四：LLM 包装层据此预留/结算
+    if not limiter.allow_rps(user_id):
+        RATE_LIMITED.labels(kind="rps").inc()
+        raise HTTPException(status_code=429, detail="请求过于频繁，请稍后再试")
+    try:
+        if not limiter.allow_budget(user_id):
+            RATE_LIMITED.labels(kind="budget").inc()
+            raise HTTPException(
+                status_code=429, detail="今日用量已达上限，请明日再试或联系人工客服"
+            )
+    except BudgetStoreUnavailable as e:
+        # 修复计划·四：预算存储故障（redis_required）→ 503，不降级本地计数
+        raise HTTPException(status_code=503, detail=f"预算存储暂不可用: {e}") from e
+
+    # 评审二轮 B2：用量按 request 归集（ContextVar 随 anyio 线程池传播，
+    # turn 线程与 close 线程的 LLM 调用都记到本请求名下）
+    request_id = uuid.uuid4().hex
+    components.usage_tracker.begin_request(request_id)
+    try:
+        # 2.2：同 session 只有一个写入者（连点/双 pod 竞态）→ 冲突 409；
+        # 修复计划·一：锁后端不可用（生产 redis_required）→ 503 而非降级
+        try:
+            lease_ctx = SessionLease(
+                components.locks, user_id, session_id or "session"
+            )
+            lease = lease_ctx.__enter__()
+        except SessionLockBackendUnavailable as e:
+            raise HTTPException(
+                status_code=503, detail=f"会话锁后端暂不可用: {e}"
+            ) from e
+        try:
+            if lease.token is None:
+                record_conflict()
+                raise HTTPException(
+                    status_code=409,
+                    detail="该会话正在处理中，请稍候再试",
+                )
+            try:
+                agent = build_agent(
+                    user_id,
+                    session_id,
+                    components,
+                    credentials=credentials,
+                )
+            except SessionOwnershipError as e:
+                # 3.1：session 归属不属于当前用户 → 403
+                raise HTTPException(status_code=403, detail=str(e)) from e
+            # 修复计划·一：绑定租约校验回调（写工具/保存/重置前校验）
+            if hasattr(agent, "bind_lease_guard"):
+                agent.bind_lease_guard(lease.assert_owned)
+            try:
+                started = time.monotonic()
+                result = await runtime.run_agent_turn(agent, message)
+                record_chat_latency(time.monotonic() - started)
+                REACT_STEPS.observe(getattr(agent, "_react_steps_count", 1) or 1)
+            except SessionConflictError as e:
+                # CAS 冲突（本轮期间被其他写入者改过）→ 客户端应重读重试
+                record_conflict()
+                raise HTTPException(status_code=409, detail=f"会话版本冲突: {e}") from e
+            except SessionLockLost as e:
+                # 租约中途失效：禁止提交副作用/会话状态 → 503（可重试）
+                raise HTTPException(status_code=503, detail=f"会话租约已失效: {e}") from e
+            except StorageUnavailableError as e:
+                # 5.2 故障注入：外置存储断连 → 503（明确不静默降级写文件，避免状态分裂）
+                raise HTTPException(status_code=503, detail=f"存储暂不可用: {e}") from e
+            finally:
+                # close 的 LLM 巩固调用同样记到本请求（在 end_request 之前）
+                await runtime.run_agent_close(agent)
+        except BudgetStoreUnavailable as e:
+            # 修复计划·二轮 7：reserve/settle/close 阶段预算存储故障统一 503
+            raise HTTPException(
+                status_code=503, detail=f"预算存储暂不可用: {e}"
+            ) from e
+        finally:
+            lease.release()
+    finally:
+        # 修复计划·四：清理/观测统一 finally——不再二次扣费（LLM 包装层已按
+        # usage 原子结算）；锁冲突/构建失败/异常路径也保证清理
+        components.usage_tracker.end_request(request_id)
+    return agent, result
+
+
+def _es_of(components):
+    """取组件当前可用的 ES 客户端（修复计划·二轮 5：单一可恢复 provider）。
+
+    provider 每次调用反映当前可用性；兼容仅有 es() 方法的轻量替身。
+    """
+    provider = getattr(components, "es_provider", None)
+    if provider is not None:
+        return provider()
+    fn = getattr(components, "es", None)
+    if callable(fn):
+        return fn()
+    return None
+
+
+def _channel_outbox(request: Request):
+    """渠道出站队列（P2-2）：lifespan 装配；缺失时按 Redis 可用性惰性补建。
+
+    与 handoff board 同模式：Redis 可用 → 持久队列（多 Pod 共享），
+    否则进程内队列（单机开发/测试）。
+    """
+    outbox = getattr(request.app.state, "channel_outbox", None)
+    if outbox is None:
+        components = getattr(request.app.state, "components", None)
+        outbox = build_channel_outbox(
+            getattr(components, "redis", None) if components is not None else None
+        )
+        request.app.state.channel_outbox = outbox
+    return outbox
+
+
+def _mark_sla_breaches_sync(board) -> int:
+    """同步标记首次超时的工单（线程池执行）；返回新增数量。"""
+    mark = getattr(board, "mark_sla_breaches", None)
+    if not callable(mark):
+        return 0
+    newly = mark()
+    return len(newly or [])
+
+
+async def _handoff_sla_loop(components: PodComponents) -> None:
+    """P2-3：SLA 超时后台兜底扫描（无人轮询看板也能观测到超时）。
+
+    首次观测才计数（去重由工单板负责），异常静默下轮再试；关闭时取消。
+    """
+    board = getattr(components, "handoff_board", None)
+    if board is None or not callable(getattr(board, "mark_sla_breaches", None)):
+        return
+    from app.observability.metrics import record_handoff_sla_breach
+
+    while True:
+        try:
+            await anyio.sleep(HANDOFF_SLA_SCAN_SECONDS)
+            newly = await to_thread.run_sync(board.mark_sla_breaches)
+            if newly:
+                record_handoff_sla_breach(len(newly))
+                logger.info("SLA 超时工单 %s 张", len(newly))
+        except asyncio.CancelledError:
+            return
+        except Exception:
+            logger.warning("SLA 超时扫描异常", exc_info=True)
 
 
 def _validate_request_ids(user_id: str, session_id: str) -> None:
@@ -186,47 +429,81 @@ def _current_trace_id() -> str:
 
 
 def _schedule_disconnected_finalize(
-    task, agent, components, user_id, limiter, request_id: str = ""
+    task, agent, components, user_id, limiter, request_id: str = "",
+    lease=None, registry: dict | None = None,
 ) -> None:
-    """断连收尾（评审·坑3：GeneratorExit 清理雷区）。
+    """断连收尾（评审·坑3 / 修复计划·一/二轮 6：租约随任务移交后台）。
 
-    收尾（等 Agent 工作结束 → close → 用量记账）放请求 cancel scope 之外的
-    独立 asyncio task——生成器 finally 在 GeneratorExit 上下文里不允许再
-    await 可能让出事件循环的操作。等待有上限（_disconnect_wait_bound_seconds），
-    超时记日志、不再 close（线程仍持有 agent，由其自行完成）。
+    收尾（等 Agent 工作真正结束 → close → 用量记账 → 释放会话租约）放请求
+    cancel scope 之外的独立 asyncio task——生成器 finally 在 GeneratorExit
+    上下文里不允许再 await 可能让出事件循环的操作。
+
+    等待上限（_disconnect_wait_bound_seconds）只用于记录 overdue 告警，
+    不再代表放弃/释放锁：Agent 线程不可中断，必须等它真正结束才 close、
+    入账并释放租约（否则锁提前释放会让第二个请求并发写同一会话）。
+
+    registry：应用级 {task: lease} 映射——持强引用防 GC，关闭时可对超时任务
+    的租约执行「只停续租、不删锁」（TTL 回收），绝不 cancel 触发 finally 放锁。
     """
     bound = _disconnect_wait_bound_seconds()
 
     def _settle() -> None:
-        """用量入账（request 粒度，评审二轮 B2；幂等——end 后重复调用为 0）。"""
-        tokens = components.usage_tracker.end_request(request_id)
-        limiter.consume_tokens(user_id, tokens)
+        """用量清理/观测（request 粒度，评审二轮 B2；幂等——end 后重复调用为 0）。
+
+        修复计划·四：只清理，不再二次扣费（LLM 包装层已按 usage 原子结算）。
+        """
+        components.usage_tracker.end_request(request_id)
 
     async def _finalize():
-        if task is not None and not task.done():
-            try:
-                await asyncio.wait_for(asyncio.shield(task), timeout=bound)
-            except asyncio.TimeoutError:
-                logger.warning(
-                    "客户端断连后 Agent 工作未在 %.0fs 内结束，交由工作线程"
-                    "自行完成（本轮 close 跳过，已发生用量照常入账）",
-                    bound,
-                )
-                _settle()
-                return
-            except asyncio.CancelledError:
-                return
-            except Exception:
-                logger.warning("断连后的 Agent 轮次以异常结束", exc_info=True)
         try:
-            await runtime.run_agent_close(agent)
-        except Exception:
-            logger.warning("断连收尾 agent.close() 失败", exc_info=True)
-        _settle()
+            if task is not None and not task.done():
+                try:
+                    await asyncio.wait_for(asyncio.shield(task), timeout=bound)
+                except asyncio.TimeoutError:
+                    logger.warning(
+                        "客户端断连后 Agent 工作超过 %.0fs 未结束（overdue 告警）；"
+                        "继续等待其真正结束，期间不释放会话锁",
+                        bound,
+                    )
+                    # 只告警，不放弃：继续等待真正的结束条件（Agent 真正结束）
+                    try:
+                        await asyncio.shield(task)
+                    except asyncio.CancelledError:
+                        raise
+                    except Exception:
+                        logger.warning("断连后的 Agent 轮次以异常结束", exc_info=True)
+                except asyncio.CancelledError:
+                    raise
+                except Exception:
+                    logger.warning("断连后的 Agent 轮次以异常结束", exc_info=True)
+            try:
+                await runtime.run_agent_close(agent)
+            except Exception:
+                logger.warning("断连收尾 agent.close() 失败", exc_info=True)
+            _settle()
+        except asyncio.CancelledError:
+            # 被取消（关闭超时等）：只停续租，不删锁——底层 Agent 线程可能仍在跑
+            if lease is not None:
+                try:
+                    lease.stop_renew()
+                except Exception:
+                    logger.warning("断连收尾停止续租失败", exc_info=True)
+            raise
+        finally:
+            # 租约最后释放：Agent 真正结束后才放锁；abandoned 状态不主动删除
+            if lease is not None and not lease.abandoned:
+                try:
+                    lease.release()
+                except Exception:
+                    logger.warning("断连收尾释放会话租约失败", exc_info=True)
 
     finalize_task = asyncio.create_task(_finalize())
+    if registry is not None:
+        registry[finalize_task] = lease
 
     def _log_crash(done: asyncio.Task) -> None:
+        if registry is not None:
+            registry.pop(done, None)
         if not done.cancelled() and done.exception() is not None:
             logger.warning("断连收尾任务异常", exc_info=done.exception())
 
@@ -313,33 +590,53 @@ async def _kb_gc_loop(components: PodComponents) -> None:
 
 
 async def _es_outbox_loop(components: PodComponents) -> None:
-    """阶段八：MySQL→ES 消息同步（outbox）。ES 挂了只跳过重试，不影响主流程。"""
-    if components.db_engine is None or components.es_client is None:
+    """阶段八：MySQL→ES 消息同步 + reset 删除事件（outbox）。
+
+    ES 挂了只跳过重试，不影响主流程；删除事件未完成期间由运营搜索 tombstone
+    过滤保证「重置后立即不可搜索」。
+    """
+    if components.db_engine is None:
         return
-    from app.stores.sql.outbox import ensure_message_index, sync_outbox_to_es
+    from app.stores.sql.outbox import ensure_message_index
 
     index = components.message_index
-    try:
-        ensure_message_index(components.es_client, index)
-    except Exception:
-        logger.warning("message_search 索引初始化失败", exc_info=True)
     while True:
         try:
             await anyio.sleep(30)
-            # 5.x：outbox 积压指标（ES 同步滞后告警依据）
-            from app.observability.metrics import set_outbox_backlog
-            from app.stores.sql.outbox import count_pending_outbox
+            es_client = _es_of(components)  # 修复计划·三：每轮取可恢复 provider
+            if es_client is None:
+                continue  # ES 未配置/暂不可用：下轮再试（恢复后自动继续）
+            try:
+                ensure_message_index(es_client, index)
+            except Exception:
+                logger.warning("message_search 索引初始化失败", exc_info=True)
+                continue
+            # 5.x：outbox 积压指标 + 删除滞后（修复计划·二）
+            from app.observability.metrics import (
+                set_outbox_backlog,
+                set_outbox_delete_backlog,
+            )
+            from app.stores.sql.outbox import (
+                count_pending_delete_events,
+                count_pending_outbox,
+                run_outbox_once,
+            )
 
             try:
                 backlog = await to_thread.run_sync(
                     partial(count_pending_outbox, components.db_engine)
                 )
                 set_outbox_backlog(backlog)
+                del_count, del_lag = await to_thread.run_sync(
+                    partial(count_pending_delete_events, components.db_engine)
+                )
+                set_outbox_delete_backlog(del_count, del_lag)
             except Exception:
                 pass
             synced = await to_thread.run_sync(
                 partial(
-                    sync_outbox_to_es, components.db_engine, components.es_client, index
+                    run_outbox_once,
+                    components.db_engine, es_client, index,
                 )
             )
             if synced:
@@ -398,6 +695,12 @@ async def _lifespan(app: FastAPI):
     from app.security.jwt import validate_jwt_secret
 
     validate_jwt_secret()
+    # 修复计划·一/二轮 6：断连收尾任务应用级 {task: lease} 映射
+    app.state.finalize_tasks: dict = {}
+    # P2-2：渠道出站队列（Redis 可用 → 持久；否则进程内）
+    app.state.channel_outbox = build_channel_outbox(
+        getattr(app.state.components, "redis", None)
+    )
     app.state.consolidator_task = asyncio.create_task(
         _idle_consolidator_loop(app.state.components)
     )
@@ -409,7 +712,34 @@ async def _lifespan(app: FastAPI):
     app.state.memory_job_task = asyncio.create_task(
         _memory_job_worker_loop(app.state.components)
     )
+    # P2-3：SLA 超时后台扫描
+    app.state.handoff_sla_task = asyncio.create_task(
+        _handoff_sla_loop(app.state.components)
+    )
     yield
+    # 修复计划·一/二轮 6：先停止接流量（uvicorn 已在 shutdown 前停止 accept），
+    # 再等待断连收尾任务完成——它们持有会话租约。
+    # 等待窗口 = 应用 drain 上限（断连任务上限）；K8s terminationGracePeriodSeconds
+    # 在此基础上再加 30 秒强制退出缓冲（Helm 模板断言）。
+    pending = list(getattr(app.state, "finalize_tasks", {}).items())
+    if pending:
+        grace = _disconnect_wait_bound_seconds()
+        logger.info("关闭：等待 %d 个断连收尾任务（上限 %.0fs）", len(pending), grace)
+        _, still = await asyncio.wait([t for t, _ in pending], timeout=grace)
+        for task in still:
+            lease = getattr(app.state, "finalize_tasks", {}).get(task)
+            # 绝不 cancel（会触发 finally 释放锁）——只停续租，剩余锁由 TTL 回收
+            if lease is not None:
+                try:
+                    lease.stop_renew()
+                except Exception:
+                    logger.warning("关闭：停止续租失败", exc_info=True)
+        if still:
+            logger.warning(
+                "关闭：仍有 %d 个断连收尾任务未完成；已停止续租、不释放会话锁"
+                "（TTL 回收，Agent 线程继续收尾）",
+                len(still),
+            )
     app.state.kb_gc_task.cancel()
     try:
         await app.state.kb_gc_task
@@ -428,6 +758,11 @@ async def _lifespan(app: FastAPI):
     app.state.memory_job_task.cancel()
     try:
         await app.state.memory_job_task
+    except asyncio.CancelledError:
+        pass
+    app.state.handoff_sla_task.cancel()
+    try:
+        await app.state.handoff_sla_task
     except asyncio.CancelledError:
         pass
     mcp = app.state.components.mcp_client
@@ -500,82 +835,148 @@ def create_app() -> FastAPI:
         components = getattr(request.app.state, "components", None)
         if components is None:
             raise HTTPException(status_code=503, detail="组件未就绪")
-        checks: dict[str, str] = {}
 
-        def _check(name: str, fn) -> None:
-            try:
-                checks[name] = "ok" if fn() else "degraded"
-            except Exception as e:
-                checks[name] = f"error: {type(e).__name__}"
+        # ---------- 依赖状态：not_configured / ok / unavailable ----------
+        deps: dict[str, str] = {}
 
-        # 2.7：生产要求 Redis 时，未就绪 → 不接流量（探针 fail）；
-        # 4.3：实际 ping 探活——对象存在不代表连接可用（kind 验收暴露）
-        if settings.redis_required and components.redis is not None:
+        redis = getattr(components, "redis", None)
+        if redis is None:
+            deps["redis"] = "unavailable" if settings.redis_required else "not_configured"
+        else:
             try:
-                components.redis.ping()
+                redis.ping()
+                deps["redis"] = "ok"
             except Exception:
-                raise HTTPException(status_code=503, detail="Redis 未就绪（ping 失败）")
-        if settings.redis_required and components.redis is None:
-            raise HTTPException(
-                status_code=503, detail="Redis 未就绪（redis_required=true）"
-            )
-        checks["redis"] = "ok" if components.redis is not None else "not_configured"
+                deps["redis"] = "unavailable"
 
-        # 4.1：MySQL schema 版本校验（只读，不自动 DDL）
-        if components.db_engine is not None:
-
-            def _db_ok():
+        if getattr(components, "db_engine", None) is None:
+            deps["mysql_schema"] = "not_configured"
+        else:
+            try:
                 from app.stores.sql.engine import _verify_schema_version
 
                 if settings.app_env.lower() == "prod":
                     _verify_schema_version(components.db_engine)
-                    return True
-                return True
+                deps["mysql_schema"] = "ok"
+            except Exception:
+                deps["mysql_schema"] = "unavailable"
 
-            _check("mysql_schema", _db_ok)
-        else:
-            checks["mysql_schema"] = "not_configured"
+        # ES：可恢复 provider（未配置 → not_configured；配置但连不上 → unavailable）
+        from app.agent.rag.es_util import es_dependency_state, get_es_client
 
-        # 4.1：ES alias 指向（KB 后端为 es 时校验；否则视为不依赖）
-        if getattr(components, "es_client", None) is not None:
+        deps["es"] = (
+            "ok" if _es_of(components) is not None else es_dependency_state()
+        )
 
-            def _es_alias_ok():
-                from app.agent.rag.es_util import get_es_client
-
-                es = get_es_client()
-                if es is None:
-                    return False
-                alias = f"{settings.es_index_prefix}-kb-active"
+        es_alias = "not_configured"
+        if settings.rag_backend == "es":
+            if deps["es"] != "ok":
+                es_alias = "unavailable"
+            else:
                 try:
-                    hits = es.indices.get_alias(name=alias)
-                    return bool(hits)
+                    hits = get_es_client().indices.get_alias(
+                        name=f"{settings.es_index_prefix}-kb-active"
+                    )
+                    es_alias = "ok" if hits else "unavailable"
                 except Exception:
-                    return False
+                    es_alias = "unavailable"
+        deps["es_kb_alias"] = es_alias
 
-            _check("es_kb_alias", _es_alias_ok)
-        else:
-            checks["es_kb_alias"] = "not_configured"
-
-        # 4.1：对象存储探活（配置了 S3 才校验）
         object_store = getattr(components, "object_store", None)
-        if object_store is not None:
-            _check("object_store", object_store.healthcheck)
+        needs_s3 = (
+            settings.kb_upload_storage == "s3"
+            or settings.turns_archive_backend == "s3"
+        )
+        if object_store is None:
+            deps["object_store"] = "unavailable" if needs_s3 else "not_configured"
         else:
-            checks["object_store"] = "not_configured"
+            try:
+                deps["object_store"] = (
+                    "ok" if object_store.healthcheck() else "unavailable"
+                )
+            except Exception:
+                deps["object_store"] = "unavailable"
 
-        degraded = [
-            k for k, v in checks.items() if v == "degraded" or v.startswith("error")
-        ]
-        ready = "ready" if not degraded else "degraded"
+        # RAG 修复计划·3：检索配置健康校验（ES/generation/embedding 一致/
+        # reranker/阈值打分器）；rag_backend=es 时任一不可用 → 聊天核心 fail-closed
+        from app.agent.rag.health import check_rag_configuration
+
+        try:
+            rag_health = await asyncio.to_thread(check_rag_configuration)
+        except Exception as e:
+            rag_health = {
+                "status": "unavailable",
+                "checks": {"rag_health": "unavailable"},
+                "errors": [f"RAG 健康校验异常: {type(e).__name__}"],
+            }
+        deps["rag"] = rag_health["status"]
+        if rag_health["status"] == "unavailable":
+            logger.warning("readyz RAG 校验未通过: %s", rag_health["errors"])
+
+        # ---------- 能力分级 ----------
+        def _worst(states: list[str]) -> str:
+            if "unavailable" in states:
+                return "unavailable"
+            if states and all(s == "not_configured" for s in states):
+                return "not_configured"
+            return "ok"
+
+        # chat：Redis（required 时）、MySQL Schema、rag_backend=es 时的 ES alias
+        # 与 RAG 配置校验；任一不可用 → 聊天核心 fail-closed（503 not_ready）
+        chat_deps: list[str] = []
+        if settings.redis_required:
+            chat_deps.append(deps["redis"])
+        if getattr(components, "db_engine", None) is not None:
+            chat_deps.append(deps["mysql_schema"])
+        if settings.rag_backend == "es":
+            chat_deps.append(
+                "ok" if deps["es_kb_alias"] == "ok" else "unavailable"
+            )
+            chat_deps.append(rag_health["status"])
+
+        # kb_upload：DB、Redis（required 时）、配置为 S3 时的对象存储
+        if not settings.kb_upload_enabled:
+            kb_upload = "not_configured"
+        else:
+            kb_states: list[str] = []
+            if getattr(components, "db_engine", None) is None:
+                kb_states.append("unavailable")
+            else:
+                kb_states.append(deps["mysql_schema"])
+            if settings.redis_required:
+                kb_states.append(deps["redis"])
+            if settings.kb_upload_storage == "s3":
+                kb_states.append(deps["object_store"])
+            kb_upload = _worst(kb_states)
+
+        capabilities = {
+            "chat": _worst(chat_deps),
+            "message_search": _worst([deps["es"]]),
+            "kb_upload": kb_upload,
+            "turn_archive": (
+                _worst([deps["object_store"]])
+                if settings.turns_archive_backend == "s3"
+                else "not_configured"
+            ),
+            "rag": rag_health["status"],
+        }
+
+        if capabilities["chat"] == "unavailable":
+            status = "not_ready"
+        elif any(v == "unavailable" for v in capabilities.values()):
+            status = "degraded"
+        else:
+            status = "ready"
+
         # 5.x：依赖就绪指标（探针同源，供告警与看板）
         from app.observability.metrics import set_dependency_readiness
 
-        for component, value in checks.items():
+        for component, value in deps.items():
             set_dependency_readiness(component, value == "ok")
+
         # 5.x：alias/pointer 一致性指标（es 后端时）
-        if getattr(components, "es_client", None) is not None:
+        if deps["es"] == "ok":
             try:
-                from app.agent.rag.es_util import get_es_client
                 from app.evolution.generation import GenerationStore
                 from app.observability.metrics import set_alias_pointer_mismatch
 
@@ -596,7 +997,11 @@ def create_app() -> FastAPI:
                     )
             except Exception:
                 pass
-        return {"status": ready, "components": checks}
+
+        payload = {"status": status, "components": deps, "capabilities": capabilities}
+        if status == "not_ready":
+            return JSONResponse(status_code=503, content=payload)
+        return payload
 
     @app.post("/v1/chat", response_model=ChatResponse, tags=["chat"])
     async def chat(body: ChatRequest, request: Request):
@@ -609,70 +1014,19 @@ def create_app() -> FastAPI:
         message, blocked = _input_prefilter(body.message)
         if blocked:
             logger.warning("guardrail block input user=%s", user_id)
-            return _safe_fallback(body.session_id)
-
-        # 3.7：per-user RPS 与日预算（超限 429，客户端展示并升级人工）
-        from app.observability.metrics import (
-            RATE_LIMITED,
-            REACT_STEPS,
-            record_chat_latency,
-            record_conflict,
-        )
-
-        limiter = components.limiter
-        if not limiter.allow_rps(user_id):
-            RATE_LIMITED.labels(kind="rps").inc()
-            raise HTTPException(status_code=429, detail="请求过于频繁，请稍后再试")
-        if not limiter.allow_budget(user_id):
-            RATE_LIMITED.labels(kind="budget").inc()
-            raise HTTPException(
-                status_code=429, detail="今日用量已达上限，请明日再试或联系人工客服"
+            ticket = await _create_guardrail_handoff(
+                components, user_id, body.session_id, body.message
             )
+            return _safe_fallback(body.session_id, _handoff_meta(ticket))
 
-        # 评审二轮 B2：用量按 request 归集（ContextVar 随 anyio 线程池传播，
-        # turn 线程与 close 线程的 LLM 调用都记到本请求名下）
-        request_id = uuid.uuid4().hex
-        components.usage_tracker.begin_request(request_id)
-
-        # 2.2：同 session 只有一个写入者（连点/双 pod 竞态）→ 冲突 409
-        with SessionLease(
-            components.locks, user_id, body.session_id or "session"
-        ) as lease:
-            if lease.token is None:
-                record_conflict()
-                raise HTTPException(
-                    status_code=409,
-                    detail="该会话正在处理中，请稍候再试",
-                )
-            try:
-                agent = build_agent(
-                    user_id,
-                    body.session_id,
-                    components,
-                    credentials=_request_credentials(user_id),
-                )
-            except SessionOwnershipError as e:
-                # 3.1：session 归属不属于当前用户 → 403
-                raise HTTPException(status_code=403, detail=str(e)) from e
-            try:
-                started = time.monotonic()
-                result = await runtime.run_agent_turn(agent, message)
-                record_chat_latency(time.monotonic() - started)
-                REACT_STEPS.observe(getattr(agent, "_react_steps_count", 1) or 1)
-            except SessionConflictError as e:
-                # CAS 冲突（本轮期间被其他写入者改过）→ 客户端应重读重试
-                record_conflict()
-                raise HTTPException(status_code=409, detail=f"会话版本冲突: {e}") from e
-            except StorageUnavailableError as e:
-                # 5.2 故障注入：外置存储断连 → 503（明确不静默降级写文件，避免状态分裂）
-                raise HTTPException(status_code=503, detail=f"存储暂不可用: {e}") from e
-            finally:
-                # close 的 LLM 巩固调用同样记到本请求（在 end_request 之前）
-                await runtime.run_agent_close(agent)
-
-        # 3.7：实际用量入账（成本护栏；评审二轮 B2：request 粒度）
-        tokens = components.usage_tracker.end_request(request_id)
-        limiter.consume_tokens(user_id, tokens)
+        # 3.7 限流 + 2.2 会话租约 + Agent 轮次（渠道入口复用同一管线，P2-2）
+        agent, result = await _run_chat_turn(
+            components,
+            user_id,
+            body.session_id,
+            message,
+            credentials=_request_credentials(user_id),
+        )
 
         reply = result.reply
         requires_human = result.requires_human
@@ -686,7 +1040,10 @@ def create_app() -> FastAPI:
                 logger.warning("guardrail block output user=%s", user_id)
                 reply = SAFE_FALLBACK_REPLY
                 requires_human = True
-        _complete_handoff(components, agent, result, reply, requires_human)
+        # P2-3：工单号随响应透出（用户可见「已转人工，工单号 X」）
+        ticket = await _complete_handoff(
+            components, agent, result, reply, requires_human
+        )
 
         return ChatResponse(
             session_id=agent.session_id,
@@ -697,6 +1054,8 @@ def create_app() -> FastAPI:
             confidence=result.confidence,
             requires_human=requires_human,
             follow_up_question=result.follow_up_question,
+            pending_turn=getattr(agent, "pending_turn", None),
+            handoff=_handoff_meta(ticket),
         )
 
     @app.get("/v1/chat/stream", tags=["chat"])
@@ -712,7 +1071,7 @@ def create_app() -> FastAPI:
         事件（老客户端未知的 SSE 事件类型，按规范安全忽略）；0.4.0 删除，
         继任端点 POST /v1/chat/stream。
         """
-        return _chat_stream_response(
+        return await _chat_stream_response(
             request,
             user_id=user_id,
             session_id=session_id,
@@ -725,7 +1084,7 @@ def create_app() -> FastAPI:
         """4.5 SSE 流式（继任端点，0.3.0 新增）：事件序列同 GET 版，参数走
         JSON body（与 POST /v1/chat 的请求模型一致）。
 
-        事件序列：meta → route?（多 Agent）→ thought* → tool_call* /
+        事件序列：meta → thought* → tool_call* /
         tool_result* ×（Agent能力强化计划·改造二） → reply → end。
 
         改造二（additive 字段，老客户端忽略）：
@@ -734,8 +1093,18 @@ def create_app() -> FastAPI:
         其余事件字段（thought{text} / reply{reply,intent,confidence,
         requires_human,follow_up_question} / meta{session_id} / end{ok} /
         error{detail,trace_id} / deprecation）不变。
+
+        推理模型适配 T6（additive 事件，老客户端按 SSE 规范忽略未知类型；
+        与上方 `:938-941` 弃用事件的既有兼容做法一致）：
+        - 开关 `sse_reasoning_enabled`（默认 **false**）打开时事件序列变为
+          `thought* → reasoning* thought*`：`reasoning{text,step}` 承载模型推理
+          原文（透出侧已过输出 guardrails，长度有界，见 chat.emit_reasoning）；
+        - 关闭（默认）时序列与字段和改造二逐字节一致——「透出受控状态说明、
+          不透出模型原始思考」仍是有意设计，开启属产品/合规决策；
+        - 两种情况下 reasoning 都进审计存储（turns archive，T3），
+          "可观测可审计"不依赖透出。
         """
-        return _chat_stream_response(
+        return await _chat_stream_response(
             request,
             user_id=body.user_id,
             session_id=body.session_id,
@@ -743,7 +1112,7 @@ def create_app() -> FastAPI:
             deprecate=False,
         )
 
-    def _chat_stream_response(
+    async def _chat_stream_response(
         request: Request,
         *,
         user_id: str,
@@ -757,8 +1126,9 @@ def create_app() -> FastAPI:
         退出——生成器实际消费在锁释放之后，流式期间会话无保护。现在：
         - 租约在生成器体内获取/释放（finally），覆盖整个流式生命周期；
         - Agent 任务在生成器内启动（客户端不消费就不开跑，天然缓解慢连接
-          占池）；断连（GeneratorExit/CancelledError）走独立收尾任务：
-          有界等待 + shield，生成器 finally 内不再 await（评审·坑1/坑3）。
+          占池）；断连（GeneratorExit/CancelledError）把租约随 Agent task 一并
+          移交独立收尾任务：等待上限只记 overdue 告警，Agent 真正结束后才
+          close/入账/释放锁（生成器 finally 内不再 await，评审·坑1/坑3）。
         """
         components: PodComponents = request.app.state.components
         user_id = authenticate_user(request, user_id)
@@ -770,13 +1140,25 @@ def create_app() -> FastAPI:
 
             verdict = check_input(message)
             if verdict.blocked:
+                logger.warning("guardrail block input user=%s", user_id)
+                ticket = await _create_guardrail_handoff(
+                    components, user_id, session_id, message
+                )
+                handoff = _handoff_meta(ticket)
 
                 async def _blocked():
                     if deprecate:
                         yield _sse("deprecation", SSE_DEPRECATION_EVENT)
                     yield _sse(
-                        "reply", {"reply": SAFE_FALLBACK_REPLY, "requires_human": True}
+                        "reply",
+                        {
+                            "reply": SAFE_FALLBACK_REPLY,
+                            "requires_human": True,
+                            "handoff": handoff,
+                        },
                     )
+                    if handoff is not None:
+                        yield _sse("handoff", handoff)
                     yield _sse("end", {"ok": True})
 
                 return StreamingResponse(
@@ -787,6 +1169,7 @@ def create_app() -> FastAPI:
             message = verdict.text
 
         limiter = components.limiter
+        limiter.bind_user(user_id)  # 修复计划·四：LLM 包装层据此预留/结算
         if not limiter.allow_rps(user_id):
 
             async def _limited():
@@ -802,7 +1185,12 @@ def create_app() -> FastAPI:
             )
 
         # 与同步端点 /v1/chat 同口径：流式路径不得绕过每日 token 预算
-        if not limiter.allow_budget(user_id):
+        try:
+            budget_ok = limiter.allow_budget(user_id)
+        except BudgetStoreUnavailable as e:
+            # 修复计划·四：预算存储故障 → 503（响应尚未开始，可返回 HTTP 状态）
+            raise HTTPException(status_code=503, detail=f"预算存储暂不可用: {e}") from e
+        if not budget_ok:
             from app.observability.metrics import RATE_LIMITED
 
             RATE_LIMITED.labels(kind="budget").inc()
@@ -840,24 +1228,48 @@ def create_app() -> FastAPI:
             # anyio 线程池拷贝上下文，close 阶段的巩固调用同样入账
             request_id = uuid.uuid4().hex
             components.usage_tracker.begin_request(request_id)
-            lease = SessionLease(
-                components.locks,
-                user_id,
-                session_id or "session",
-            )
-            lease.__enter__()
+            lease = None
+            handed_off = False
             task = None
             interrupted = False
+            agent_closed = False
             try:
+                try:
+                    lease = SessionLease(
+                        components.locks,
+                        user_id,
+                        session_id or "session",
+                    ).__enter__()
+                except SessionLockBackendUnavailable as e:
+                    # 修复计划·一：锁后端不可用 → 稳定错误码（响应头已发出，
+                    # 只能走流内 error 事件 + end.ok=false）
+                    if deprecate:
+                        yield _sse("deprecation", SSE_DEPRECATION_EVENT)
+                    yield _sse("error", {
+                        "code": "session_lock_unavailable",
+                        "detail": f"会话锁后端暂不可用: {e}",
+                    })
+                    yield _sse("end", {"ok": False})
+                    return
                 if lease.token is None:
                     if deprecate:
                         yield _sse("deprecation", SSE_DEPRECATION_EVENT)
-                    yield _sse("error", {"detail": "该会话正在处理中，请稍候再试"})
+                    yield _sse("error", {
+                        "code": "session_lock_conflict",
+                        "detail": "该会话正在处理中，请稍候再试",
+                    })
                     yield _sse("end", {"ok": False})
                     return
+                # 修复计划·一：绑定租约校验（写工具/保存前校验）
+                if hasattr(agent, "bind_lease_guard"):
+                    agent.bind_lease_guard(lease.assert_owned)
                 if deprecate:
                     yield _sse("deprecation", SSE_DEPRECATION_EVENT)
-                yield _sse("meta", {"session_id": agent.session_id})
+                yield _sse("meta", {
+                    "session_id": agent.session_id,
+                    # 掉线恢复：非空 = 上次回复未完成（客户端可提示重发）
+                    "pending_turn": getattr(agent, "pending_turn", None),
+                })
 
                 queue: asyncio.Queue = asyncio.Queue()
                 loop = asyncio.get_running_loop()
@@ -900,12 +1312,45 @@ def create_app() -> FastAPI:
                     },
                 )
                 # 阶段A：普通与 SSE 复用同一 Handoff 完成器（SSE 之前漏建工单）
-                _complete_handoff(components, agent, result, reply, requires_human)
+                # P2-3：工单号以 handoff 事件（+reply.handoff 字段）透出给用户
+                ticket = await _complete_handoff(
+                    components, agent, result, reply, requires_human
+                )
+                handoff = _handoff_meta(ticket)
+                if handoff is not None:
+                    yield _sse("handoff", handoff)
+                # 修复计划·二轮 7：先完成需要计费的 close（可能触发预算故障），
+                # 再报告成功——避免先 end.ok=true 之后才暴露预算故障。
+                try:
+                    await runtime.run_agent_close(agent)
+                    agent_closed = True
+                except BudgetStoreUnavailable as e:
+                    if deprecate:
+                        yield _sse("deprecation", SSE_DEPRECATION_EVENT)
+                    yield _sse("error", {
+                        "code": "budget_store_unavailable",
+                        "detail": f"预算存储暂不可用: {e}",
+                    })
+                    yield _sse("end", {"ok": False})
+                    return
                 yield _sse("end", {"ok": True})
+            except BudgetStoreUnavailable as e:
+                # reserve/settle 阶段预算存储故障 → 稳定错误码 + end.ok=false
+                if deprecate:
+                    yield _sse("deprecation", SSE_DEPRECATION_EVENT)
+                yield _sse("error", {
+                    "code": "budget_store_unavailable",
+                    "detail": f"预算存储暂不可用: {e}",
+                })
+                yield _sse("end", {"ok": False})
             except (GeneratorExit, asyncio.CancelledError):
-                # 客户端断连：Agent 线程不可中断——有界等待其自然结束后
-                # 在请求 scope 之外收尾（本 finally 内不做任何 await）
+                # 客户端断连：Agent 线程不可中断——租约随 Agent task 一并移交
+                # 后台收尾任务（本生成器不再释放；续期继续，直到 Agent 真正
+                # 结束才 close/入账/放锁）。本 finally 内不做任何 await。
                 interrupted = True
+                if lease is not None and not lease.handed_off:
+                    lease.handover()
+                    handed_off = True
                 _schedule_disconnected_finalize(
                     task,
                     agent,
@@ -913,8 +1358,23 @@ def create_app() -> FastAPI:
                     user_id,
                     limiter,
                     request_id,
+                    lease=lease,
+                    registry=getattr(request.app.state, "finalize_tasks", None),
                 )
                 raise
+            except SessionLockLost as e:
+                # 修复计划·一：租约中途失效 → 稳定错误码 + end.ok=false
+                trace_id = _current_trace_id()
+                logger.warning(
+                    "stream session lock lost session=%s/%s trace_id=%s",
+                    user_id, session_id, trace_id,
+                )
+                yield _sse("error", {
+                    "code": "session_lock_lost",
+                    "detail": "会话租约已失效，本轮结果未提交，请重试",
+                    "trace_id": trace_id,
+                })
+                yield _sse("end", {"ok": False})
             except Exception as e:
                 # 安全修复 P2：不回显异常细节（与 500 脱敏同一原则）
                 trace_id = _current_trace_id()
@@ -935,12 +1395,18 @@ def create_app() -> FastAPI:
                 yield _sse("end", {"ok": False})
             finally:
                 if not interrupted:
-                    # 正常/业务错误收尾：不在 GeneratorExit 上下文，可安全
-                    # await——先 close（巩固调用的用量记到本请求）再入账
-                    await runtime.run_agent_close(agent)
-                    tokens = components.usage_tracker.end_request(request_id)
-                    limiter.consume_tokens(user_id, tokens)
-                lease.__exit__(None, None, None)
+                    if not agent_closed:
+                        # 正常/业务错误收尾：不在 GeneratorExit 上下文，可安全
+                        # await——close（巩固调用用量记到本请求）；成功路径已在
+                        # end 之前 close 过，避免重复
+                        try:
+                            await runtime.run_agent_close(agent)
+                        except Exception:
+                            logger.warning("stream agent.close() 失败", exc_info=True)
+                    components.usage_tracker.end_request(request_id)
+                # 修复计划·一：已移交后台的租约由收尾任务释放（不在此重复释放）
+                if lease is not None and not handed_off:
+                    lease.release()
 
         return StreamingResponse(
             _stream(),
@@ -948,15 +1414,164 @@ def create_app() -> FastAPI:
             headers=headers,
         )
 
+    # ============================================================
+    # P2-2 渠道适配层（generic webhook；渠道就绪性演示，不接真实第三方渠道）
+    # ============================================================
+    @app.post(
+        "/v1/channels/{channel}/messages",
+        response_model=ChannelMessageResponse,
+        tags=["channel"],
+    )
+    async def channel_message(
+        channel: str, body: ChannelMessageRequest, request: Request
+    ):
+        """通用渠道 webhook：归一 → 会话路由（user_id 映射）→ 复用 chat 管线。
+
+        鉴权：外部系统接入面 RBAC（human_chat_ingest scope，与
+        /v1/human-conversations/batch 同口径）；auth 关闭且未强制 RBAC 时
+        开发直通。限流/会话租约与 /v1/chat 完全一致（同一 _run_chat_turn）。
+
+        出站：**轮询**——回复进入渠道出站队列，适配器用
+        GET /v1/channels/{channel}/outbound?cursor=N 拉取（选型理由见
+        app/server/channels.py 模块 docstring）。webhook 响应只给受理元数据
+        （message_id / outbound_seq / requires_human / 工单号），不回传回复正文。
+
+        写确认协议（pending_write）由 Agent 内部处理，本入口不复制该逻辑。
+        """
+        principal = authorize_scopes(request, SCOPE_HUMAN_INGEST)
+        components: PodComponents = request.app.state.components
+        try:
+            validate_channel_id(channel)
+            inbound = normalize_inbound(channel, body)
+        except (InvalidChannel, InvalidIdentifier) as e:
+            raise HTTPException(status_code=422, detail=str(e)) from e
+        user_id = channel_user_id(inbound.channel, inbound.external_user_id)
+        _validate_request_ids(user_id, inbound.session_id)
+
+        # 输入预检与 /v1/chat 同口径（注入 → 安全话术 + 工单；PII → 脱敏继续）
+        message, blocked = _input_prefilter(inbound.message)
+        handoff_ticket = None
+        pending_turn = None
+        if blocked:
+            logger.warning(
+                "channel guardrail block channel=%s user=%s operator=%s",
+                inbound.channel, user_id, principal.sub or principal.via,
+            )
+            handoff_ticket = await _create_guardrail_handoff(
+                components, user_id, inbound.session_id, inbound.message
+            )
+            reply, intent, confidence, requires_human = (
+                SAFE_FALLBACK_REPLY, "other", 0.0, True,
+            )
+        else:
+            agent, result = await _run_chat_turn(
+                components,
+                user_id,
+                inbound.session_id,
+                message,
+                credentials=_request_credentials(user_id),
+            )
+            reply = result.reply
+            requires_human = result.requires_human
+            intent = (
+                result.intent.value
+                if hasattr(result.intent, "value")
+                else str(result.intent)
+            )
+            confidence = result.confidence
+            pending_turn = getattr(agent, "pending_turn", None)
+            if settings.guardrails_enabled:
+                from app.security.guardrails import check_output
+
+                if check_output(reply).blocked:
+                    logger.warning(
+                        "channel guardrail block output channel=%s user=%s",
+                        inbound.channel, user_id,
+                    )
+                    reply = SAFE_FALLBACK_REPLY
+                    requires_human = True
+            handoff_ticket = await _complete_handoff(
+                components, agent, result, reply, requires_human
+            )
+
+        handoff = _handoff_meta(handoff_ticket)
+        payload = outbound_payload(
+            inbound=inbound,
+            user_id=user_id,
+            reply=reply,
+            intent=intent,
+            confidence=confidence,
+            requires_human=requires_human,
+            handoff=handoff,
+            pending_turn=pending_turn,
+        )
+        outbox = _channel_outbox(request)
+        try:
+            # 同步 Redis/内存写入（C1：不阻塞事件循环）
+            seq = await asyncio.to_thread(outbox.append, inbound.channel, payload)
+        except Exception as e:
+            # 出站入队失败：回复会丢——明确 503 让渠道侧稍后重试（不静默丢消息）
+            logger.error(
+                "channel outbound append failed channel=%s user=%s",
+                inbound.channel, user_id, exc_info=e,
+            )
+            raise HTTPException(
+                status_code=503, detail="渠道出站队列暂不可用，请稍后重试"
+            ) from e
+        logger.info(
+            "channel inbound channel=%s external=%s user=%s session=%s seq=%s",
+            inbound.channel, inbound.external_user_id, user_id,
+            inbound.session_id, seq,
+        )
+        return ChannelMessageResponse(
+            channel=inbound.channel,
+            message_id=inbound.message_id,
+            user_id=user_id,
+            session_id=inbound.session_id,
+            status="replied",
+            outbound_seq=seq,
+            requires_human=requires_human,
+            handoff=handoff,
+        )
+
+    @app.get(
+        "/v1/channels/{channel}/outbound",
+        response_model=ChannelOutboundResponse,
+        tags=["channel"],
+    )
+    async def channel_outbound(
+        channel: str, request: Request, cursor: int = 0, limit: int = 50
+    ):
+        """渠道出站轮询：返回 cursor 之后的出站消息（至少一次投递）。
+
+        cursor = 上次响应的 next_cursor（0 = 从最早保留的消息开始）。
+        消息保留上限 MAX_OUTBOUND_RETAINED（超出裁剪最旧），适配器应持续消费。
+        """
+        authorize_scopes(request, SCOPE_HUMAN_INGEST)
+        try:
+            validate_channel_id(channel)
+        except InvalidChannel as e:
+            raise HTTPException(status_code=422, detail=str(e)) from e
+        outbox = _channel_outbox(request)
+        result = await asyncio.to_thread(
+            outbox.list_since,
+            channel,
+            max(int(cursor), 0),
+            min(max(int(limit), 1), 200),
+        )
+        return {"channel": channel, **result}
+
     @app.post("/v1/handoffs", tags=["handoff"])
     async def create_handoff(request: Request, body: dict):
         """6.1：手动为 (user, session) 创建转人工工单（一般由 requires_human 自动触发）。
 
         安全修复 P1：运营面端点，要求 ops scope（auth 关闭且未强制时开发直通）。
+        ops 端点：为指定用户建单——user_id 取请求体（坐席代客建单），
+        认证主体只用于鉴权，不参与定位目标用户。
         """
         authorize_scopes(request, SCOPE_OPS)
         components: PodComponents = request.app.state.components
-        user_id = authenticate_user(request, str(body.get("user_id", "")))
+        user_id = str(body.get("user_id", ""))
         _validate_request_ids(user_id, str(body.get("session_id", "")))
         agent = build_agent(user_id, body.get("session_id", ""), components)
         try:
@@ -973,32 +1588,106 @@ def create_app() -> FastAPI:
             summary=getattr(agent, "summary", "") or "",
             created_at=_now(),
         )
-        components.handoff_board.create(ticket)
+        await asyncio.to_thread(components.handoff_board.create, ticket)
         return {"ticket_id": ticket.ticket_id, "status": "pending"}
 
     @app.get("/v1/handoffs", tags=["handoff"])
-    async def list_handoffs(request: Request, status: str = "pending"):
+    async def list_handoffs(
+        request: Request, status: str = "pending", mine: bool = False
+    ):
         """工单看板（运营面，ops scope）：支持 pending/resolved/all。
+
+        P2-3 坐席工作台：
+        - mine=true → 只返回当前认证主体（principal.sub）领取的工单（「我的」列表）；
+        - 返回 to_ops_dict（附 SLA 截止时间/剩余秒数/是否超时），UI 超时标红；
+        - 每次看板轮询顺带做 SLA 超时「首次观测」标记并累加
+          handoff_sla_breach_total（去重由工单板负责，重复轮询不重复计数）。
 
         capabilities.human_qa_evolution：UI 据此显示或禁用「沉淀为知识」表单
         ——仅当功能开关开启且工单板为 Redis 持久实现（进程内队列不可恢复）。
         """
-        authorize_scopes(request, SCOPE_OPS)
+        principal = authorize_scopes(request, SCOPE_OPS)
         if status not in ("pending", "resolved", "all"):
             raise HTTPException(
                 status_code=422,
                 detail=f"未知工单状态: {status}（支持 pending/resolved/all）",
             )
         components: PodComponents = request.app.state.components
-        tickets = components.handoff_board.list(status)
+        board = components.handoff_board
+        # SLA 超时首次观测计数（P2-3；board 缺失该方法时跳过）
+        newly = await asyncio.to_thread(_mark_sla_breaches_sync, board)
+        if newly:
+            from app.observability.metrics import record_handoff_sla_breach
+
+            record_handoff_sla_breach(newly)
+        # board.list 内部是 smembers + 逐 id get（N+1 Redis 往返）→ 线程池执行
+        tickets = await asyncio.to_thread(
+            board.list, status, assignee=principal.sub if mine else ""
+        )
         return {
-            "tickets": [t.to_dict() for t in tickets],
+            "tickets": [t.to_ops_dict() for t in tickets],
+            "assignee": principal.sub if mine else "",
             "capabilities": {
                 "human_qa_evolution": (
                     settings.human_qa_evolution_enabled
-                    and bool(getattr(components.handoff_board, "durable", False))
+                    and bool(getattr(board, "durable", False))
                 ),
             },
+        }
+
+    @app.post("/v1/handoffs/{ticket_id}/claim", tags=["handoff"])
+    async def claim_handoff(ticket_id: str, request: Request):
+        """P2-3：坐席领取工单（工单进「我的」列表）。
+
+        并发安全：Redis 侧 Lua「读-比较-写」原子执行，两方同时领取只有一个
+        成功；进程内实现用 RLock 保护同一临界区。他人已领取/已解决 → 409，
+        同一坐席重复领取幂等（already=true，不重复追加留痕）。
+        领取人只取认证主体 sub（不接受请求体伪造）。
+        """
+        principal = authorize_scopes(request, SCOPE_OPS)
+        components: PodComponents = request.app.state.components
+        try:
+            ticket, already = await asyncio.to_thread(
+                components.handoff_board.claim, ticket_id, principal.sub
+            )
+        except HandoffNotFound as e:
+            raise HTTPException(status_code=404, detail="工单不存在") from e
+        except HandoffConflict as e:
+            raise HTTPException(status_code=409, detail=str(e)) from e
+        return {
+            "ticket_id": ticket_id,
+            "status": "claimed",
+            "assignee": ticket.assignee,
+            "claimed_at": ticket.claimed_at,
+            "already": already,
+            "ticket": ticket.to_ops_dict(),
+        }
+
+    @app.post("/v1/handoffs/{ticket_id}/notes", tags=["handoff"])
+    async def add_handoff_note(
+        ticket_id: str, request: Request, body: HandoffNoteRequest
+    ):
+        """P2-3：追加坐席处理备注（append-only 留痕，不改变工单状态）。
+
+        备注人只取认证主体 sub；备注进 events（与领取/解决同一事件流）。
+        """
+        principal = authorize_scopes(request, SCOPE_OPS)
+        components: PodComponents = request.app.state.components
+        try:
+            ticket = await asyncio.to_thread(
+                components.handoff_board.add_note,
+                ticket_id,
+                principal.sub,
+                body.note,
+            )
+        except HandoffNotFound as e:
+            raise HTTPException(status_code=404, detail="工单不存在") from e
+        events = ticket.events
+        return {
+            "ticket_id": ticket_id,
+            "event": events[-1] if events else None,
+            "events": events,
+            "ticket": ticket.to_ops_dict(),
         }
 
     @app.post("/v1/handoffs/{ticket_id}/resolve", tags=["handoff"])
@@ -1021,7 +1710,6 @@ def create_app() -> FastAPI:
         """
         principal = authorize_scopes(request, SCOPE_OPS)
         components: PodComponents = request.app.state.components
-        authenticate_user(request, body.user_id or "")
         resolution = dict(body.resolution)
         if resolution.get("knowledge_candidate"):
             # 人工知识沉淀链路已切换为「外部会话批量接入 → MySQL 评审 →
@@ -1031,11 +1719,12 @@ def create_app() -> FastAPI:
                 detail="knowledge_candidate 已弃用：人工知识改由 "
                 "POST /v1/human-conversations/batch 批量推送会话沉淀",
             )
-        ticket = components.handoff_board.get(ticket_id)
+        ticket = await asyncio.to_thread(components.handoff_board.get, ticket_id)
         if ticket is None:
             raise HTTPException(status_code=404, detail="工单不存在")
         try:
-            event, duplicate = components.handoff_board.resolve_atomic(
+            event, duplicate = await asyncio.to_thread(
+                components.handoff_board.resolve_atomic,
                 ticket_id,
                 resolution,
                 principal.sub,
@@ -1045,12 +1734,16 @@ def create_app() -> FastAPI:
             raise HTTPException(status_code=409, detail=str(e)) from e
         except HandoffNotFound as e:  # get 与 resolve 之间的竞态删除
             raise HTTPException(status_code=404, detail="工单不存在") from e
+        # P2-3：回读工单（含 assignee/resolved_at/events 留痕与 SLA 判定）
+        resolved = await asyncio.to_thread(components.handoff_board.get, ticket_id)
         return {
             "ticket_id": ticket_id,
             "status": "resolved",
             "reclaim_session": body.reclaim,
             "resolution_event": event,
             "duplicate": duplicate,
+            "assignee": getattr(resolved, "assignee", "") if resolved else "",
+            "ticket": resolved.to_ops_dict() if resolved is not None else None,
         }
 
     @app.get("/v1/messages/search", tags=["handoff"])
@@ -1063,16 +1756,46 @@ def create_app() -> FastAPI:
     ):
         """阶段八：对话全文检索（坐席接手/质检）。
 
-        安全修复 P1：运营面端点，要求 ops scope。
-        归属围栏：user_id 一律取自认证（auth 关闭时回退参数），只搜本用户；
-        ES 不可达 → 200 + degraded=true（检索侧降级，不影响 Agent 主流程）。
+        修复计划·五：运营面端点，要求 ops scope（无 scope → 403）。
+        - 操作者取 authorize_scopes 的认证主体（不用于定位目标用户）；
+        - user_id 是**必填目标客户**参数（ops 可搜索任意明确指定的用户）；
+          缺失 → 422；
+        - 审计记录操作者/目标用户/session/查询摘要哈希/命中数/trace_id，
+          不记录原始查询正文。
+        修复计划·二：返回前按删除 tombstone 过滤旧 UUID（及 legacy 空 UUID），
+        保证 Reset 后立即不可搜索（即使 ES 删除事件尚未执行）。
+        修复计划·三：ES 不可用 → 503（不再返回易被误读为「确实没有结果」的空数组）。
         """
-        authorize_scopes(request, SCOPE_OPS)
+        principal = authorize_scopes(request, SCOPE_OPS)
         components: PodComponents = request.app.state.components
-        user_id = authenticate_user(request, user_id)
+        if not user_id:
+            raise HTTPException(status_code=422, detail="缺少目标用户参数 user_id")
         _validate_request_ids(user_id, session_id)
-        if components.es_client is None or not components.message_index:
-            return {"hits": [], "degraded": True, "reason": "ES 未配置/不可达"}
+
+        # 修复计划·二轮 4：tombstone 先读且 fail-closed——DB 缺失/查询失败
+        # 一律 503，绝不返回可能含旧会话数据的空集合假象。
+        from app.stores.sql.outbox import (
+            MessageTombstoneUnavailable,
+            load_message_tombstones,
+        )
+
+        try:
+            tombstones = await asyncio.to_thread(
+                load_message_tombstones, components.db_engine, user_id
+            )
+        except MessageTombstoneUnavailable as e:
+            logger.error("message_search tombstone 不可用: %s", e)
+            return JSONResponse(
+                status_code=503,
+                content={
+                    "detail": "消息检索暂不可用（删除标记不可读）",
+                    "code": "message_tombstone_unavailable",
+                },
+            )
+
+        es_client = _es_of(components)
+        if es_client is None or not components.message_index:
+            raise HTTPException(status_code=503, detail="消息检索暂不可用（ES 未配置/不可达）")
         if not q.strip():
             return {"hits": [], "degraded": False}
 
@@ -1081,28 +1804,77 @@ def create_app() -> FastAPI:
         if session_id:
             filters.append({"term": {"session_key": f"{user_id}/{session_id}"}})
         try:
-            resp = components.es_client.search(
+            # 同步 ES 客户端调用（C1：不阻塞事件循环）
+            resp = await asyncio.to_thread(
+                es_client.search,
                 index=components.message_index,
                 query={"bool": {"must": must, "filter": filters}},
                 sort=[{"ts": "desc"}],
                 size=min(max(limit, 1), 200),
-                source=["session_key", "seq", "role", "content", "ts"],
+                source=["session_key", "session_uuid", "seq", "role", "content", "ts"],
             )
-        except Exception:
-            return {"hits": [], "degraded": True, "reason": "ES 查询失败"}
-        return {
-            "hits": [
-                {
-                    "session_id": h["_source"].get("session_key", "").split("/", 1)[-1],
-                    "seq": h["_source"].get("seq"),
-                    "role": h["_source"].get("role", ""),
-                    "content": h["_source"].get("content", ""),
-                    "ts": h["_source"].get("ts"),
-                }
-                for h in resp.get("hits", {}).get("hits", [])
-            ],
-            "degraded": False,
-        }
+        except Exception as e:
+            logger.warning("message_search ES 查询失败: %s", type(e).__name__)
+            from app.agent.rag.es_util import invalidate_es_client
+
+            invalidate_es_client(f"search_failed:{type(e).__name__}")
+            raise HTTPException(status_code=503, detail="消息检索暂不可用（ES 查询失败）") from e
+
+        # 修复计划·三轮 P1-1：ES 查询期间可能发生 Reset（删除事件同事务提交），
+        # 查询后重读 tombstone 与快照取并集再过滤；二次读取失败仍 fail-closed
+        # （503，绝不返回可能含旧会话数据的 ES 结果）。
+        try:
+            post_tombstones = await asyncio.to_thread(
+                load_message_tombstones, components.db_engine, user_id
+            )
+        except MessageTombstoneUnavailable as e:
+            logger.error("message_search tombstone 二次读取不可用: %s", e)
+            return JSONResponse(
+                status_code=503,
+                content={
+                    "detail": "消息检索暂不可用（删除标记不可读）",
+                    "code": "message_tombstone_unavailable",
+                },
+            )
+        for key, uuids in post_tombstones.items():
+            tombstones.setdefault(key, set()).update(uuids)
+
+        # 修复计划·二轮 3/4：过滤 tombstone（旧 UUID 与 legacy 空 UUID），
+        # 并按 (session_key, seq) 去重——兼容新旧文档 ID（legacy _id 不含 UUID）。
+        hits: list[dict] = []
+        seen: set[tuple] = set()
+        for h in resp.get("hits", {}).get("hits", []):
+            src = h.get("_source", {}) or {}
+            session_key = src.get("session_key", "")
+            stale = src.get("session_uuid") or ""
+            blocked = tombstones.get(session_key)
+            if blocked is not None and (stale in blocked or not stale):
+                continue  # 旧会话实例（或 legacy 无 UUID）→ 已重置，不得返回
+            dedup_key = (session_key, src.get("seq"))
+            if dedup_key in seen:
+                continue  # 同 (session_key, seq) 的新旧文档重复：保留首条（ts 倒序）
+            seen.add(dedup_key)
+            hits.append({
+                "session_id": session_key.split("/", 1)[-1],
+                "seq": src.get("seq"),
+                "role": src.get("role", ""),
+                "content": src.get("content", ""),
+                "ts": src.get("ts"),
+            })
+
+        # 审计（不记录原始查询正文）：操作者/目标/session/查询摘要/命中数/trace
+        import hashlib
+
+        logger.info(
+            "ops.message_search operator=%s target=%s session=%s query_sha=%s hits=%s trace_id=%s",
+            principal.sub or principal.via,
+            user_id,
+            session_id or "-",
+            hashlib.sha256(q.encode("utf-8")).hexdigest()[:16],
+            len(hits),
+            _current_trace_id(),
+        )
+        return {"hits": hits, "degraded": False}
 
     @app.post("/v1/sessions/reset", response_model=SessionResetResponse, tags=["chat"])
     async def reset_session(body: SessionResetRequest, request: Request):
@@ -1116,20 +1888,34 @@ def create_app() -> FastAPI:
         except SessionOwnershipError as e:
             raise HTTPException(status_code=403, detail=str(e)) from e
         components = request.app.state.components
-        with SessionLease(
-            components.locks,
-            user_id,
-            body.session_id or "session",
-        ) as lease:
+        # 修复计划·一：锁后端不可用（生产 redis_required）→ 503，不降级
+        try:
+            lease = SessionLease(
+                components.locks,
+                user_id,
+                body.session_id or "session",
+            ).__enter__()
+        except SessionLockBackendUnavailable as e:
+            raise HTTPException(
+                status_code=503, detail=f"会话锁后端暂不可用: {e}"
+            ) from e
+        try:
             if lease.token is None:
                 raise HTTPException(
                     status_code=409,
                     detail="该会话正在处理中，请稍候再试",
                 )
+            # 修复计划·一：reset 删除会话前校验租约（无锁不得删）
+            if hasattr(agent, "bind_lease_guard"):
+                agent.bind_lease_guard(lease.assert_owned)
             try:
                 await runtime.run_agent_reset(agent)
+            except SessionLockLost as e:
+                raise HTTPException(status_code=503, detail=f"会话租约已失效: {e}") from e
             finally:
                 await runtime.run_agent_close(agent)
+        finally:
+            lease.release()
         return SessionResetResponse(session_id=agent.session_id)
 
     # Web 聊天界面（静态单页，无需前端构建链；对话走 POST /v1/chat）。

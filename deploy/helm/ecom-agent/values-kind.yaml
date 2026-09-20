@@ -15,6 +15,8 @@ env:
   RAG_BACKEND: es
   RAG_HYBRID: "false"
   RAG_RERANK: none
+  # kind 使用确定性 fake embedding；生产发布阈值由 rag-release 校准产物覆盖。
+  RAG_MIN_RELEVANCE_SCORE: "0.0"
   ES_URL: "http://elasticsearch:9200"
   # ---- 状态外置 ----
   SESSION_STORE_BACKEND: redis
@@ -46,7 +48,6 @@ env:
   # ---- 安全（验收：全开）----
   AUTH_ENABLED: "false"   # kind 无外部鉴权；归属经 JWT 开发者密钥（测试签发）
   ENFORCE_ORDER_OWNERSHIP: "true"
-  REFUND_CONFIRMATION_REQUIRED: "true"
   OPS_RBAC_REQUIRED: "true"
   GUARDRAILS_ENABLED: "true"
   # ---- 数据库（kind 内联 MySQL）----

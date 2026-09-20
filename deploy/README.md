@@ -35,12 +35,37 @@ helm rollback ecom-agent 1   # 秒级回滚（RollingUpdate maxUnavailable=0）
 
 ## 就绪与优雅退出
 
-- `readiness` 探 `/readyz`：组件就绪 + `REDIS_REQUIRED=true` 时 Redis 必须在线；
+- `readiness` 探 `/readyz`：返回 `status`（ready/degraded/not_ready）+ `components`
+  依赖明细（not_configured/ok/unavailable）+ `capabilities` 能力分级
+  （chat/message_search/kb_upload/turn_archive）。聊天核心依赖不可用 → 503
+  not_ready；仅非聊天能力不可用 → 200 degraded；
+- `REDIS_REQUIRED=true` 时 Redis 为聊天核心依赖（fail-closed，锁与预算均不降级）；
 - `liveness` 探 `/healthz`：进程存活（不依赖外部组件）；
-- Pod 驱逐时收到 SIGTERM → uvicorn 停接新请求 → drain 在途请求（Agent 线程池
-  内任务完成后写回 Redis 会话/记忆）→ 退出；`terminationGracePeriodSeconds=45`
-  给单轮（≤ 30s）留足余量；
-- 会话/记忆/锁都在 Redis，Pod 漂移零丢失（2.2/2.6 验收）。
+- Pod 驱逐时收到 SIGTERM → uvicorn 停接新请求 → drain 在途请求（含断连收尾任务：
+  其持有会话租约，必须等 Agent 真正结束才释放）→ 退出；
+  `terminationGracePeriodSeconds = max(TURN_BUDGET_SECONDS, 30) × 1.5 + 30`
+  （默认 120 → 210 秒）；
+- 会话/记忆/锁都在 Redis/MySQL，Pod 漂移零丢失（2.2/2.6 验收）。
+
+## Reset 删除事件两阶段上线（修复计划·二）
+
+Reset 会写 `message_delete_outbox`（ES 旧消息删除事件）；上线分两步：
+
+1. 先部署迁移 011、UUID 写入与兼容新事件的消费者，并将
+   `MESSAGE_DELETE_OUTBOX_ENABLED=false`（Helm 默认已是第一阶段值）关闭删除事件生产；
+2. 全部 Pod 升级后置 `MESSAGE_DELETE_OUTBOX_ENABLED=true` 启用 Reset 删除事件。
+
+`MESSAGE_DELETE_OUTBOX_ENABLED` **只是生产开关**：消费者始终处理/重试/清理已存在
+的删除事件，关闭生产不会让存量事件积压。
+
+回滚前必须先关闭生产并排空新事件。删除事件未完成期间，运营搜索按 tombstone
+过滤旧 `session_uuid`，保证「重置后立即不可搜索」。死信可用
+`python -m app.scripts.outbox_admin list|replay` 查询/重放。
+
+上线顺序（迁移先行、应用后发）：Reset/Outbox 状态机不允许新旧 Worker 长时间
+混跑——切流前排空旧 Worker，至少等待一个 Outbox lease 周期。旧会话消息在 Reset
+时被标记 `obsolete`（终态，不再写 ES）；ES 文档 ID 含 session UUID，Reset 后
+seq 重新从 1 开始也不会覆盖新消息。Schema 是前向兼容资产，应用回滚不回滚迁移。
 
 ## 混沌验收（对照计划 2.6 验收）
 
@@ -113,3 +138,43 @@ helm rollback ecom-gray 1
 python -m app.scripts.run_eval --no-judge                 # 黄金集门禁
 python -m app.scripts.shadow_replay --turns app/sessions/evolution/turns --limit 200
 ```
+
+## RAG 检索发布顺序（RAG 修复计划·6）
+
+严格按序执行，前一步未通过不进入下一步：
+
+1. **修复降级语义与文档过滤**：`rerank=none` → 真 None；RRF 分不做阈值门控；
+   reranker 不可用 → 生产 fail-closed（`RAG_RERANK_FAIL_CLOSED=true`）；
+   索引仅含 根目录 + `evolved/` + `uploads/`（排除 `archive/`、`.trash/`、
+   `.staging/`、隐藏/临时文件）。
+2. **补齐文档元数据**（`status` / `authority` / `effective_date`）并开启
+   `RAG_DOC_METADATA_REQUIRED=true`（strict 构建缺字段直接失败）。
+3. **在生产 ES 构建未激活候选**：`python -m app.scripts.build_kb_index --backend es
+   --no-activate --json-out rag_release_candidate.json`
+   （生产同构：`RAG_BACKEND=es RAG_HYBRID=true RAG_HYBRID_RECALL_K=60
+   RAG_RERANK=bge-reranker-v2-m3 EMBEDDING_PROVIDER=sophnet EMBEDDING_MODEL=bge-m3`）。
+4. **用 v3 dev 集重新校准**：`run_retrieval_eval --dataset
+   app/evaluation/retrieval_cases_v3.json --calibrate ...`；门槛：正例 Recall@5
+   ≥95%、Easy ≥98%、Hard ≥80%、MRR ≥90%、nDCG@5 ≥90%、负例拒绝率 ≥90%、
+   P95 延迟 ≤500ms。
+5. **dev 门禁通过**后，`rag-release` 从校准报告提取阈值，后续 dev/holdout
+   均以同一个 `RAG_MIN_RELEVANCE_SCORE` 重跑，并生成发布覆盖文件
+   `rag_release_values.yaml`。部署时必须同时传入该文件，例如
+   `helm upgrade ... -f values-production.yaml -f rag_release_values.yaml`；基础生产
+   values 不保存未经本轮验收的旧阈值。
+6. **执行一次 holdout**（`holdout_cases_v3.json`，只跑一次，不得反向调参）；
+   要求 Recall@5 ≥95%、Hard ≥80%、负例拒绝率 ≥90%。
+7. **应用生产 embedding/reranker 配置和本轮阈值覆盖文件**，然后在能访问同一
+   ES/Redis 的发布环境执行 `python -m app.scripts.build_kb_index --backend es
+   --activate-candidate rag_release_candidate.json`；命令会校验配置指纹和构建前的
+   活动 generation，期间若已有其他发布则拒绝覆盖。随后
+   确认 `/readyz` 的 `rag` 能力为 ok（ES 可连接 / generation 存在 /
+   embedding 模型与索引一致 / reranker 可用 / 阈值有有效打分器）。
+8. **灰度 5%**，观察错误率、空结果率（`rag_retrieve_empty_total`）、
+   reranker fallback（`reranker_fallback_total`）与延迟；无异常后逐步
+   扩大到 25% 与 100%。
+
+> 注：`rag-release` 使用 `production-rag` 受保护环境中的
+> `RAG_RELEASE_ES_URL`、`RAG_RELEASE_REDIS_URL`、SophNet 与 reranker secrets，
+> 候选直接构建在待发布 ES 中，但门禁期间不切 alias/共享指针。工作流产出的
+> candidate JSON、三份评测报告和 values 覆盖必须作为同一个发布包使用。

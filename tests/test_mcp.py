@@ -34,7 +34,9 @@ MCP_URL = "http://127.0.0.1:9123/mcp"
 TEST_SESSION = str(ROOT / "app" / "sessions" / "test_mcp_session.json")
 
 EXPECTED_TOOLS = {
-    "query_order", "query_product", "query_logistics", "apply_refund",
+    "query_order", "query_product", "query_logistics",
+    "submit_refund_application", "query_refund_application",
+    "cancel_refund_application",
     "search_knowledge",
 }
 

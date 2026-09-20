@@ -41,8 +41,13 @@ def run_agent_turn_sync(agent: Any, message: str) -> Any:
 
 
 def run_agent_close_sync(agent: Any) -> None:
+    """线程内 close；预算存储故障必须上抛（修复计划·二轮 7：HTTP/SSE 返回 503）。"""
+    from app.security.ratelimit import BudgetStoreUnavailable
+
     try:
         agent.close()
+    except BudgetStoreUnavailable:
+        raise
     except Exception:  # noqa: BLE001 —— 收尾失败不影响响应已返回
         logger.warning("agent.close() 收尾失败", exc_info=True)
 

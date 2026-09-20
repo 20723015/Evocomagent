@@ -21,6 +21,19 @@ spec:
         app: ecom-agent
         app.kubernetes.io/version: {{ .Values.image.tag | quote }}
     spec:
+      {{- /* 修复计划·二轮 6：终止宽限期必须 ≥ 应用 drain 上限 + 30s 强制退出缓冲。
+             应用 drain 上限 = max(TURN_BUDGET_SECONDS, 30) × 1.5（断连收尾任务等待窗口）。 */}}
+      {{- $tb := 120.0 }}
+      {{- if hasKey .Values.env "TURN_BUDGET_SECONDS" }}
+      {{- $tb = float64 .Values.env.TURN_BUDGET_SECONDS }}
+      {{- end }}
+      {{- if lt $tb 30.0 }}
+      {{- $tb = 30.0 }}
+      {{- end }}
+      {{- $requiredGrace := addf (mulf $tb 1.5) 30.0 }}
+      {{- if lt (float64 .Values.terminationGracePeriodSeconds) $requiredGrace }}
+      {{- fail (printf "terminationGracePeriodSeconds=%v 小于应用 drain 上限+30=%.0f（TURN_BUDGET_SECONDS=%v）：请调大终止宽限期" .Values.terminationGracePeriodSeconds $requiredGrace $tb) }}
+      {{- end }}
       terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
       # 安全基线：非 root（4.1；共享卷启用时 fsGroup 保证 appuser 可写）
       securityContext:

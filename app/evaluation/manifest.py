@@ -5,7 +5,7 @@ manifest 记录：
 - Git commit（head）
 - Prompt 目录 SHA-256（评估/记忆/summarizer 提示词——判定口径的一部分）
 - 被测模型、与被测模型不同的 Judge 模型
-- 实际 CLI 的 mode、Judge 开关、temperature、token 上限、后端、reranker、阈值
+- 实际 CLI 的 Judge 开关、temperature、token 上限、后端、reranker、阈值
 - Python 版本与依赖锁（requirements.txt）哈希
 
 用途：
@@ -25,10 +25,21 @@ from typing import Any, Mapping
 from urllib.parse import urlsplit, urlunsplit
 
 from app.config.settings import settings
+from app.evaluation.sandbox import (
+    SANDBOX_ENFORCE_ORDER_OWNERSHIP,
+    sandbox_temperature,
+)
+from app.llm.model_profile import profile_fingerprint
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 PROMPT_DIR = ROOT / "app" / "prompts"
 REQUIREMENTS = ROOT / "requirements.txt"
+
+
+def _model_name(model: str | None) -> str:
+    """被测模型名（CLI 未传时回退 settings，与 _runtime_config 同口径）。"""
+    return str(model if model is not None else settings.model_name)
+
 
 
 def sha256_of(path: Path) -> str:
@@ -113,14 +124,13 @@ def _runtime_config(
     dataset_path: str | None = None,
     model: str | None = None,
     judge_model: str | None = None,
-    mode: str | None = None,
     use_judge: bool | None = None,
     overrides: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """返回参与评测的、可安全落盘的运行配置。
 
     这里刻意不读取 ``settings.eval_*`` 来代替 CLI 参数：续跑的 manifest
-    必须描述「实际运行」的模型、模式与 Judge 开关，而不是当前进程后来
+    必须描述「实际运行」的模型与 Judge 开关，而不是当前进程后来
     重新加载出来的默认值。API key 等凭据永远不进入 manifest。
     """
     config: dict[str, Any] = {
@@ -129,9 +139,6 @@ def _runtime_config(
         "judge_model": str(
             judge_model if judge_model is not None else (settings.eval_judge_model or "")
         ),
-        "mode": str(mode if mode is not None else (
-            "multi" if settings.multi_agent_enabled else "single"
-        )),
         "use_judge": bool(
             use_judge if use_judge is not None else settings.eval_use_judge
         ),
@@ -139,9 +146,18 @@ def _runtime_config(
         # experiment, while userinfo/query credentials remain redacted.
         "openai_base_url": _safe_endpoint(settings.openai_base_url),
         "openai_base_url_sha256": _endpoint_sha256(settings.openai_base_url),
-        "temperature": settings.temperature,
+        # 低危修复 C5：沙箱固定温度（settings.temperature 被沙箱忽略），
+        # 指纹记录实际运行值——改 settings.temperature 不再改变 config_hash
+        # 推理模型适配 T9：非 free 画像下沙箱**不传** temperature → 记 None，
+        # 避免「报告说跑了 0.0、实际请求体里没有 temperature」的误读
+        "temperature": sandbox_temperature(_model_name(model)),
         "llm_max_tokens": settings.llm_max_tokens,
-        "multi_agent_enabled": settings.multi_agent_enabled,
+        # P3-2 校准后的轮预算/步数进指纹：D4 的「120s 臂」结论需要可溯
+        "turn_budget_seconds": settings.turn_budget_seconds,
+        "max_react_steps": settings.max_react_steps,
+        # 推理模型适配 T9：画像全字段进指纹（模型行为差异本身就是实验变量）
+        "model_profile": profile_fingerprint(_model_name(model)),
+
         "eval_pass_threshold": settings.eval_pass_threshold,
         "rag": {
             "backend": settings.rag_backend,
@@ -172,8 +188,10 @@ def _runtime_config(
             "search_max_calls": settings.tool_search_max_calls,
         },
         "authorization": {
-            "enforce_order_ownership": settings.enforce_order_ownership,
-            "refund_confirmation_required": settings.refund_confirmation_required,
+            # 沙箱对被测 Agent 硬编码开启归属校验（SANDBOX_ENFORCE_ORDER_OWNERSHIP），
+            # 指纹必须记实际值——若记 settings 值，.env 关闭时会出现
+            # 「报告说没开、实际跑开了」的审计误导（与温度 C5 同类问题）
+            "enforce_order_ownership": SANDBOX_ENFORCE_ORDER_OWNERSHIP,
         },
         "commerce_backend": settings.commerce_backend,
     }
@@ -195,21 +213,19 @@ def config_hash(
     dataset_path: str | None = None,
     model: str | None = None,
     judge_model: str | None = None,
-    mode: str | None = None,
     use_judge: bool | None = None,
     overrides: Mapping[str, Any] | None = None,
 ) -> str:
     """配置指纹（续跑/合并校验用）。
 
     所有 CLI 运行时参数都必须显式传入；不传时才回退到 settings，兼容
-    旧的内部调用。这样 ``--mode single`` / ``--no-judge`` 等不会被忽略。
+    旧的内部调用。这样 ``--no-judge`` 等不会被忽略。
     """
     raw = json.dumps(
         _combined_sha256(
             dataset_path=dataset_path,
             model=model,
             judge_model=judge_model,
-            mode=mode,
             use_judge=use_judge,
             overrides=overrides,
         ),
@@ -227,7 +243,6 @@ def build_manifest(
     judge_model: str,
     rng_seed: str = "",
     *,
-    mode: str = "single",
     use_judge: bool = False,
     config_overrides: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
@@ -236,7 +251,7 @@ def build_manifest(
     context = _context_fingerprint()
     config = _runtime_config(
         dataset_path=str(ds), model=model, judge_model=judge_model,
-        mode=mode, use_judge=use_judge, overrides=config_overrides,
+        use_judge=use_judge, overrides=config_overrides,
     )
     return {
         "protocol": "eval-v2",
@@ -252,8 +267,12 @@ def build_manifest(
             "under_test": model,
             "judge": judge_model,
             "use_judge": use_judge,
-            "temperature": settings.temperature or 0.0,
+            "temperature": sandbox_temperature(_model_name(model)),
             "max_tokens": settings.llm_max_tokens,
+            # 推理模型适配 T9：被测与 Judge 各自的画像全字段（判分口径依赖
+            # judge 的 temperature 被尊重，见 run_eval 的 judge 守卫）
+            "profile": profile_fingerprint(_model_name(model)),
+            "judge_profile": profile_fingerprint(judge_model) if judge_model else None,
         },
         "retrieval": {
             "backend": settings.rag_backend,
@@ -279,7 +298,6 @@ def build_manifest(
             "pass": settings.eval_pass_threshold,
         },
         "execution": {
-            "mode": mode,
             "use_judge": use_judge,
             "base_url": _safe_endpoint(settings.openai_base_url),
             "base_url_sha256": _endpoint_sha256(settings.openai_base_url),
@@ -292,7 +310,7 @@ def build_manifest(
         },
         "config_hash": config_hash(
             dataset_path=str(ds), model=model, judge_model=judge_model,
-            mode=mode, use_judge=use_judge, overrides=config_overrides,
+            use_judge=use_judge, overrides=config_overrides,
         ),
     }
 
@@ -303,7 +321,6 @@ def verify_manifest_unchanged(
     dataset_path: str,
     model: str,
     judge_model: str,
-    mode: str = "single",
     use_judge: bool = False,
     config_overrides: Mapping[str, Any] | None = None,
     allow_context_mismatch: bool = False,
@@ -325,7 +342,7 @@ def verify_manifest_unchanged(
     )
     expected_hash = config_hash(
         dataset_path=str(dataset_path), model=model, judge_model=judge_model,
-        mode=mode, use_judge=use_judge, overrides=config_overrides,
+        use_judge=use_judge, overrides=config_overrides,
     )
     context = _context_fingerprint()
     recorded_context = {
@@ -345,6 +362,39 @@ def verify_manifest_unchanged(
     return dataset_ok and manifest.get("config_hash") == expected_hash
 
 
+def _active_generation_target() -> str:
+    """当前 backend 的活动 generation target（报告审计用；失败返回 ""）。"""
+    try:
+        from pathlib import Path as _P
+
+        from app.evolution.generation import GenerationStore
+        from app.stores.redis_client import get_redis
+
+        gen = GenerationStore(
+            _P(settings.kb_generation_path), redis_client=get_redis(),
+        ).active(settings.rag_backend)
+        return gen.target if gen is not None else ""
+    except Exception:  # noqa: BLE001
+        return ""
+
+
+def _query_normalize_snapshot() -> dict[str, Any]:
+    """工作流 A 快照：词表是否启用/加载、语料指纹与规模（不落词表内容）。"""
+    if not settings.rag_query_normalize:
+        return {"enabled": False}
+    try:
+        from app.agent.rag.query_normalizer import QueryNormalizer
+
+        normalizer = QueryNormalizer.load(settings.rag_query_normalize_lexicon_path)
+    except Exception:  # noqa: BLE001
+        normalizer = None
+    if normalizer is None:
+        return {"enabled": True, "loaded": False}
+    snapshot = normalizer.snapshot()
+    snapshot["loaded"] = True
+    return snapshot
+
+
 def build_retrieval_manifest(
     *,
     dataset_path: str,
@@ -355,18 +405,25 @@ def build_retrieval_manifest(
     thresholds: Mapping[str, Any],
     variant: str,
     hard_threshold_overridden: bool = False,
+    generation_target: str = "",
 ) -> dict[str, Any]:
     """构建独立于端到端 eval-v2 的检索实验清单。
 
-    检索报告不调用 ``build_manifest``，因为它没有 Agent model/Judge/mode；
+    检索报告不调用 ``build_manifest``，因为它没有 Agent model/Judge；
     但同样必须冻结数据集哈希、git、后端/embedding/reranker 和所有阈值。
     """
     ds = Path(dataset_path)
     context = _context_fingerprint()
+    from app.agent.rag.fingerprint import (
+        config_fingerprint,
+        embedding_dimensions,
+    )
+
     retrieval = {
         "backend": settings.rag_backend,
         "embedding_model": settings.embedding_model,
         "embedding_provider": settings.embedding_provider,
+        "embedding_dimensions": embedding_dimensions(),
         "embedding_endpoint": _safe_endpoint(settings.sophnet_embedding_url),
         "embedding_endpoint_sha256": _endpoint_sha256(settings.sophnet_embedding_url),
         "openai_base_url": _safe_endpoint(settings.openai_base_url),
@@ -378,6 +435,10 @@ def build_retrieval_manifest(
         "rerank_endpoint_sha256": _endpoint_sha256(settings.rerank_endpoint_url),
         "rerank_model": settings.rerank_model,
         "min_relevance_score": settings.rag_min_relevance_score,
+        "query_normalize": _query_normalize_snapshot(),
+        "config_fingerprint": config_fingerprint(),
+        "generation_target": generation_target or _active_generation_target(),
+        "kb_dir": settings.kb_dir,
         "kb_index_path": settings.kb_index_path,
         "chroma_persist_dir": settings.chroma_persist_dir,
     }
@@ -423,3 +484,20 @@ def build_retrieval_manifest(
         },
         "config_hash": hashlib.sha256(raw.encode("utf-8")).hexdigest(),
     }
+
+
+# ============================================================
+# 生产检索基线（RAG 修复计划·3：唯一被批准的线上配置）
+# 文档治理 + 重建 generation + 重校准后，生产 values 必须与此完全一致。
+# ============================================================
+APPROVED_RAG_BASELINE = {
+    "RAG_BACKEND": "es",
+    "RAG_HYBRID": "true",
+    "RAG_HYBRID_RECALL_K": "60",
+    "RAG_RERANK": "bge-reranker-v2-m3",
+    "EMBEDDING_PROVIDER": "sophnet",
+    "EMBEDDING_MODEL": "bge-m3",
+    "SOPHNET_EMBEDDING_DIMENSIONS": "1024",
+}
+# 阈值必须由重校准生成后写入（禁止沿用旧值 0.04185213）
+FORBIDDEN_RAG_THRESHOLD = "0.04185213"

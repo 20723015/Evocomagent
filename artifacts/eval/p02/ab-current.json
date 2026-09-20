@@ -1,0 +1,12 @@
+{
+  "protocol": "kb-generation-candidate-v1",
+  "backend": "numpy",
+  "generation": {
+    "generation_id": "20260918062702-66e6a879",
+    "target": "E:\\ea\\app\\sessions\\kb_index.20260918062702-66e6a879.json",
+    "embedding_model": "bge-m3",
+    "previous_generation_id": ""
+  },
+  "config_fingerprint": "8f3a27dfa5f80180",
+  "expected_active_generation_id": "20260831225839-9dfc4d1a"
+}

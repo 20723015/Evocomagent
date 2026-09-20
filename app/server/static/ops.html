@@ -6,6 +6,22 @@
 <title>运营工作台 · 并夕夕智能客服</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛠️</text></svg>">
 <link rel="stylesheet" href="/css/app.css">
+<style>
+  /* P2-3 坐席工作台：SLA 超时标红 + 处理留痕 + 领取/备注区 */
+  .ticket-card.sla-breach { border-color: var(--err-border); box-shadow: 0 0 0 1px var(--err-border); }
+  .chip.err { background: var(--err-bg); color: var(--err); border-color: var(--err-border); }
+  .ticket-actions { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+  .ticket-note { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+  .ticket-note textarea {
+    border: 1px solid var(--border); border-radius: var(--radius-s);
+    padding: 8px 11px; font-size: 13px; font-family: inherit; resize: vertical;
+    min-height: 56px; background: var(--card); color: var(--text);
+  }
+  .ticket-note textarea:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px rgba(225, 37, 27, .1); }
+  .ticket-trail { margin-top: 8px; font-size: 12.5px; color: var(--text-2); }
+  .ticket-trail summary { cursor: pointer; color: var(--text-3); min-height: 28px; }
+  .ticket-trail .t-field { margin-top: 4px; }
+</style>
 </head>
 <body>
 <div class="ops-wrap">
@@ -31,9 +47,14 @@
         <option value="resolved">已处理</option>
         <option value="all">全部</option>
       </select>
+      <label class="sr-only" for="ticketScope">工单范围筛选</label>
+      <select id="ticketScope">
+        <option value="all" selected>全部工单</option>
+        <option value="mine">我的工单</option>
+      </select>
       <button id="refreshTickets" class="btn btn-outline">刷新</button>
       <span class="spacer" style="flex:1"></span>
-      <span class="hint">requires_human / guardrail 命中时自动生成工单</span>
+      <span class="hint">领取后进入「我的工单」；超 SLA（30 分钟）标红并计入 handoff_sla_breach_total</span>
     </div>
     <div class="ticket-list" id="ticketBox"></div>
   </section>

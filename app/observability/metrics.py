@@ -53,6 +53,10 @@ RATE_LIMITED = Counter(
 LLM_BUDGET_REJECTED = Counter(
     "llm_budget_rejected_total", "单轮/日预算拦截",
 )
+# 修复计划·四：预估算子低估（真实 usage 超预留，仍全额入账）
+BUDGET_ESTIMATOR_OVERRUN = Counter(
+    "llm_budget_estimator_overrun_total", "预算预留估算低估量（tokens）",
+)
 TURN_BUDGET_EXHAUSTED = Counter(
     "turn_budget_exhausted_total", "轮次预算耗尽（按阶段）",
     labelnames=("phase",),  # react|extract|stm|summary|ltm|semaphore
@@ -121,6 +125,34 @@ MEMORY_JOB_RETRIES = Counter(
 MEMORY_JOB_DEAD = Counter(
     "memory_job_dead_total", "memory job 死信（超过重试上限）",
 )
+MEMORY_INJECTION_BLOCKED = Counter(
+    "memory_injection_blocked_total", "记忆提取输出含注入/指令模式被丢弃（按来源）",
+    labelnames=("source",),
+)
+# ---------- 记忆系统重构·阶段0：注入/漏注可观测 ----------
+MEMORY_INJECT_CANDIDATES = Histogram(
+    "memory_inject_candidates", "LTM 注入评估的候选事实数（每次 select 一次）",
+    buckets=(0, 1, 2, 4, 8, 16, 32, 64, 128),
+)
+MEMORY_INJECT_SELECTED = Histogram(
+    "memory_inject_selected", "LTM 实际注入 prompt 的事实数（每次 select 一次）",
+    buckets=(0, 1, 2, 3, 4, 5, 6, 7, 8),
+)
+MEMORY_INJECT_SCORE = Histogram(
+    "memory_inject_score", "LTM 注入候选融合得分分布（每个候选一次）",
+    buckets=(0.02, 0.05, 0.1, 0.15, 0.2, 0.25, 0.35, 0.5, 0.75, 1.0, 1.5),
+)
+MEMORY_INJECT_FILTERED = Counter(
+    "memory_inject_filtered_total", "LTM 注入候选被过滤次数（按原因）",
+    labelnames=("reason",),  # exclude_key | ttl | below_threshold
+)
+MEMORY_RECALL_MISS = Counter(
+    "memory_recall_miss_total", "Agent 主动召回命中但自动注入未命中的事实次数（漏注直接度量）",
+)
+MEMORY_EMBEDDING_FAILURES = Counter(
+    "memory_embedding_failures_total", "记忆嵌入调用失败次数（按阶段）",
+    labelnames=("stage",),  # query | write | sweep
+)
 LLM_CONSOLIDATION_CALLS = Counter(
     "llm_consolidation_calls_total", "记忆巩固期间的 LLM 调用（应为 0：close/轮内已去 LLM）",
 )
@@ -128,12 +160,24 @@ LLM_CONSOLIDATION_CALLS = Counter(
 FINAL_PROTOCOL_CORRECTIONS = Counter(
     "final_protocol_corrections_total", "终答协议纠错（纯文本输出要求改走 final_response）",
 )
+# 步数余量感知：剩余步数（含当前步）≤2 时注入的 system 预告次数。
+# 触发率 = 该计数 / 轮数，即「早收尾提示」的影响面上限（零额外 LLM 调用）。
+STEPS_MARGIN_HINTS = Counter(
+    "steps_margin_hints_total", "步数余量提示注入次数（剩余步数≤2，每轮至多一次）",
+)
 TURNS_MISSING_FINAL = Counter(
     "turns_missing_final_total", "无最终回复轮次（强制终答失败/fallback 收尾）",
 )
-REFUND_CONFIRMATION_BLOCKED = Counter(
-    "refund_confirmation_blocked_total", "退款确认拦截（按原因）",
-    labelnames=("reason",),  # ambiguous | reserved_args | multiple_pending | cancel
+# 推理模型适配 T4：强制收尾的两种达成手段（hard=显式强制 tool_choice /
+# soft=只挂终止工具 + system 软强制）。失败率 = fallback / attempts，按 mode 分组，
+# 用来在灰度期判断画像把 supports_forced_tool_choice 设成 false 是否划算。
+FORCED_FINALIZE_ATTEMPTS = Counter(
+    "forced_finalize_attempts_total", "强制收尾次数（按达成手段）",
+    labelnames=("mode",),
+)
+FORCED_FINALIZE_FALLBACK = Counter(
+    "forced_finalize_fallback_total", "强制收尾失败（转人工 fallback，按达成手段）",
+    labelnames=("mode",),
 )
 MEMORY_JOB_OBSOLETE = Counter(
     "memory_job_obsolete_total", "reset 后按 obsolete 处理的旧 memory job",
@@ -171,12 +215,51 @@ RERANKER_FALLBACK = Counter(
 OUTBOX_BACKLOG = Gauge(
     "outbox_backlog", "待同步 outbox 消息数（ES 同步滞后）",
 )
+# 修复计划·二：Outbox 可靠性指标（重试/dead-letter/删除滞后）
+OUTBOX_RETRIES = Counter(
+    "outbox_retries_total", "outbox 重试次数",
+    labelnames=("kind",),  # message | delete
+)
+OUTBOX_DEAD_LETTERS = Counter(
+    "outbox_dead_letters_total", "outbox 进入 dead-letter 次数",
+    labelnames=("kind", "reason"),  # reason: json|deterministic_4xx|max_attempts|es_error
+)
+OUTBOX_DELETE_BACKLOG = Gauge(
+    "outbox_delete_backlog", "待执行 ES 删除事件数（reset 删除滞后）",
+)
+OUTBOX_DELETE_LAG_SECONDS = Gauge(
+    "outbox_delete_lag_seconds", "最老未完成删除事件的滞后秒数",
+)
+# 修复计划·二轮 2/3：租约状态机指标
+OUTBOX_TAKEOVERS = Counter(
+    "outbox_lease_takeovers_total", "接管过期 processing 行次数",
+    labelnames=("kind",),
+)
+OUTBOX_FENCE_REJECTED = Counter(
+    "outbox_fence_rejected_total", "结算被租约 fencing 拒绝次数（token 已易主）",
+    labelnames=("kind",),
+)
+OUTBOX_OBSOLETE = Counter(
+    "outbox_obsolete_total", "Reset 后旧会话消息被标记 obsolete 次数",
+    labelnames=("kind",),
+)
+OUTBOX_SETTLE_FAILURES = Counter(
+    "outbox_settle_failures_total", "结算写入失败次数",
+    labelnames=("kind",),
+)
 
 # 估算单价（美元/1M token，粗糙常量——真实账单以 4.6 成本看板校准误差 <10%）
+# 推理模型适配 T7：推理 token 按 output 价计（厂商均计入 output 计费）；新增条目
+# 必须在部署校准期与账单对账（验收：单日成本估算误差 <5%），未对账前只当趋势看。
 _MODEL_PRICES = {
     "gpt-4o-mini": (0.15, 0.60),
     "gpt-4o": (2.50, 10.00),
     "gpt-4.1-mini": (0.40, 1.60),
+    # —— 推理模型（价格待 T0/T7 部署校准，勿用于对外报价）——
+    "deepseek-reasoner": (0.55, 2.19),
+    "o1": (15.00, 60.00),
+    "o3": (2.00, 8.00),
+    "o4-mini": (1.10, 4.40),
 }
 
 
@@ -187,12 +270,23 @@ def record_chat_latency(seconds: float) -> None:
 # 单价表（美元/1M token）：prompt 与 completion 分开计价——
 # 修复历史「70/30 猜测」成本口径（真实 usage 由 ResilientLLM 归集后传入）
 def record_llm_usage(model: str, purpose: str,
-                     prompt_tokens: int, completion_tokens: int) -> None:
-    """按真实 usage 拆分方向计费（分）；无 usage 时只记 token 不记成本。"""
+                     prompt_tokens: int, completion_tokens: int,
+                     reasoning_tokens: int = 0) -> None:
+    """按真实 usage 拆分方向计费（分）；无 usage 时只记 token 不记成本。
+
+    推理模型适配 T7（N5）：`reasoning_tokens` 从 completion 中**拆出单列**
+    （direction="reasoning"），回答侧只留可见输出——否则「方向计费」会把思考
+    成本记成回答成本。成本合计不变（推理 token 按 output 价，与 completion 同价），
+    拆分只影响可观测口径；reasoning_tokens=0 时行为与拆分前逐字节一致。
+    """
+    reasoning = max(int(reasoning_tokens or 0), 0)
+    visible_completion = max(int(completion_tokens or 0) - reasoning, 0)
     if prompt_tokens:
         LLM_TOKENS.labels(direction="prompt", purpose=purpose).inc(prompt_tokens)
-    if completion_tokens:
-        LLM_TOKENS.labels(direction="completion", purpose=purpose).inc(completion_tokens)
+    if visible_completion:
+        LLM_TOKENS.labels(direction="completion", purpose=purpose).inc(visible_completion)
+    if reasoning:
+        LLM_TOKENS.labels(direction="reasoning", purpose=purpose).inc(reasoning)
     if not (prompt_tokens or completion_tokens) or not model:
         return
     price = _MODEL_PRICES.get(model)
@@ -203,6 +297,7 @@ def record_llm_usage(model: str, purpose: str,
             + completion_tokens / 1_000_000 * out_per_m * 100
         )
         LLM_COST.labels(model=model).inc(cents)
+
 
 
 def record_llm_call_count(purpose: str) -> None:
@@ -237,16 +332,25 @@ def record_write_claim_blocked() -> None:
 def record_write_blocked(tool: str) -> None:
     WRITE_BLOCKED.labels(tool=tool).inc()
 
+
 def record_final_protocol_correction() -> None:
     FINAL_PROTOCOL_CORRECTIONS.inc()
+
+
+def record_steps_margin_hint() -> None:
+    STEPS_MARGIN_HINTS.inc()
 
 
 def record_turn_missing_final() -> None:
     TURNS_MISSING_FINAL.inc()
 
 
-def record_refund_confirmation_blocked(reason: str) -> None:
-    REFUND_CONFIRMATION_BLOCKED.labels(reason=reason).inc()
+def record_forced_finalize_attempt(mode: str) -> None:
+    FORCED_FINALIZE_ATTEMPTS.labels(mode=mode).inc()
+
+
+def record_forced_finalize_fallback(mode: str) -> None:
+    FORCED_FINALIZE_FALLBACK.labels(mode=mode).inc()
 
 
 def record_memory_job_obsolete() -> None:
@@ -265,6 +369,45 @@ def record_memory_job_dead() -> None:
     MEMORY_JOB_DEAD.inc()
 
 
+def record_memory_injection_blocked(source: str = "ltm") -> None:
+    MEMORY_INJECTION_BLOCKED.labels(source=source).inc()
+
+
+def record_memory_inject(candidates: int, selected: int,
+                         scores: list[float] | None = None) -> None:
+    """阶段0：注入埋点——候选数/选中数/候选得分分布（每次 select_facts_for_prompt）。"""
+    try:
+        MEMORY_INJECT_CANDIDATES.observe(max(int(candidates), 0))
+        MEMORY_INJECT_SELECTED.observe(max(int(selected), 0))
+        for score in scores or []:
+            MEMORY_INJECT_SCORE.observe(max(float(score), 0.0))
+    except Exception:  # noqa: BLE001 —— 埋点绝不影响主链路
+        pass
+
+
+def record_memory_inject_filtered(reason: str) -> None:
+    try:
+        MEMORY_INJECT_FILTERED.labels(reason=reason or "unknown").inc()
+    except Exception:  # noqa: BLE001
+        pass
+
+
+def record_memory_recall_miss(count: int = 1) -> None:
+    """阶段0：漏注度量——recall_user_memory 命中而自动注入未命中。"""
+    try:
+        if count > 0:
+            MEMORY_RECALL_MISS.inc(int(count))
+    except Exception:  # noqa: BLE001
+        pass
+
+
+def record_memory_embedding_failure(stage: str = "query") -> None:
+    try:
+        MEMORY_EMBEDDING_FAILURES.labels(stage=stage or "query").inc()
+    except Exception:  # noqa: BLE001
+        pass
+
+
 def record_memory_job_latency(seconds: float) -> None:
     MEMORY_JOB_LATENCY.observe(max(seconds, 0.0))
 
@@ -275,6 +418,28 @@ def set_memory_job_backlog(count: int) -> None:
 
 RAG_RETRIEVE_EMPTY = Counter(
     "rag_retrieve_empty_total", "检索空结果（拒答校准观测）",
+)
+# RAG 修复计划·1：降级与失败（reranker 不可用等）
+RAG_DEGRADED = Counter(
+    "rag_degraded_total", "检索降级次数（按原因）",
+    labelnames=("reason",),
+)
+RAG_RETRIEVE_FAILED = Counter(
+    "rag_retrieve_failed_total", "检索失败次数（fail-closed）",
+    labelnames=("reason",),
+)
+# reranker 不可用按原因分标签（reranker_unavailable | partial_response）
+RERANKER_UNAVAILABLE = Counter(
+    "rag_reranker_unavailable_total", "精排器不可用/部分响应次数（按原因）",
+    labelnames=("reason",),
+)
+# 工作流 A：query 表层规范化打点（kind = abbr | homophone | mixed）
+RAG_QUERY_NORMALIZE_HITS = Counter(
+    "rag_query_normalize_hits_total", "query 表层规范化改写次数（按类型）",
+    labelnames=("kind",),
+)
+RAG_QUERY_NORMALIZE_MISSING = Counter(
+    "rag_query_normalize_missing_total", "规范化词表缺失/损坏（fail-open 恒等）",
 )
 
 
@@ -353,6 +518,9 @@ HUMAN_EVAL_OLDEST_AGE = Gauge(
 HUMAN_EVAL_BLOCKED = Gauge(
     "human_eval_blocked", "blocked 评审任务数（人工重试入口）",
 )
+HUMAN_VERSION_STALE_PUBLISHED = Gauge(
+    "human_version_stale_published", "旧版本已发布仍在线（version_stale=1）候选数，待人工下架",
+)
 # 人工知识生命周期观测（010：语义去重/审批快照/补偿下架）
 HUMAN_DEDUP_DECISION = Counter(
     "human_dedup_decision_total", "人工链路语义去重决策（评审+发布两端）",
@@ -376,6 +544,10 @@ HUMAN_LIFECYCLE_INCONSISTENCY = Counter(
 HUMAN_PUBLISH_PROBE_FAIL = Counter(
     "human_publish_probe_fail_total", "发布存在性探针失败次数（批次回退重试）",
 )
+HUMAN_VERSION_STALE_MARKED = Counter(
+    "human_version_stale_marked_total",
+    "同会话更高版本接入时旧版本已发布候选被置 version_stale 的行数（不自动下架）",
+)
 
 
 def record_human_dedup_decision(decision: str) -> None:
@@ -398,6 +570,11 @@ def record_human_lifecycle_inconsistency(kind: str) -> None:
     HUMAN_LIFECYCLE_INCONSISTENCY.labels(kind=kind or "unknown").inc()
 
 
+def record_human_version_stale_marked(count: int = 1) -> None:
+    if count > 0:
+        HUMAN_VERSION_STALE_MARKED.inc(count)
+
+
 def record_human_publish_probe_fail() -> None:
     HUMAN_PUBLISH_PROBE_FAIL.inc()
 
@@ -414,6 +591,8 @@ def set_human_eval_stats(stats: dict) -> None:
         HUMAN_EVAL_OLDEST_AGE.set(
             max(float(stats.get("oldest_age_seconds") or 0.0), 0.0))
         HUMAN_EVAL_BLOCKED.set(max(int(stats.get("blocked") or 0), 0))
+        HUMAN_VERSION_STALE_PUBLISHED.set(
+            max(int(stats.get("stale_published") or 0), 0))
     except Exception:
         pass
 
@@ -484,6 +663,39 @@ def record_rag_retrieve(diag: dict) -> None:
         pass
 
 
+def record_rag_degraded(reason: str) -> None:
+    """检索降级打点（如 reranker_unavailable）。"""
+    try:
+        RAG_DEGRADED.labels(reason=reason or "unknown").inc()
+    except Exception:
+        pass
+
+
+def record_rag_retrieve_failed(reason: str) -> None:
+    """检索 fail-closed 失败打点。"""
+    try:
+        RAG_RETRIEVE_FAILED.labels(reason=reason or "unknown").inc()
+    except Exception:
+        pass
+
+
+def record_query_normalize_hits(kinds) -> None:
+    """query 表层规范化改写打点（kinds：单条 query 内的改写类型列表）。"""
+    try:
+        for kind in kinds or ():
+            RAG_QUERY_NORMALIZE_HITS.labels(kind=kind or "unknown").inc()
+    except Exception:
+        pass
+
+
+def record_query_normalize_missing(path: str) -> None:
+    """规范化词表缺失/损坏打点（fail-open 恒等路径）。"""
+    try:
+        RAG_QUERY_NORMALIZE_MISSING.inc()
+    except Exception:
+        pass
+
+
 def record_tokens(direction: str, purpose: str, tokens: int, model: str = "") -> None:
     """兼容保留：无方向拆分时的记账（不再用 70/30 估算成本）。"""
     if not tokens:
@@ -510,6 +722,12 @@ def record_conflict() -> None:
 def record_budget_exhausted(phase: str) -> None:
     """轮次预算耗尽打点（phase: react|extract|stm|summary|ltm|semaphore）。"""
     TURN_BUDGET_EXHAUSTED.labels(phase=phase).inc()
+
+
+def record_budget_estimator_overrun(overrun_tokens: int) -> None:
+    """预估算子低估打点：真实 usage 超预留（已全额入账）。"""
+    if overrun_tokens > 0:
+        BUDGET_ESTIMATOR_OVERRUN.inc(int(overrun_tokens))
 
 
 def record_dup_blocked(tool: str) -> None:
@@ -561,8 +779,45 @@ def record_reranker_fallback() -> None:
     RERANKER_FALLBACK.inc()
 
 
+def record_reranker_unavailable(reason: str) -> None:
+    """精排不可用/部分响应按原因打点（reranker_unavailable | partial_response）。"""
+    try:
+        RERANKER_UNAVAILABLE.labels(reason=reason or "reranker_unavailable").inc()
+    except Exception:
+        pass
+
+
 def set_outbox_backlog(count: int) -> None:
     OUTBOX_BACKLOG.set(count)
+
+
+def record_outbox_retry(kind: str) -> None:
+    OUTBOX_RETRIES.labels(kind=kind).inc()
+
+
+def record_outbox_dead_letter(kind: str, reason: str) -> None:
+    OUTBOX_DEAD_LETTERS.labels(kind=kind, reason=reason).inc()
+
+
+def set_outbox_delete_backlog(count: int, lag_seconds: float = 0.0) -> None:
+    OUTBOX_DELETE_BACKLOG.set(count)
+    OUTBOX_DELETE_LAG_SECONDS.set(max(0.0, lag_seconds))
+
+
+def record_outbox_takeover(kind: str) -> None:
+    OUTBOX_TAKEOVERS.labels(kind=kind).inc()
+
+
+def record_outbox_fence_rejected(kind: str) -> None:
+    OUTBOX_FENCE_REJECTED.labels(kind=kind).inc()
+
+
+def record_outbox_obsolete(kind: str) -> None:
+    OUTBOX_OBSOLETE.labels(kind=kind).inc()
+
+
+def record_outbox_settle_failure(kind: str) -> None:
+    OUTBOX_SETTLE_FAILURES.labels(kind=kind).inc()
 
 
 def record_tool_timeout(kind: str) -> None:
@@ -587,3 +842,106 @@ def record_turn_usage(ctx, state) -> None:
 
 def record_mcp_write_indeterminate(tool: str) -> None:
     MCP_WRITE_INDETERMINATE.labels(tool=tool).inc()
+
+
+# ---------- P1-3 查询改写（查询侧双路召回；append-only）----------
+RAG_QUERY_REWRITE = Counter(
+    "rag_query_rewrite_total", "查询改写结果（ok|unchanged|empty|error|skipped）",
+    labelnames=("result",),
+)
+RAG_QUERY_REWRITE_FAILED = Counter(
+    "rag_query_rewrite_failed_total",
+    "查询改写失败（fail-open 原样透传，按原因）",
+    labelnames=("reason",),
+)
+RAG_QUERY_REWRITE_LATENCY = Histogram(
+    "rag_query_rewrite_latency_seconds", "查询改写 LLM 调用延迟",
+    buckets=(0.05, 0.1, 0.25, 0.5, 1.0, 2.0, 4.0, 8.0, 15.0, 30.0),
+)
+# 延迟增量（改写路相对原 query 单路的额外耗时；由调用方观测，秒）
+RAG_QUERY_REWRITE_LATENCY_DELTA = Histogram(
+    "rag_query_rewrite_latency_delta_seconds",
+    "查询改写相对单路检索的额外延迟增量",
+    buckets=(0.0, 0.05, 0.1, 0.25, 0.5, 1.0, 2.0, 4.0, 8.0),
+)
+
+# ---------- P1-4 四信号联合拒绝（append-only）----------
+RAG_REJECTION_DECISIONS = Counter(
+    "rag_rejection_decisions_total", "联合拒绝决策（accepted|rejected|skipped）",
+    labelnames=("decision", "reason"),
+)
+RAG_REJECTION_SIGNALS = Counter(
+    "rag_rejection_signals_total", "联合拒绝触发信号（top1|gap|coverage|rerank）",
+    labelnames=("signal",),
+)
+
+
+def record_query_rewrite(result: str, reason: str = "",
+                         latency_seconds: float = 0.0) -> None:
+    """查询改写打点（fail-open 纪律：埋点本身绝不影响检索）。"""
+    try:
+        RAG_QUERY_REWRITE.labels(result=result or "unknown").inc()
+        if result in ("error", "empty", "skipped"):
+            RAG_QUERY_REWRITE_FAILED.labels(reason=reason or "unknown").inc()
+        if latency_seconds > 0:
+            RAG_QUERY_REWRITE_LATENCY.observe(latency_seconds)
+    except Exception:  # noqa: BLE001
+        pass
+
+
+def record_query_rewrite_latency_delta(seconds: float) -> None:
+    """改写路额外延迟（可为 0；负值按 0 计）。"""
+    try:
+        RAG_QUERY_REWRITE_LATENCY_DELTA.observe(max(float(seconds), 0.0))
+    except Exception:  # noqa: BLE001
+        pass
+
+
+def record_rag_rejection(decision: str, reasons=(), *, reason: str = "") -> None:
+    """联合拒绝决策打点：decision ∈ accepted|rejected|skipped；reasons=触发信号。"""
+    try:
+        RAG_REJECTION_DECISIONS.labels(
+            decision=decision or "unknown", reason=reason or "",
+        ).inc()
+        for signal in reasons or ():
+            RAG_REJECTION_SIGNALS.labels(signal=signal or "unknown").inc()
+    except Exception:  # noqa: BLE001
+        pass
+
+
+# ---------- P1-1 情绪识别与分级（append-only）----------
+# 分级分布：level ∈ neutral|dissatisfied|angry|extreme；
+# source ∈ rule（词表命中/无线索快路）| llm（辅模型判定）| fail（LLM 失败/不可用，
+# fail-open 回落词表口径）。触发率 = source=llm 占比；失败率 = source=fail 占比。
+EMOTION_LEVEL = Counter(
+    "emotion_level_total", "情绪分级分布（按等级与归因）",
+    labelnames=("level", "source"),
+)
+
+
+def record_emotion_level(level: str, source: str = "rule") -> None:
+    """情绪分级打点（埋点绝不影响输入评估主链路）。"""
+    try:
+        EMOTION_LEVEL.labels(
+            level=level or "neutral", source=source or "rule",
+        ).inc()
+    except Exception:  # noqa: BLE001
+        pass
+
+
+# ---------- P2-3 坐席工作台：SLA 超时（append-only）----------
+# 语义：工单从创建起算 HANDOFF_SLA_SECONDS，超时（未解决已过期 / 解决时间晚于
+# 截止时间）首次被观测时计数一次；观测去重由 handoff board 负责
+# （Redis SET / 进程内集合），本指标只累加「新增超时工单数」。
+HANDOFF_SLA_BREACH = Counter(
+    "handoff_sla_breach_total", "转人工工单 SLA 超时数（首次观测去重）",
+)
+
+
+def record_handoff_sla_breach(count: int = 1) -> None:
+    """SLA 超时打点（count = 本次新观测到的超时工单数）。"""
+    try:
+        if count > 0:
+            HANDOFF_SLA_BREACH.inc(count)
+    except Exception:  # noqa: BLE001
+        pass

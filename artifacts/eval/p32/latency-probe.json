@@ -1,0 +1,93 @@
+{
+  "protocol": "turn-latency-probe-v1",
+  "dataset": "app/evaluation/cases_large.json",
+  "per_intent": 2,
+  "sampled_cases": [
+    "complaint_1",
+    "complaint_2",
+    "greeting_1",
+    "greeting_2",
+    "order_query_001_1",
+    "order_query_001_2",
+    "product_shoe_1",
+    "product_shoe_2",
+    "return_query_progress",
+    "return_unshipped_direct",
+    "kb_退换货政策_1",
+    "kb_退换货政策_2"
+  ],
+  "n_cases": 12,
+  "n_calls": 30,
+  "overall": {
+    "n": 30,
+    "p50_ms": 3738.7,
+    "p95_ms": 10047.6,
+    "max_ms": 22116.6,
+    "mean_ms": 4725.5
+  },
+  "by_intent": {
+    "complaint": {
+      "n": 6,
+      "p50_ms": 6932.2,
+      "p95_ms": 19241.1,
+      "max_ms": 22116.6,
+      "mean_ms": 8808.3
+    },
+    "greeting": {
+      "n": 3,
+      "p50_ms": 2640.0,
+      "p95_ms": 3582.9,
+      "max_ms": 3687.7,
+      "mean_ms": 2940.8
+    },
+    "order_query": {
+      "n": 6,
+      "p50_ms": 3533.5,
+      "p95_ms": 4934.1,
+      "max_ms": 5184.9,
+      "mean_ms": 3449.1
+    },
+    "product_consult": {
+      "n": 5,
+      "p50_ms": 3481.1,
+      "p95_ms": 5553.9,
+      "max_ms": 5742.0,
+      "mean_ms": 4045.9
+    },
+    "return_request": {
+      "n": 5,
+      "p50_ms": 3042.8,
+      "p95_ms": 5994.5,
+      "max_ms": 6075.3,
+      "mean_ms": 4068.1
+    },
+    "unspecified": {
+      "n": 5,
+      "p50_ms": 4293.1,
+      "p95_ms": 5067.3,
+      "max_ms": 5134.2,
+      "mean_ms": 3765.5
+    }
+  },
+  "react_steps": {
+    "n": 12,
+    "p50_ms": 3.0,
+    "p95_ms": 3.0,
+    "max_ms": 3.0,
+    "mean_ms": 2.5
+  },
+  "failures": [],
+  "note": "",
+  "recommendation": {
+    "max_react_steps": 8,
+    "llm_call_p95_seconds": 10.05,
+    "required_budget_seconds": 80.4,
+    "observed_max_react_steps": 3.0,
+    "formula": "max_react_steps × P95(llm_call) < turn_budget_seconds"
+  },
+  "current_settings": {
+    "turn_budget_seconds": 300.0,
+    "max_react_steps": 8,
+    "llm_timeout_seconds": 60.0
+  }
+}

@@ -243,7 +243,7 @@ def _build_services() -> dict:
         from app.evaluation.evaluator import Evaluator
         from app.evaluation.sandbox import Sandbox
 
-        sandbox = Sandbox(mode="multi" if settings.multi_agent_enabled else "single")
+        sandbox = Sandbox()
         return Evaluator(
             sandbox=sandbox,
             client=OpenAI(
@@ -579,11 +579,16 @@ def _cmd_human_eval_worker(
     - 循环领取评审任务（SKIP LOCKED + lease token，多实例安全）；
     - 空闲时按 queued/retry_wait 的最小 next_run_at 决定睡眠时长（最多
       poll_seconds），不再依赖外部 Cron 触发；
-    - 单次 --human-eval 命令与部署调度保持不动（两种模式可并存）。
+    - 空闲分支顺带队列指标上报与保留期清理（monotonic 节流，间隔
+      human_eval_worker_cleanup_interval_seconds，默认日频）；
+    - 单次 --human-eval 命令与部署调度保持不动（两种模式可并存，
+      SKIP LOCKED 天然幂等）；循环级异常只记日志不退出（对齐
+      human_publish_worker 的常驻容错口径）。
     """
     import time
 
     from app.evolution.human_evaluator import HumanKnowledgeEvaluator
+    from app.observability.metrics import set_human_eval_stats
 
     store = svc["store"]
     evaluator = HumanKnowledgeEvaluator(
@@ -595,17 +600,36 @@ def _cmd_human_eval_worker(
     )
     log.info("human_eval_worker started pid=%s poll=%ss", os.getpid(), poll_seconds)
     processed = 0
+    cleanup_due = time.monotonic()  # 启动后第一个空闲周期即执行一轮清理
     while True:
+        delay = float(poll_seconds)
         try:
             if evaluator.process_once():
                 processed += 1
                 continue
+            set_human_eval_stats(store.stats())
+            now = time.monotonic()
+            if now >= cleanup_due:
+                removed = store.cleanup_expired_conversations(
+                    days=settings.human_conversation_retention_days,
+                )
+                cleanup_due = now + float(
+                    settings.human_eval_worker_cleanup_interval_seconds
+                )
+                if removed:
+                    log.info(
+                        "human_eval_worker cleanup removed=%s retention_days=%s",
+                        removed,
+                        settings.human_conversation_retention_days,
+                    )
+            delay = min(
+                float(store.next_evaluation_delay(poll_seconds=poll_seconds)),
+                float(poll_seconds),
+            )
         except KeyboardInterrupt:
             return 0
-        delay = min(
-            float(store.next_evaluation_delay(poll_seconds=poll_seconds)),
-            float(poll_seconds),
-        )
+        except Exception as e:  # noqa: BLE001 - long-running worker boundary
+            log.warning("human_eval_worker loop error: %s", type(e).__name__)
         if max_jobs and processed >= max_jobs:
             return 0
         time.sleep(delay)

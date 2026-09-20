@@ -63,9 +63,11 @@ def compute_reliability(signal: ReliabilitySignal) -> float:
     if signal.budget_exhausted:
         return TIER_BUDGET_EXHAUSTED
 
-    # 特殊规则覆盖（如业务升级上限由调用方直接给出）
+    # 特殊规则覆盖（如业务升级上限由调用方直接给出）：overrides 语义是
+    # 「上限，只能压低」——多个上限同轮命中取最严（升级上限 0.5 与输出
+    # 安全硬上限 0.2 同时命中时应取 0.2）
     if signal.overrides:
-        value = max(signal.overrides.values())
+        value = min(signal.overrides.values())
         value = _apply_caps(value, signal)
         return round(value, 4)
 

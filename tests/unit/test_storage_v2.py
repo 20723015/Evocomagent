@@ -1,4 +1,8 @@
-"""storage v2：session_id 贯通（第10期）。"""
+"""storage v2：session_id 贯通（第10期）。
+
+记忆系统重构：会话文档不再携带 short_term_memory（槽位层已删除）——
+旧文件里残留的该字段读取时被忽略（无损升级）。
+"""
 
 from __future__ import annotations
 
@@ -26,13 +30,31 @@ def test_save_explicit_session_id_roundtrip(tmp_path):
     assert loaded["summary"] is None
 
 
-def test_load_returns_session_id_and_stm(tmp_path):
+def test_payload_has_no_short_term_memory(tmp_path):
     path = str(tmp_path / "s3.json")
     save_session(path, [{"role": "user", "content": "hi"}], "sum",
-                 short_term_memory={"k": "v"}, session_id="sid-1")
+                 session_id="sid-1")
+    data = json.loads(tmp_path.joinpath("s3.json").read_text(encoding="utf-8"))
+    assert "short_term_memory" not in data
     loaded = load_session(path)
     assert loaded["session_id"] == "sid-1"
-    assert loaded["short_term_memory"] == {"k": "v"}
+    assert "short_term_memory" not in loaded
+
+
+def test_legacy_file_with_short_term_memory_still_loads(tmp_path):
+    """旧文件（v2 带 short_term_memory）读取时忽略该字段，不报错。"""
+    path = tmp_path / "legacy.json"
+    path.write_text(json.dumps({
+        "version": 2,
+        "session_id": "sid-legacy",
+        "summary": "s",
+        "messages": [{"role": "user", "content": "hi"}],
+        "short_term_memory": {"schema_version": 2, "facts": []},
+    }, ensure_ascii=False), encoding="utf-8")
+    loaded = load_session(str(path))
+    assert loaded["session_id"] == "sid-legacy"
+    assert loaded["messages"]
+    assert "short_term_memory" not in loaded
 
 
 def test_v1_file_without_session_id(tmp_path):

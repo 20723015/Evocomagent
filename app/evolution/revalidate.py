@@ -454,7 +454,13 @@ def recover_revalidate(
     if ledger_retired:
         ledger.batch_cleanup_published(ledger_retired)
     if found_any or retired:
-        info = index_service.build(backend)
+        # 中危修复 B4：重建沿用 journal 记录的 generation（与正常路径 build 传参
+        # 及 REC_FORWARD 分支激活同代保持一致）；恢复路径漏传会生成新代，
+        # ES 崩溃窗口内 reconcile 会误判 BLOCKED。journal 缺该字段时回退新 id
+        # （保持可恢复）。
+        info = index_service.build(
+            backend, generation_id=index_info.get("generation_id")
+        )
         index_service.activate(backend, info)
         confirmed, reason = _confirm_revalidate_activation(
             index_service, backend, info.target,

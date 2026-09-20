@@ -20,7 +20,7 @@ from app.stores.sql.schema import metadata
 class _FakeComponents:
     redis = None
     db_engine = None
-    es_client = None
+    es_provider = None
     message_index = ""
     tool_executor = None
     mcp_client = None

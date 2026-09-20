@@ -163,3 +163,80 @@ def test_get_redis_singleton_returns_none_without_server(reset_settings):
     set_redis_for_test(None)  # 明确注入：不可用
     from app.stores.redis_client import get_redis
     assert get_redis() is None
+
+
+class _EvalCapableRedis:
+    """最小 Redis 桩：eval 语义与真 Redis 一致。
+
+    fakeredis 无 lua 支持时 eval 抛异常走 GET+DEL 降级，覆盖不到
+    「eval 成功执行但返回 0（锁不在 Redis）」分支，故专用此桩。
+    """
+
+    def __init__(self):
+        self.kv: dict = {}
+        self.down = False
+
+    def set(self, key, value, nx=False, ex=None):
+        if self.down:
+            raise ConnectionError("redis down")
+        if nx and key in self.kv:
+            return None
+        self.kv[key] = value
+        return True
+
+    def eval(self, script, numkeys, key, *args):
+        if self.down:
+            raise ConnectionError("redis down")
+        if self.kv.get(key) == args[0]:
+            del self.kv[key]
+            return 1
+        return 0
+
+    def get(self, key):
+        if self.down:
+            raise ConnectionError("redis down")
+        return self.kv.get(key)
+
+    def delete(self, key):
+        if self.down:
+            raise ConnectionError("redis down")
+        return self.kv.pop(key, None)
+
+
+def test_release_redis_recovered_still_releases_in_process_lock():
+    """中危修复 A2：acquire 时 Redis 故障降级进程内锁，release 时 Redis 已恢复
+    （eval 成功返回 0 = 锁不在 Redis）——必须继续释放进程内锁，否则泄漏导致
+    同会话后续 acquire 永久 409。"""
+    r = _EvalCapableRedis()
+    r.down = True
+    mgr = SessionLockManager(r, ttl_seconds=60)
+    token = mgr.acquire("u-cur", "s-cur")  # Redis 故障 → 降级进程内锁
+    assert token is not None and ":" in token
+    r.down = False
+    mgr.release("u-cur", "s-cur", token)  # eval 返回 0（锁本就不在 Redis）
+    r.down = True
+    t2 = mgr.acquire("u-cur", "s-cur")
+    assert t2 is not None  # 修复前：进程内锁泄漏 → 此处永久 None
+    mgr.release("u-cur", "s-cur", t2)  # 清理（Redis 仍故障，走进程内释放）
+
+
+def test_load_corrupted_payload_fields_returns_none(tmp_path):
+    """低危修复 B5：payload 字段损坏（consolidated_len 非整数）按损坏处理
+    返回 None（文件版与 Redis 版同口径），ValueError 不逃逸。"""
+    import json
+
+    store = LocalFileSessionStore(tmp_path)
+    path = store.path_for("u1", "s1")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps({
+        "messages": [{"role": "user", "content": "hi"}],
+        "consolidated_len": "abc",
+    }, ensure_ascii=False), encoding="utf-8")
+    assert store.load("u1", "s1") is None
+
+    r = fakeredis.FakeRedis(server=fakeredis.FakeServer())
+    r.set(
+        RedisSessionStore.key("u1", "s1"),
+        json.dumps({"messages": [], "consolidated_len": "abc"}),
+    )
+    assert RedisSessionStore(r).load("u1", "s1") is None

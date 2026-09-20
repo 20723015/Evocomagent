@@ -203,7 +203,14 @@ class TestCompleteHappyPath:
         content = files[0].read_text(encoding="utf-8")
         assert "provenance: upload:up-1" in content
         assert "owner: ops" in content
+        assert "status: active" in content
+        assert "authority: platform" in content
+        assert "effective_date:" in content
         assert "适用范围" in content
+        from app.agent.rag import governance
+
+        metadata = governance.metadata_for(files[0], "uploads/" + files[0].name, content)
+        governance.validate_metadata("uploads/" + files[0].name, metadata)
         # 原件与分片清理
         assert svc._originals.exists(out["doc_id"], "md")
         assert svc._chunks.list_chunks("up-1") == []
@@ -213,6 +220,20 @@ class TestCompleteHappyPath:
         # 幂等 complete
         again = svc.complete("up-1", uploader="ops-a")
         assert again["doc_id"] == out["doc_id"]
+
+    def test_uploaded_markdown_passes_strict_governance(
+        self, tmp_path, monkeypatch,
+    ):
+        svc, (_doc_store, _c, _gen, kb, _tmp) = _build_service(tmp_path, monkeypatch)
+        (kb / "根文档.md").write_text(
+            "---\nstatus: active\nauthority: platform\n"
+            "effective_date: 2026-01-01\n---\n# 根文档\n\n## 说明\n已有内容\n",
+            encoding="utf-8",
+        )
+        monkeypatch.setattr(settings, "rag_doc_metadata_required", True)
+        _upload_two_chunks(svc)
+        out = svc.complete("up-1", uploader="ops-a")
+        assert out["status"] == STATUS_INDEXED
 
     def test_complete_race_cas_guards_unique_winner(self, tmp_path, monkeypatch):
         """并发唯一性语义（确定性分解，不做线程级竞态——调度漂移）：
@@ -518,3 +539,34 @@ class TestGc:
             lock.release()
         assert not svc._stage.trash_exists(svc._doc.get(out["doc_id"]).storage_key)
         assert svc._originals.exists(out["doc_id"], "md")
+
+
+# ============================================================
+# 低危修复 B1/B3：解析超限拒绝 / upload_id fullmatch
+# ============================================================
+def test_parse_worker_truncation_is_rejected_not_silently_kept(tmp_path):
+    """低危修复 B1：解析超限不再静默截断入库——worker 截断只保护 IPC 管道并
+    携带 truncated 标记，parse_guard 按超限拒绝（恢复 _parse_final 长度校验
+    的设计语义）。"""
+    from app.agent.rag.parse_guard import parse_with_timeout
+
+    big = tmp_path / "big.txt"
+    big.write_text("七" * 200_500, encoding="utf-8")  # > kb_upload_max_text_chars
+    with pytest.raises(ValueError, match="超过长度上限"):
+        parse_with_timeout(big, timeout=60)
+
+    ok = tmp_path / "ok.txt"
+    ok.write_text("七天无理由退货", encoding="utf-8")
+    assert "七天无理由退货" in parse_with_timeout(ok, timeout=60)
+
+
+def test_upload_id_rejects_trailing_newline():
+    """低危修复 B3：upload_id 正则改 fullmatch——"abc\\n" 不再借 $+match
+    的尾部换行语义绕过校验。"""
+    from app.agent.rag.upload_service import UploadError, _validate_upload_id
+
+    with pytest.raises(UploadError):
+        _validate_upload_id("abc\n")
+    with pytest.raises(UploadError):
+        _validate_upload_id("abc\nx")
+    assert _validate_upload_id("abc-123") == "abc-123"

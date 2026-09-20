@@ -39,12 +39,16 @@ def _parse_payload(data: dict, session_id: str) -> SessionState:
     consolidated_len = (
         int(raw_len) if raw_len is not None else len(messages)
     )
+    pending = data.get("pending_turn")
+    pending_write = data.get("pending_write")
     return SessionState(
         session_id=data.get("session_id") or session_id,
         user_id=str(data.get("user_id", "") or ""),
         summary=data.get("summary"),
         messages=messages,
-        short_term_memory=data.get("short_term_memory"),
+        # 读侧容错：损坏/异形标记按「无草稿」处理（不因脏字段毁整个会话）
+        pending_turn=pending if isinstance(pending, dict) else None,
+        pending_write=pending_write if isinstance(pending_write, dict) else None,
         version=int(data.get(_LOCK_VERSION_KEY, 0) or 0),
         consolidated_len=consolidated_len,
         updated_at=data.get("updated_at", ""),
@@ -59,7 +63,8 @@ def _payload_of(state: SessionState) -> dict:
         "updated_at": state.updated_at or _now(),
         "summary": state.summary,
         "messages": state.messages,
-        "short_term_memory": state.short_term_memory,
+        "pending_turn": state.pending_turn,
+        "pending_write": state.pending_write,
         "consolidated_len": state.consolidated_len,
         _LOCK_VERSION_KEY: state.version,
     }
@@ -91,7 +96,12 @@ class LocalFileSessionStore:
             return None
         if not isinstance(data, dict) or "messages" not in data:
             return None
-        return _parse_payload(data, session_id)
+        try:
+            return _parse_payload(data, session_id)
+        except (TypeError, ValueError):
+            # 低危修复 B5：字段损坏（如 consolidated_len="abc"）按损坏 payload
+            # 处理，与 JSONDecodeError 同口径返回 None，不让 ValueError 逃逸
+            return None
 
     def _acquire_write_lock(self, path: Path, timeout: float = 2.0):
         """文件级写锁（O_EXCL）：串行化读-判-写，让本地 CAS 具备真单写者语义。
@@ -176,7 +186,11 @@ class RedisSessionStore:
             data = json.loads(raw)
         except (json.JSONDecodeError, TypeError):
             return None
-        return _parse_payload(data, session_id)
+        try:
+            return _parse_payload(data, session_id)
+        except (TypeError, ValueError):
+            # 低危修复 B5：字段损坏按损坏 payload 处理（与文件版同口径）
+            return None
 
     def save(self, user_id: str, session_id: str, state: SessionState,
              new_messages: Optional[list[dict]] = None,

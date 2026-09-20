@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import sys
 
 import pytest
 
@@ -108,3 +109,72 @@ def test_activate_keeps_previous_generation_for_rollback(tmp_path, tmp_kb_dir,
     # 上一代索引文件保留（回滚/热刷新过渡期用）
     assert (tmp_path / "fixed" / f"kb_index.{g1.generation_id}.json").exists()
     assert store.active("numpy").previous_generation_id == g1.generation_id
+
+
+def test_cli_no_activate_then_activates_exact_candidate(
+    tmp_path, tmp_kb_dir, reset_settings, monkeypatch,
+):
+    """发布 CLI 的 build-only 阶段不切指针，提交阶段激活同一候选。"""
+    from app.scripts import build_kb_index
+
+    _configure(tmp_path, reset_settings)
+    settings.kb_dir = str(tmp_kb_dir)
+    settings.kb_write_lock_backend = "file"
+    candidate = tmp_path / "candidate.json"
+    monkeypatch.setattr(build_kb_index, "ROOT", tmp_path)
+    monkeypatch.setattr(build_kb_index, "create_embedder", lambda: FakeEmbedder())
+    monkeypatch.setattr(build_kb_index, "get_engine", lambda: None)
+    monkeypatch.setattr(build_kb_index, "get_redis", lambda: None)
+
+    monkeypatch.setattr(
+        sys, "argv",
+        ["build_kb_index", "--backend", "numpy", "--no-activate",
+         "--json-out", str(candidate)],
+    )
+    build_kb_index.main()
+    store = GenerationStore(tmp_path / "g.json")
+    assert store.active("numpy") is None
+    payload = json.loads(candidate.read_text(encoding="utf-8"))
+
+    monkeypatch.setattr(
+        sys, "argv",
+        ["build_kb_index", "--backend", "numpy", "--activate-candidate", str(candidate)],
+    )
+    build_kb_index.main()
+    assert store.active("numpy").generation_id == payload["generation"]["generation_id"]
+
+
+def test_cli_rejects_stale_candidate_after_concurrent_activation(
+    tmp_path, tmp_kb_dir, reset_settings, monkeypatch,
+):
+    """候选验收期间若活动代已变化，提交必须 CAS 失败，不能覆盖并发发布。"""
+    from app.scripts import build_kb_index
+
+    _configure(tmp_path, reset_settings)
+    settings.kb_dir = str(tmp_kb_dir)
+    settings.kb_write_lock_backend = "file"
+    candidate = tmp_path / "candidate.json"
+    monkeypatch.setattr(build_kb_index, "ROOT", tmp_path)
+    monkeypatch.setattr(build_kb_index, "create_embedder", lambda: FakeEmbedder())
+    monkeypatch.setattr(build_kb_index, "get_engine", lambda: None)
+    monkeypatch.setattr(build_kb_index, "get_redis", lambda: None)
+
+    monkeypatch.setattr(
+        sys, "argv",
+        ["build_kb_index", "--backend", "numpy", "--no-activate",
+         "--json-out", str(candidate)],
+    )
+    build_kb_index.main()
+
+    store = GenerationStore(tmp_path / "g.json")
+    store.activate("numpy", GenerationInfo(
+        generation_id="concurrent", target="unused", embedding_model="fake-embedder",
+    ))
+    monkeypatch.setattr(
+        sys, "argv",
+        ["build_kb_index", "--backend", "numpy", "--activate-candidate", str(candidate)],
+    )
+    with pytest.raises(SystemExit) as exc:
+        build_kb_index.main()
+    assert exc.value.code == 1
+    assert store.active("numpy").generation_id == "concurrent"

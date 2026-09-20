@@ -48,10 +48,9 @@ class PodComponents:
     turns_archive: object | None = None  # ObjectStore（turns 归档）
     limiter: object | None = None  # 阶段三 3.7 UserLimiter
     usage_tracker: object | None = None  # 阶段三 3.7 UsageTracker
-    refund_store: object | None = None  # 阶段三 3.3 一次性确认令牌存储
     handoff_board: object | None = None  # 阶段六 6.1 转人工板
     db_engine: object | None = None  # 阶段八：SQL 正本引擎（db_url 配置时启用）
-    es_client: object | None = None  # 阶段八：ES 客户端（es_url 配置时启用）
+    es_provider: object | None = None  # 修复计划·二轮 5：可恢复 ES provider（Callable[[], ES|None]）
     message_index: str = ""  # 阶段八：对话全文检索索引名（{prefix}-messages）
     tool_executor: object | None = None  # Agent能力强化计划：pod 级工具批次执行器（无状态单例）
     upload_service: object | None = None  # KB 文档上传编排（kb_upload_enabled 且 DB 可用时）
@@ -59,6 +58,17 @@ class PodComponents:
     memory_job_worker: object | None = None  # 阶段F：异步记忆 worker（首次用时惰性装配）
     kb_job_store: object | None = None  # KB 异步建库任务队列（多实例异步改造；DB 可用时）
     human_knowledge_store: object | None = None  # 人工会话知识链路正本（迁移008；DB 可用时）
+
+    def es(self):
+        """当前 ES 客户端（修复计划·二轮 5：单一可恢复 provider）。
+
+        provider 每次调用都反映当前可用性（冷却后自动重建），不缓存启动时结果。
+        """
+        if self.es_provider is not None:
+            return self.es_provider()
+        from app.agent.rag.es_util import get_es_client
+
+        return get_es_client()
 
 
 def build_openai_client() -> OpenAI:
@@ -79,7 +89,7 @@ def build_openai_client() -> OpenAI:
 def build_pod_components() -> PodComponents:
     """构建 pod 级组件；MCP 启用时建立共享连接（失败即降级 None，走本地工具）。"""
     from app.stores.locks import SessionLockManager
-    from app.stores.memory_store import LocalFileLTMStore, RedisLTMStore
+    from app.stores.memory_store import LocalFileLTMStore
     from app.stores.redis_client import get_redis
     from app.stores.session_store import LocalFileSessionStore, RedisSessionStore
 
@@ -116,16 +126,25 @@ def build_pod_components() -> PodComponents:
     # 否则按 session_store_backend 选择：auto=历史行为（Redis 可用→Redis，
     # 否则文件）；file=显式文件（Redis 仅锁/限流）；redis=强制 Redis
     #（不可用且未 redis_required → 降级文件并告警）。
+    #
+    # 记忆系统重构：LTM 不再以 Redis 为唯一主存储——SQL 正本 + Redis
+    # cache-aside 读缓存（与会话热缓存同模式）；无 SQL 时 LTM 落文件，
+    # Redis 只做会话/锁/限流（eviction 静默丢记忆 + 跨存储无事务两个坑）。
     from app.stores.sql.engine import get_engine
 
     engine = get_engine()
     backend = settings.session_store_backend
     if engine is not None:
+        from app.stores.memory_store import CachedLTMStore
         from app.stores.sql.memory_store import SqlLTMStore
         from app.stores.sql.session_store import SqlSessionStore
 
         session_store = SqlSessionStore(engine, redis=redis)
-        ltm_store = SqlLTMStore(engine)
+        # redis=None → 裸 SqlLTMStore（无缓存层，语义与 CachedLTMStore 无缓存等价）
+        ltm_store = (
+            CachedLTMStore(SqlLTMStore(engine), redis)
+            if redis is not None else SqlLTMStore(engine)
+        )
     elif backend == "file":
         if redis is not None:
             logging.getLogger("app.server.deps").info(
@@ -141,12 +160,23 @@ def build_pod_components() -> PodComponents:
         session_store = LocalFileSessionStore(settings.session_dir)
         ltm_store = LocalFileLTMStore(settings.memory_dir)
     elif redis is not None:
+        logging.getLogger("app.server.deps").warning(
+            "SESSION_STORE_BACKEND=redis：会话走 Redis，但记忆不再以 Redis "
+            "为唯一主存储（eviction 静默丢记忆），LTM 落本地文件——"
+            "生产请配置 DB_URL 走 SQL 正本"
+        )
         session_store = RedisSessionStore(redis)
-        ltm_store = RedisLTMStore(redis)
+        ltm_store = LocalFileLTMStore(settings.memory_dir)
     else:
         session_store = LocalFileSessionStore(settings.session_dir)
         ltm_store = LocalFileLTMStore(settings.memory_dir)
-    locks = SessionLockManager(redis, ttl_seconds=settings.session_lock_ttl_seconds)
+    # 修复计划·一：生产 redis_required=true 时锁后端故障 fail-closed（503），
+    # 不再降级进程内锁（多 Pod 各自本地锁 = 同一会话可被并发写）
+    locks = SessionLockManager(
+        redis,
+        ttl_seconds=settings.session_lock_ttl_seconds,
+        redis_required=settings.redis_required,
+    )
 
     # 2.4/2.8：S3/OSS 兼容对象存储共享客户端——turns 归档、上传分片、上传原件
     # 复用同一 S3 client，通过不同 prefix 隔离（turns/、uploads/、originals/）。
@@ -182,31 +212,25 @@ def build_pod_components() -> PodComponents:
 
     # 阶段三 3.7：用户级限流/配额 + LLM 用量归集
     from app.security.ratelimit import UsageTracker, UserLimiter, install_usage_tracking
-    from app.security.refunds import (
-        InProcessConfirmationStore,
-        RedisConfirmationStore,
-    )
 
-    limiter = UserLimiter(redis)
+    limiter = UserLimiter(redis, redis_required=settings.redis_required)
     usage_tracker = UsageTracker()
     install_usage_tracking(client, usage_tracker)
     # 阶段四 4.4：韧性包装（重试/超时/pod 级信号量/降级链/廉价任务路由），
-    # 装在 usage 外层 → 重试前的用量已归集，指标同时反映真实记账
+    # 装在 usage 外层 → 重试前的用量已归集，指标同时反映真实记账。
+    # 修复计划·四：注入 limiter → 每次真实尝试原子预留/按 usage 结算。
     from app.llm.client import install_resilience
 
-    install_resilience(client, settings.model_name)
-    refund_store = (
-        RedisConfirmationStore(redis) if redis is not None
-        else InProcessConfirmationStore()
-    )
+    install_resilience(client, settings.model_name, limiter=limiter)
     from app.handoff.board import get_board
 
     handoff_board = get_board(redis)
 
-    # 阶段八：ES 客户端（对话全文检索 / KB 检索后端；不可达 → None，检索侧有降级）
+    # 阶段八：ES（对话全文检索 / KB 检索后端）——修复计划·二轮 5：
+    # 不保存启动时固定客户端，注入可恢复 provider（readiness/搜索/Outbox/RAG 共用）
     from app.agent.rag.es_util import get_es_client
 
-    es_client = get_es_client()
+    es_provider = get_es_client
 
     # Agent能力强化计划·改造二：pod 级工具批次执行器（无状态，仅持全局
     # 并发信号量）；CLI/评估自建并负责 shutdown
@@ -239,10 +263,9 @@ def build_pod_components() -> PodComponents:
         turns_archive=turns_archive,
         limiter=limiter,
         usage_tracker=usage_tracker,
-        refund_store=refund_store,
         handoff_board=handoff_board,
         db_engine=engine,
-        es_client=es_client,
+        es_provider=es_provider,
         message_index=f"{settings.es_index_prefix}-messages",
         tool_executor=tool_executor,
         upload_service=upload_service,
@@ -301,13 +324,20 @@ def _build_upload_service(engine, redis, object_store=None, job_store=None):
             chunker=chunk_kb_dir,
             strict_build=True,
         )
-        # 2.8：分片/原件与 turns 共用同一 S3 client（不同 prefix 隔离）；
-        # object_store 为 None 时维持本地（开发）
-        chunk_storage = None
-        originals = None
-        if object_store is not None and settings.kb_upload_storage == "s3":
+        # 修复计划·三：KB_UPLOAD_STORAGE=s3 时对象存储不可用 → 上传端点 503，
+        # 绝不退回 Pod 本地文件（多 Pod 数据分裂）。未配置 s3 才用本地开发存储。
+        if settings.kb_upload_storage == "s3":
+            if object_store is None:
+                log.warning(
+                    "KB_UPLOAD_STORAGE=s3 但对象存储不可用：上传服务不装配"
+                    "（端点返回 503，不退回本地文件）"
+                )
+                return None
             chunk_storage = S3ChunkStorage(object_store, prefix="uploads")
             originals = OriginalStore(object_store=object_store)
+        else:
+            chunk_storage = build_chunk_storage()
+            originals = OriginalStore()
         return DocumentUploadService(
             doc_store=SqlDocumentStore(engine),
             control_store=KbControlStore(engine),
@@ -316,8 +346,8 @@ def _build_upload_service(engine, redis, object_store=None, job_store=None):
             engine=engine,
             redis=redis,
             kb_root=root / settings.kb_dir,
-            chunk_storage=chunk_storage or build_chunk_storage(),
-            originals=originals or OriginalStore(),
+            chunk_storage=chunk_storage,
+            originals=originals,
             job_store=job_store,
         )
     except Exception as e:
@@ -336,13 +366,15 @@ def build_agent(
     credentials: dict | None = None,
     enforce_order_ownership: bool | None = None,
 ):
-    """按 user_id/session_id 构造 Agent（单 Agent/多 Agent 同一入口）。
+    """按 user_id/session_id 构造 EcomAgent（单 Agent）。
 
     credentials 为请求级外部凭证（3.2），随 ToolContext 注入，永不进 prompt/日志；
     enforce_order_ownership 由配置注入（不传则 Agent 内跟随全局 settings）。
     """
     components = components or build_pod_components()
-    kwargs = dict(
+    from app.agent.chat import EcomAgent
+
+    return EcomAgent(
         user_id=user_id,
         session_id=session_id or None,
         client=components.client,
@@ -361,10 +393,3 @@ def build_agent(
             else settings.enforce_order_ownership
         ),
     )
-    if settings.multi_agent_enabled:
-        from app.multi_agent.orchestrator import MultiAgentOrchestrator
-
-        return MultiAgentOrchestrator(**kwargs)
-    from app.agent.chat import EcomAgent
-
-    return EcomAgent(**kwargs)

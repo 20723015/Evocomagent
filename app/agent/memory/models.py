@@ -7,7 +7,7 @@ import math
 import re
 import uuid
 from dataclasses import asdict, dataclass, replace
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Iterable, Optional
 
 
@@ -48,6 +48,20 @@ MEMORY_KEY_SPECS: dict[str, MemoryKeySpec] = {
 
 _CUSTOM_KEY_RE = re.compile(r"^custom\.[a-z0-9][a-z0-9_]{0,63}$")
 _LEGACY_KEY_RE = re.compile(r"^legacy\.[a-f0-9]{16,64}$")
+_PHONE_RE = re.compile(r"1[3-9]\d{9}")
+
+
+def mask_sensitive(content: str) -> str:
+    """记忆链路统一脱敏口径（批次4·Review #3）：手机号等直接 PII 替换为占位符。
+
+    业务例外（有意保留）：姓名/收货地址为客服业务必需 PII，保留入库，
+    依赖存储访问控制保护——见 docs/第7期-Memory短期记忆与长期记忆.md 与
+    values-production.yaml 注释。
+
+    写侧唯一实现（提取/sweep 共用）；放在 models 而非上层模块，避免
+    「事实模型 → 提取实现」的反向依赖。
+    """
+    return _PHONE_RE.sub("[已脱敏号码]", content)
 
 
 def key_spec(fact_key: str) -> Optional[MemoryKeySpec]:
@@ -137,7 +151,10 @@ class MemoryMutation:
 
 
 def _now() -> str:
-    return datetime.now().isoformat(timespec="seconds")
+    # 低危修复 B6 补遗：写侧时基统一 UTC aware（+00:00 后缀），读侧
+    # _created_at_utc 按 tz-aware 解析；本地 naive 时钟在 UTC+8 部署下
+    # 会让事实时间戳偏离 8 小时
+    return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
 def _eligible(mutation: MemoryMutation) -> tuple[bool, Optional[MemoryKeySpec]]:
@@ -222,7 +239,14 @@ def apply_memory_mutations(
                 continue
             replaced: list[MemoryFact] = [target] if target is not None else []
         else:
-            if len(same_key) == 1 and same_key[0].content.strip().casefold() == content.casefold():
+            # 幂等守卫：同键同内容 → 无操作。键迁移（target 从 legacy 键并入
+            # same_key）即使内容相同也是真实变更（键变化），必须放行——
+            # 否则 sweep 的 legacy 键规范化会被误判为 no-op（阶段3 修复）
+            if (
+                len(same_key) == 1
+                and same_key[0].fact_key == mutation.fact_key
+                and same_key[0].content.strip().casefold() == content.casefold()
+            ):
                 continue
             replaced = same_key
 

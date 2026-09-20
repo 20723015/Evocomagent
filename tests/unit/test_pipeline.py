@@ -86,7 +86,7 @@ def make_services(tmp_path, clock=None, **overrides):
         kb_dir=kb,
         state_dir=dirs["state"],
         output_dir=dirs["output"],
-        session_paths=[],
+        session_paths=overrides.get("session_paths") or [],
         clock=clock,
         evaluator_factory=overrides.get("evaluator_factory"),
         eval_cases=overrides.get("eval_cases") or [],
@@ -455,6 +455,83 @@ def test_approve_publishes_through_pipeline(tmp_path, evolve_on):
     assert len(list((svc["kb_dir"] / "evolved").glob("*.md"))) == 1
 
 
+# ============================================================
+# publish_approved 重接地基准推进条件（中危修复 B3）
+# ============================================================
+def _approved_candidate(svc, cid="cidB", turn_id="tB"):
+    candidate = CandidateQA(
+        candidate_id=cid, turn_id=turn_id, question="运费谁承担？",
+        answer="质量问题退货运费由商家承担，非质量问题由顾客承担。",
+        intent="after_sale", confidence=1.0, filter_state="pending",
+    )
+    svc["ledger"].add_pending(candidate, reason="judge_failed")
+    return svc["ledger"].approve(cid)
+
+
+def test_approve_publish_failure_does_not_advance_baseline(tmp_path, evolve_on):
+    """发布失败 → finally 不得推进 last_human_generation（修复前失败也盖章，
+    抑制下一次 run 的重接地触发）。"""
+    svc = make_services(tmp_path)
+    write_turn(svc["turns_dir"], "t1")
+    svc["pipeline"].run()
+    svc["pipeline"].record_current_generation()
+    before = svc["pipeline"]._read_last_human_generation()
+    assert before
+
+    approved = _approved_candidate(svc)
+
+    def boom(*args, **kwargs):
+        raise RuntimeError("publish exploded")
+
+    svc["pipeline"]._publish = boom
+    with pytest.raises(RuntimeError):
+        svc["pipeline"].publish_approved([approved])
+    assert svc["pipeline"]._read_last_human_generation() == before
+
+
+def test_approve_with_unreviewed_human_change_keeps_baseline(tmp_path, evolve_on):
+    """进入时存在未核对的人工 generation 变更（last_human 落后于活动代）→
+    approve 成功也不推进基准，留给下一次 run 的 _maybe_revalidate 重接地。"""
+    svc = make_services(tmp_path)
+    write_turn(svc["turns_dir"], "t1")
+    svc["pipeline"].run()  # 正常落账：last_human == 活动 generation
+    # 模拟人工变更：基准回拨到陈旧代 → 与活动代不一致
+    (svc["state_dir"] / "last_human_generation.json").write_text(
+        json.dumps({"backend": "numpy", "generation_id": "g-stale-human"},
+                   ensure_ascii=False),
+        encoding="utf-8",
+    )
+
+    approved = _approved_candidate(svc)
+    report = svc["pipeline"].publish_approved([approved])
+    assert report.sedimented == 1
+    # 修复前：approve 成功 → 无条件 record → 基准被推进（人工变更被吞掉）
+    assert svc["pipeline"]._read_last_human_generation() == "g-stale-human"
+
+
+def test_approve_in_run_pairwise_dedup(tmp_path, evolve_on):
+    """低危修复 C1：同批 approve 的近重复候选只发布一条（批内 pairwise 去重，
+    与机器人路径同阈值同平局规则），被去重者按 duplicate_on_approve 终结。"""
+    svc = make_services(tmp_path)
+    base = dict(
+        question="国际快递多久能到？",
+        answer="国际件一般 7-10 个工作日送达，具体视目的地海关而定。",
+        intent="after_sale", confidence=1.0, filter_state="pending",
+    )
+    c1 = CandidateQA(candidate_id="cidC1", turn_id="tC1", **base)
+    c2 = CandidateQA(candidate_id="cidC2", turn_id="tC2", **base)
+    svc["ledger"].add_pending(c1, reason="judge_failed")
+    svc["ledger"].add_pending(c2, reason="judge_failed")
+    a1 = svc["ledger"].approve("cidC1")
+    a2 = svc["ledger"].approve("cidC2")
+
+    report = svc["pipeline"].publish_approved([a1, a2])
+    assert report.sedimented == 1
+    assert report.skipped["duplicate"] == 1
+    published = svc["ledger"].published()
+    assert ("cidC1" in published) != ("cidC2" in published)  # 恰好一条发布
+
+
 def test_approve_unknown_pending(tmp_path, evolve_on):
     svc = make_services(tmp_path)
     assert svc["ledger"].approve("nope") is None
@@ -736,3 +813,54 @@ def test_replacement_crash_switched_catches_up_ledger(tmp_path, evolve_on):
     # 幂等：journal 已归档，再次运行不报错、状态不变
     svc["pipeline"].run()
     assert "cid-old" not in svc["ledger"].published()
+
+
+# ============================================================
+# legacy 会话挖掘走 processed 游标（中危修复 A4）
+# ============================================================
+def test_legacy_mining_respects_processed_cursor(tmp_path, evolve_on):
+    """legacy 会话中被 judge 拒绝的候选：_finalize 已把该轮 mark_processed，
+    重复 run 不得再次送审（修复前 legacy 支路不查游标 → 每轮重复烧 judge）。"""
+    session_file = tmp_path / "legacy_session.json"
+    session_file.write_text(json.dumps({
+        "messages": [
+            {"role": "user", "content": "七天无理由退货可以吗"},
+            {"role": "assistant", "content": "", "tool_calls": [{
+                "id": "call-1", "type": "function",
+                "function": {"name": "search_knowledge", "arguments": "{}"},
+            }]},
+            {"role": "tool", "tool_call_id": "call-1", "content": json.dumps({
+                "success": True,
+                "results": [{
+                    "source_path": "退货政策.md", "doc": "退货政策",
+                    "section": "七天无理由", "score": 0.9,
+                    "text": "支持七天无理由退货，运费由顾客承担",
+                }],
+            }, ensure_ascii=False)},
+            {"role": "assistant", "content": json.dumps({
+                "reply": "可以退货，运费由您承担。" + "补充" * 10,
+                "intent": "return_request", "confidence": 0.9,
+            }, ensure_ascii=False)},
+        ],
+    }, ensure_ascii=False), encoding="utf-8")
+
+    judge_calls = {"n": 0}
+
+    def reject_judge(qa, sources):
+        judge_calls["n"] += 1
+        return ValueDecision(
+            worth_saving=False, quality_score=0.9,
+            question=qa.question, answer=qa.answer, reason="质量不足",
+        )
+
+    svc = make_services(
+        tmp_path,
+        value_judge=StubValueJudge(reject_judge),
+        session_paths=[str(session_file)],
+    )
+    report = svc["pipeline"].run()
+    assert judge_calls["n"] == 1
+    assert report.skipped["judge_rejected"] == 1
+
+    report2 = svc["pipeline"].run()
+    assert judge_calls["n"] == 1  # 修复前：legacy 不查游标，第二次重复送审

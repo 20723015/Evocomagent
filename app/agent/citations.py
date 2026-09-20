@@ -111,7 +111,7 @@ def verify_citations(reply: str, sources: set[str]) -> dict:
 
 
 def apply_citation_policy(result, sources: set[str]) -> dict | None:
-    """Agent 内部分级处置（改造三；单/多 Agent 同约定）。
+    """Agent 内部分级处置（改造三）。
 
     - 无引用（纯闲聊/纯工具数据）→ 放行；
     - 零检索却有引用 → requires_human=true + confidence 压低 + 告警；
@@ -131,6 +131,8 @@ def apply_citation_policy(result, sources: set[str]) -> dict | None:
         return verdict  # 无引用 → 放行
     log = logging.getLogger("app.agent.citations")
     if not sources:
+        # 口径说明：confidence 随后由 TurnFinalizer 用程序可靠度整体覆盖，
+        # 此处的压低只影响覆盖前的中间值
         result.requires_human = True
         result.confidence = round(min(result.confidence, 0.5), 4)
         log.warning("citation.zero_source cited=%s", verdict["cited"])

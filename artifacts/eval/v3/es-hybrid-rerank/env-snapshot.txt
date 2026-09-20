@@ -1,0 +1,27 @@
+# C 批 env 清单（build 与 eval 必须逐键一致）
+PARSER_CHUNKER_VERSION = 2026-09-15.1
+config_fingerprint     = 64b1c95282fd1250
+
+rag_backend = es
+rag_hybrid = True
+rag_hybrid_recall_k = 60
+rag_rerank = bge-reranker-v2-m3
+rerank_endpoint_url = http://localhost:8001/rerank
+rerank_model = 
+rag_rerank_fail_closed = True
+rag_min_relevance_score = None
+rag_query_normalize = True
+rag_parent_merge = True
+rag_prefix_dedup = True
+rag_contextual_index = False
+rag_doc_metadata_required = False
+embedding_provider = sophnet
+embedding_model = bge-m3
+extraction_model = deepseek-flash
+es_url = http://localhost:19200
+es_index_prefix = ecom
+retrieval_eval_dataset_path = app/evaluation/retrieval_cases_v3.json
+rag_rejection_min_top1 = 0.549
+rag_rejection_min_gap = 0.0
+rag_rejection_min_coverage = 0.0
+rag_rejection_min_rerank = None

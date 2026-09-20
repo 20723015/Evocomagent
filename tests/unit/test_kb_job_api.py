@@ -19,7 +19,7 @@ from app.stores.sql.document_store import STATUS_INDEXED
 class _FakeComponents:
     redis = None
     db_engine = None
-    es_client = None
+    es_provider = None
     message_index = ""
     tool_executor = None
     mcp_client = None  # lifespan 收尾访问

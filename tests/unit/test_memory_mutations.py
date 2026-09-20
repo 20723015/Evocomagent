@@ -10,7 +10,7 @@ from types import SimpleNamespace
 import pytest
 from sqlalchemy import create_engine, inspect
 
-from app.agent.memory.extraction import extract_long_term_facts
+from app.agent.memory.extraction import _parse_mutation_items, extract_long_term_facts
 from app.agent.memory.long_term import LongTermMemory
 from app.agent.memory.models import (
     ACTIVE,
@@ -20,7 +20,6 @@ from app.agent.memory.models import (
     MemoryMutation,
     apply_memory_mutations,
 )
-from app.agent.memory.short_term import ShortTermMemory
 from app.agent.context import ToolContext
 from app.agent.tools.memory_tool import recall_user_memory
 from app.stores.base import StorageUnavailableError
@@ -147,22 +146,6 @@ def test_target_fact_id_migrates_legacy_fact_to_controlled_key():
     assert next(f for f in records if f.active).fact_key == "preference.color"
 
 
-def test_stm_applies_structured_mutation_and_malformed_output_keeps_state():
-    client = FakeChatClient().enqueue_chat(json.dumps({
-        "mutations": [{
-            "operation": "upsert", "fact_key": "preference.color",
-            "content": "用户喜欢蓝色", "category": "preference",
-            "confidence": 0.95, "target_fact_id": "", "explicit": True,
-            "evidence": "我喜欢蓝色",
-        }],
-    }, ensure_ascii=False)).enqueue_chat("not-json")
-    stm = ShortTermMemory()
-    stm.update(client, "m", [{"role": "user", "content": "我喜欢蓝色"}])
-    assert stm.facts == ["用户喜欢蓝色"]
-    stm.update(client, "m", [{"role": "user", "content": "随便聊聊"}])
-    assert stm.facts == ["用户喜欢蓝色"]
-
-
 def test_ltm_invalid_json_keeps_mutations_empty():
     client = FakeChatClient().enqueue_chat("invalid")
     mutations, summary = extract_long_term_facts(
@@ -231,9 +214,7 @@ def test_recall_returns_active_facts_only_with_additive_metadata():
         [_mutation("upsert", "preference.color", "用户喜欢蓝色")],
         max_active=50,
     )
-    manager = SimpleNamespace(
-        memory_enabled=True, ltm=ltm, stm=SimpleNamespace(facts=[]),
-    )
+    manager = SimpleNamespace(memory_enabled=True, ltm=ltm)
     result = recall_user_memory(ctx=ToolContext(user_id="u1", memory=manager))
     assert [item["content"] for item in result["long_term_facts"]] == ["用户喜欢蓝色"]
     assert result["long_term_facts"][0]["fact_key"] == "preference.color"
@@ -623,3 +604,37 @@ def test_sql_legacy_schema_upgrade_adds_evidence_column(tmp_path):
     reloaded = LongTermMemory(user_id="u1", store=store)
     reloaded.load()
     assert reloaded.active_facts[0].evidence == "我喜欢蓝色"
+
+
+# ============================================================
+# 写侧 PII 脱敏（记忆系统重构：mask_sensitive 移入 models，唯一实现）
+# ============================================================
+class TestSensitiveMasking:
+    """批次4（Review #3）口径：content 与 evidence 同口径脱敏——落库内容
+    不含直接 PII；姓名为客服业务必需 PII，保留入库（存储访问控制保护）。"""
+
+    def test_phone_number_masked(self):
+        from app.agent.memory.models import mask_sensitive
+
+        assert mask_sensitive("我喜欢13800138000") == "我喜欢[已脱敏号码]"
+        assert mask_sensitive("没有号码") == "没有号码"
+
+    def test_ltm_mutation_masked_before_store(self):
+        raw = "我喜欢13800138000"
+        mutations = _parse_mutation_items([{
+            "operation": "upsert", "fact_key": "custom.preference",
+            "content": "偏好号码13800138000", "category": "preference",
+            "confidence": 0.9, "explicit": True,
+            "evidence": raw,
+        }], raw)
+        assert len(mutations) == 1
+        assert "13800138000" not in mutations[0].content
+        assert mutations[0].content == "偏好号码[已脱敏号码]"
+        # evidence 精确匹配对原文校验 → 落库为脱敏版（可审计但不含直接 PII）
+        assert mutations[0].evidence == "我喜欢[已脱敏号码]"
+
+    def test_name_is_documented_business_exception(self):
+        """姓名不做脱敏（客服业务必需），仅手机号等直接 PII 替换。"""
+        from app.agent.memory.models import mask_sensitive
+
+        assert mask_sensitive("我叫王小明") == "我叫王小明"

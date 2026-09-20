@@ -5,7 +5,7 @@
 存储层另有兜底校验）。
 """
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import AliasChoices, BaseModel, Field, field_validator
 
 from app.security.identifiers import InvalidIdentifier, validate_identifier
 
@@ -22,6 +22,16 @@ def _check_session_id(v: str) -> str:
         return validate_identifier(v, "session_id", allow_empty=True)
     except InvalidIdentifier as e:
         raise ValueError(str(e)) from e
+
+
+def _check_optional_id(field_name: str):
+    def _check(v: str) -> str:
+        try:
+            return validate_identifier(v, field_name, allow_empty=True)
+        except InvalidIdentifier as e:
+            raise ValueError(str(e)) from e
+
+    return _check
 
 
 class ChatRequest(BaseModel):
@@ -47,6 +57,74 @@ class ChatResponse(BaseModel):
     confidence: float
     requires_human: bool
     follow_up_question: str | None = None
+    pending_turn: dict | None = None
+    # 掉线恢复（记忆系统重构·Step6）：非空 = 进入本轮前检测到上次回复未完成
+    # （{turn_id, user_message, started_at}）；客户端可据此提示「上次回复未完成」
+    # 并提供重发入口。本轮正常收尾后该标记已在服务端清除。
+    # P2-3：requires_human 时携带用户可见状态（ticket_id/status/message），
+    # 会话 meta 与工单号对账（SSE 同名字段走 handoff 事件）。
+    handoff: dict | None = None
+
+
+class ChannelMessageRequest(BaseModel):
+    """渠道 webhook 入站消息（P2-2，通用信封；不接真实第三方渠道）。
+
+    - external_user_id：渠道侧用户标识（必填；服务端映射为内部 user_id，
+      渠道不能直接指定内部 user_id）；兼容 user_id 别名；
+    - message：文本内容；兼容 text/content 别名（渠道适配器字段差异）；
+    - session_id 留空 → 该外部用户的默认会话（会话路由确定性）；
+    - message_id 可选（渠道重试对账用；留空服务端生成）。
+    """
+
+    model_config = {"populate_by_name": True}
+
+    external_user_id: str = Field(
+        ...,
+        min_length=1,
+        max_length=64,
+        validation_alias=AliasChoices("external_user_id", "user_id"),
+        description="渠道侧用户标识（服务端映射为内部 user_id）",
+    )
+    message: str = Field(
+        ...,
+        min_length=1,
+        max_length=8000,
+        validation_alias=AliasChoices("message", "text", "content"),
+    )
+    session_id: str = Field("", max_length=128)
+    message_id: str = Field("", max_length=128)
+    metadata: dict = Field(default_factory=dict)
+
+    _external_user_id = field_validator("external_user_id")(_check_user_id)
+    _session_id = field_validator("session_id")(_check_session_id)
+    _message_id = field_validator("message_id")(_check_optional_id("message_id"))
+
+
+class ChannelMessageResponse(BaseModel):
+    """webhook 同步受理结果（出站走 GET /v1/channels/{channel}/outbound 轮询）。"""
+
+    channel: str
+    message_id: str
+    user_id: str          # 映射后的内部用户
+    session_id: str
+    status: str = "replied"
+    outbound_seq: int     # 出站队列序号（轮询 cursor 起点）
+    requires_human: bool
+    handoff: dict | None = None
+
+
+class ChannelOutboundResponse(BaseModel):
+    """渠道出站轮询结果：cursor 之后的出站消息（至少一次投递）。"""
+
+    channel: str
+    messages: list[dict]
+    next_cursor: int
+
+
+class HandoffNoteRequest(BaseModel):
+    """坐席处理备注（P2-3：append-only 留痕，不改变工单状态）。"""
+
+    note: str = Field(..., min_length=1, max_length=4000)
 
 
 class SessionResetRequest(BaseModel):
@@ -63,10 +141,14 @@ class SessionResetResponse(BaseModel):
 
 
 class HealthResponse(BaseModel):
-    """4.1：状态兼容保留 status；components 为依赖明细（readyz 用）。"""
+    """4.1：状态兼容保留 status；components 为依赖明细（readyz 用）。
+
+    修复计划·三：新增 capabilities（能力分级）；status ∈ ready|degraded|not_ready。
+    """
 
     status: str
-    components: dict = {}  # {"redis": "ok"|"degraded"|"error: ...", ...}
+    components: dict = {}  # {"redis": "ok"|"not_configured"|"unavailable", ...}
+    capabilities: dict = {}  # {"chat": "ok"|"not_configured"|"unavailable", ...}
 
 
 class HandoffResolveRequest(BaseModel):

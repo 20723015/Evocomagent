@@ -7,6 +7,8 @@
   / owner），供 7.7 沉淀文档与 7.1 统一元数据规范识别使用。
 - serialize_frontmatter：meta → frontmatter 块（统一序列化正本——
   publisher / revalidate 刷新共用，杜绝三套实现漂移）。
+- decode_text / read_text（批次4）：字节/文件 → 文本的编码回退链
+  （utf-8 → gb18030），替代各处写死的 ``encoding="utf-8"``。
 
 frontmatter 格式示例：
     ---
@@ -23,8 +25,51 @@ frontmatter 格式示例：
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 _BOM = "\ufeff"
+
+# 编码回退链（批次4）：utf-8 优先，其次 gb18030（GBK/GB2312 的超集）。
+# 不含 utf-8-sig——BOM 本身是合法 utf-8 且 normalize_document 已剥，不可达。
+_TEXT_ENCODINGS = ("utf-8", "gb18030")
+# gb18030 能「成功」解码绝大多数随机字节，因此解码后还要按 NUL / 不可打印
+# 控制字符占比再判一次，否则「二进制文件仍解析失败」的语义不成立。
+_CONTROL_CHARS = frozenset(
+    chr(c) for c in list(range(0x00, 0x09)) + [0x0B, 0x0C] + list(range(0x0E, 0x20))
+)
+_CONTROL_RATIO_LIMIT = 0.02
+
+
+def _looks_binary(text: str) -> bool:
+    """含 NUL 或不可打印控制字符占比超限 → 视为二进制（非文本）。"""
+    if "\x00" in text:
+        return True
+    if not text:
+        return False
+    bad = sum(1 for ch in text if ch in _CONTROL_CHARS)
+    return bad / len(text) > _CONTROL_RATIO_LIMIT
+
+
+def decode_text(raw: bytes) -> str:
+    """字节 → 文本：utf-8 → gb18030 依次尝试；全失败抛 ``ValueError``。
+
+    回退顺序固定，不做编码探测（不引入 chardet）；GBK 文本因此不再抛
+    ``UnicodeDecodeError`` 让 strict 构建中止。
+    """
+    for encoding in _TEXT_ENCODINGS:
+        try:
+            text = raw.decode(encoding)
+        except UnicodeDecodeError:
+            continue
+        if not _looks_binary(text):
+            return text
+    raise ValueError("文本解码失败（已尝试 utf-8 / gb18030，疑似二进制内容）")
+
+
+def read_text(path) -> str:
+    """读文件并按编码回退链解码（批次4；唯一文本读取入口）。"""
+    return decode_text(Path(path).read_bytes())
+
 
 # 值中出现这些字符（或首尾空白）时序列化加 JSON 引号。
 # 注意逗号不在列：grounded_on 的单行逗号格式（a.md, b.md）保持既有字节形态，

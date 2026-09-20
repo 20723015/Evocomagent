@@ -2,7 +2,7 @@
 
 阶段B约定：
 - 每轮历史只保存一个 assistant 消息：content = 用户可见回复，结构化字段
-  （intent/confidence/requires_human/follow_up/tools/pending_writes/...）
+  （intent/confidence/requires_human/follow_up/tools/...）
   放入消息 metadata；本轮中间的 assistant(tool_calls) 与 tool 消息在收尾
   时从模型窗口折叠移除——完整结果只进入审计存储（append_log/SQL 行式
   正本 + evolution turn 记录）；
@@ -13,7 +13,7 @@
 
 from __future__ import annotations
 
-import json
+from datetime import datetime, timezone
 
 from app.agent.context_builder import METADATA_KEY
 from app.agent.turn_context import AgentTurnContext
@@ -32,21 +32,44 @@ class TurnRepository:
         self._agent = agent
 
     # ---------- 主入口 ----------
+    def begin_turn(self, ctx: AgentTurnContext) -> None:
+        """轮次开始：把本轮 user 消息先落库，并置 pending_turn 草稿标记。
+
+        与消息同一 save 事务（SQL 同事务；文件/Redis 同一次整包写）。
+        **best-effort**：失败只告警——提交阶段仍会整轮落库，草稿标记只是
+        增强（丢了不丢消息），不得因它中断用户请求。
+
+        草稿在轮次开始（ReAct 之前）置位而非收尾阶段：崩溃窗口最大的一段
+        是 ReAct 循环本身，收尾时才置位等于只覆盖收尾窗口。
+        """
+        agent = self._agent
+        try:
+            agent.flush_session(pending_turn={
+                "turn_id": ctx.turn_id,
+                "user_message": ctx.sanitized_input or ctx.user_input,
+                "started_at": datetime.now(timezone.utc).isoformat(
+                    timespec="seconds"
+                ),
+            })
+        except Exception:  # noqa: BLE001 —— 草稿失败不影响本轮
+            log.warning("turn.begin_persist_failed", exc_info=True)
+
     def commit_turn(self, ctx: AgentTurnContext,
                     result) -> None:
-        """收尾步骤6：折叠本轮消息 → 单条 assistant 消息 → 保存。"""
+        """收尾步骤6：折叠本轮消息 → 单条 assistant 消息 → 保存。
+
+        保存同时清除 pending_turn（收尾成功 = 本轮已完整落库）。
+        """
         agent = self._agent
         # 1. 折叠本轮中间消息，追加最终 assistant 消息（新格式）
         self._collapse_turn(ctx, result)
         # 2. 审计切片（含工具完整结果）进 append_log（SQL 正本逐行落库）
         agent.append_audit_messages(ctx.full_turn_messages)
-        # 3. 确定性 STM（零 LLM）
-        self._update_stm_deterministic()
-        # 4. token 水位压缩（辅助 LLM；预算耗尽跳过，不毁本轮结果）
+        # 3. token 水位压缩（辅助 LLM；预算耗尽跳过，不毁本轮结果）
         self._compress_if_overflow(ctx)
-        # 5. 保存会话（SQL 同事务入队 memory job）
+        # 4. 保存会话（SQL 同事务入队 memory job；清 pending_turn 草稿）
         self._save_session(ctx)
-        # 6. 演进 turn 记录（脱敏；失败不影响主流程）
+        # 5. 演进 turn 记录（脱敏；失败不影响主流程）
         self._record_turn(ctx, result)
 
     # ---------- 折叠 ----------
@@ -68,7 +91,6 @@ class TurnRepository:
             }
             for t in ctx.tool_trace
         ]
-        pending_writes = self._pending_writes(ctx)
         metadata: dict = {
             "schema": METADATA_SCHEMA,
             "turn_id": ctx.turn_id,
@@ -80,8 +102,6 @@ class TurnRepository:
         }
         if ctx.sources:
             metadata["sources"] = sorted(ctx.sources)
-        if pending_writes:
-            metadata["pending_writes"] = pending_writes
         if ctx.indeterminate_writes:
             metadata["indeterminate_writes"] = ctx.indeterminate_writes
         final_message = {
@@ -94,52 +114,7 @@ class TurnRepository:
         # 历史均包含最终答复
         ctx.full_turn_messages.append(final_message)
 
-    def _pending_writes(self, ctx: AgentTurnContext) -> list[dict]:
-        """待用户确认的写操作（跨轮确认所需最小字段集）。"""
-        out: list[dict] = []
-        for record in ctx.write_ops.refund.records:
-            if record.phase.value == "awaiting_confirmation" and record.confirmation_issued:
-                out.append({
-                    "tool": record.tool,
-                    "order_id": record.order_id,
-                })
-        # Review 修复：metadata.pending_writes 只含 tool/order_id/reason——
-        # token 只存确认存储（user+session+refund_id 反向解析），
-        # 绝不进消息 metadata / outbox / 日志 / 模型上下文
-        for entry in ctx.tool_trace:
-            if entry.name != "apply_refund" or not entry.ok:
-                continue
-            try:
-                payload = json.loads(entry.result)
-            except (json.JSONDecodeError, TypeError, ValueError):
-                continue
-            if payload.get("status") == "pending_confirmation":
-                order_id = str(entry.arguments.get("order_id", ""))
-                reason = str(entry.arguments.get("reason", ""))
-                if not any(w.get("order_id") == order_id for w in out):
-                    out.append({
-                        "tool": "apply_refund",
-                        "order_id": order_id,
-                        "reason": reason,
-                    })
-                else:
-                    next(w for w in out if w.get("order_id") == order_id)[
-                        "reason"
-                    ] = reason
-        return out
-
     # ---------- 辅助任务 ----------
-    def _update_stm_deterministic(self) -> None:
-        """阶段F：STM 确定性规则即时提取（零 LLM）；复杂事实走异步 memory job。"""
-        agent = self._agent
-        try:
-            agent.memory_manager.update_short_term_deterministic(
-                agent.raw_messages[-6:],
-                query=agent.current_turn_query or "",
-            )
-        except Exception:
-            log.warning("stm.deterministic_failed", exc_info=True)
-
     def _compress_if_overflow(self, ctx: AgentTurnContext) -> None:
         agent = self._agent
         try:
@@ -161,10 +136,12 @@ class TurnRepository:
         agent = self._agent
         # 文件 memory queue 使用轮次稳定 ID 做幂等键；SQL store 仍以其
         # append-only seq/事务唯一键为正本语义。
+        # pending_turn 显式传 None：收尾成功即清草稿标记。
         agent.flush_session(
             enqueue_memory_job=True,
             turn_messages=ctx.full_turn_messages,
             turn_id=ctx.turn_id,
+            pending_turn=None,
         )
 
     def _record_turn(self, ctx: AgentTurnContext, result) -> None:

@@ -19,6 +19,21 @@ from abc import ABC, abstractmethod
 from app.agent.rag.backends.base import RetrievedChunk
 
 
+class RerankerUnavailable(RuntimeError):
+    """精排器不可用（超时/断连/畸形/部分响应）。
+
+    RAG 修复计划·1/6：调用方必须按降级处理——不得把 RRF 的 0 分当成精排分
+    继续做阈值判断，也不得把未评分候选按旧尺度补进精排结果；
+    生产默认 fail-closed（search_knowledge.success=false）。
+
+    reason：reranker_unavailable（调用失败/畸形）| partial_response（有效分不足）。
+    """
+
+    def __init__(self, message: str = "", reason: str = "reranker_unavailable"):
+        super().__init__(message or reason)
+        self.reason = reason
+
+
 class Reranker(ABC):
     """精排器抽象：对融合后的候选列表重新排序，取前 top_k 个。"""
 
@@ -144,16 +159,18 @@ class HTTPReranker(Reranker):
 
     def rerank(self, query: str, hits: list[RetrievedChunk], top_k: int,
                timeout: float | None = None) -> list[RetrievedChunk]:
-        # 空候选 / top_k<=0：无意义，不发 HTTP 请求
+        """精排；不可用（超时/断连/畸形/部分响应）→ 抛 RerankerUnavailable。
+
+        RAG 修复计划·6：返回的每个候选都必须有合法有限的精排分——缺项/重复/
+        越界/NaN 导致有效分不足 min(top_k, 候选数) 时，整次精排判不可用
+        （reason=partial_response），绝不把未评分候选按旧 vector/RRF 分数补入。
+        """
         if not hits or top_k <= 0:
             return []
         from app.observability.metrics import record_reranker_fallback
-        # 分批调用（TEI/cohere 有单请求批量上限，如 TEI 默认 32）：候选超过
-        # 上限时切片多次请求，index 偏移合并——recall_k 放大后不依赖批次大小。
         batch_size = 30
         attempt = min(self._timeout, timeout) if timeout is not None else self._timeout
         scored: dict[int, float] = {}
-        any_scored = False
         try:
             client = self._get_client()
             headers = {"Content-Type": "application/json"}
@@ -167,7 +184,6 @@ class HTTPReranker(Reranker):
                 resp.raise_for_status()
                 for index, score in self._parse(resp.json()):
                     gi = start + index
-                    # 忽略越界、重复（首见保留）与 NaN/Inf 分数
                     if not 0 <= gi < len(hits):
                         continue
                     if gi in scored:
@@ -175,22 +191,29 @@ class HTTPReranker(Reranker):
                     if not math.isfinite(score):
                         continue
                     scored[gi] = float(score)
-                    any_scored = True
-        except Exception:  # noqa: BLE001 —— 精排失败退回原序（可用性优先）
+        except Exception as e:  # noqa: BLE001 —— 超时/断连/畸形：显式不可用
             record_reranker_fallback()
-            return list(hits[:top_k])
+            raise RerankerUnavailable(
+                f"reranker 调用失败: {type(e).__name__}",
+                reason="reranker_unavailable",
+            ) from e
 
-        if not any_scored:
-            # 响应可解析但没有任何可用分数（全部畸形/越界）→ 也按原序
+        required = min(max(int(top_k), 1), len(hits))
+        if len(scored) < required:
+            # 有效分不足：部分响应一律判不可用（不混用其他分数尺度）
             record_reranker_fallback()
-            return list(hits[:top_k])
+            raise RerankerUnavailable(
+                f"reranker 部分响应：有效分 {len(scored)} < 需要 {required}",
+                reason="partial_response",
+            )
 
-        # 已评分项按精排分数降序在前，未评分项按原召回顺序补位；分数写回
-        # hit.score——下游 filter_hits_by_score（负例拒绝）依赖精排后的分数。
+        # 只返回有合法精排分的候选（按精排分降序），不补入未评分候选。
+        # P1-4：精排分同时写入 rerank_score（联合拒绝的 4 号信号需要独立读取，
+        # 不能在多路 RRF 合并后只剩秩融合分时丢失）。
         for gi, s in scored.items():
+            hits[gi].rerank_score = s
             hits[gi].score = s
-        unscored = [i for i in range(len(hits)) if i not in scored]
-        ordered = sorted(scored, key=lambda gi: scored[gi], reverse=True) + unscored
+        ordered = sorted(scored, key=lambda gi: scored[gi], reverse=True)
         return [hits[i] for i in ordered[:top_k]]
 
 

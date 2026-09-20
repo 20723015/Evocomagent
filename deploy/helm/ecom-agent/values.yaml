@@ -15,11 +15,15 @@ env:
   # 人工客服问答沉淀（首次部署保持 false；开启后只采集显式勾选的工单）
   HUMAN_QA_EVOLUTION_ENABLED: "false"
   HUMAN_CONVERSATION_RETENTION_DAYS: "180"
+  # 修复计划·二/三轮：Reset 删除事件生产开关（仅控制写入；消费者始终处理存量）。
+  # 第一阶段保持 "false"（迁移先行、应用后发）；全部 Pod 升级后再改 "true"。
+  MESSAGE_DELETE_OUTBOX_ENABLED: "false"
   # ---- 状态外置（阶段二）----
   SESSION_STORE_BACKEND: redis
   REDIS_URL: redis://redis-master:6379/0
   REDIS_REQUIRED: "true"
   SESSION_LOCK_TTL_SECONDS: "300"
+  TURN_BUDGET_SECONDS: "120"  # 单轮墙钟预算；terminationGracePeriodSeconds 校验依赖它
   MEMORY_CONSOLIDATE_EVERY: "10"
   MEMORY_CONSOLIDATE_IDLE_MINUTES: "30"
   MEMORY_CONSOLIDATE_SCAN_MINUTES: "5"
@@ -55,8 +59,10 @@ podDisruptionBudget:
   enabled: true
   minAvailable: 1
 
-# SIGTERM：uvicorn 优雅退出（drain 在途请求并持久化）；给足等待时间
-terminationGracePeriodSeconds: 45
+# SIGTERM：uvicorn 优雅退出（drain 在途请求并持久化；断连收尾任务持有会话
+# 租约，须等其结束时释放）。取值 = max(turn_budget_seconds, 30) × 1.5 + 30：
+# turn_budget_seconds 默认 120 → 210 秒。
+terminationGracePeriodSeconds: 210
 
 # KB Index Worker（多实例异步建库改造）：独立 Deployment，无 Service；
 # Web Pod 不启动 Worker（进程门禁 KB_WORKER_ENABLED）。副本数只提高容灾与
@@ -112,6 +118,25 @@ humanEvalCron:
   schedule: "0 2 * * *"
   timeZone: "Asia/Shanghai"
   image: ""
+
+# 常驻人工知识评审 Worker（P2-2）：循环领取评审任务，空闲时上报队列指标
+# 并按保留期清理过期会话。默认关闭；开启需 HUMAN_QA_EVOLUTION_ENABLED=true
+# + REDIS_URL + 共享卷 + OPENAI_API_KEY（渲染校验 fail-fast）。
+# 与 humanEvalCron 的关系：两者幂等（SKIP LOCKED），Worker 常驻后 Cron
+# 可关可留——留则作兜底；多实例安全但默认 1 即可。
+humanEvalWorker:
+  enabled: false
+  replicaCount: 1
+  terminationGracePeriodSeconds: 60
+  podAntiAffinity:
+    required: false
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
 
 humanPublishWorker:
   enabled: false

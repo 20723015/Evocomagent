@@ -22,6 +22,8 @@ SQL 正本归一化 + 异步记忆可靠性 + 事实冲突按主题锚点）。�
   （指标 `turns_missing_final_total`）。
 
 ### 服务端退款确认闸门（`app/agent/refund_gate.py`）
+> **（已废止 2026-09-14）** 本节描述的两段式退款确认实现已随「退款流程简化」
+> 移除；保留原文仅供历史追溯，现行口径见文末新增节。
 - 程序层三态判定：`confirm / cancel / ambiguous`（否定优先；明确确认词或
   唯一待确认的简短肯定回复才 confirm；多笔待确认未带订单号 → 确定性澄清
   问题，零 LLM）；ambiguous 本轮禁止一切写工具。
@@ -104,8 +106,12 @@ SQL 正本归一化 + 异步记忆可靠性 + 事实冲突按主题锚点）。�
 - 工具完整结果只进审计存储（append_log→SQL 行式正本 / evolution turn 记录）；
   后续上下文只保留 digest 摘要（metadata.tools）。跨轮退款确认所需的
   `confirmation_token/idempotency_key` 以受控系统说明回注（唯一例外）。
+> **（已废止 2026-09-14）** 本节描述的两段式退款确认实现已随「退款流程简化」
+> 移除；保留原文仅供历史追溯，现行口径见文末新增节。
 
 ### 阶段C：写操作状态机
+> **（已废止 2026-09-14）** 本节描述的两段式退款确认实现已随「退款流程简化」
+> 移除；保留原文仅供历史追溯，现行口径见文末新增节。
 - `app/agent/write_ops.py`：`collecting → ownership_verified →
   awaiting_confirmation → executing → committed|rejected|indeterminate`。
 - 执行器前置拦截（`ToolBatchExecutor`，预算检查优先于写闸门）：缺订单号/
@@ -141,6 +147,9 @@ SQL 正本归一化 + 异步记忆可靠性 + 事实冲突按主题锚点）。�
 - `close()` 只释放本地资源（tool_manager/执行器），**不再调用 LLM**。
 - STM 改为零 LLM 确定性槽位提取（`app/agent/memory/stm_rules.py`：
   显式句式 + PII 脱敏 + 每键最新覆盖）。
+  - 后续（2026-09 记忆系统重构）：该槽位层**已整体删除**——会话内上下文
+    收敛为对话历史 + rolling 摘要，身份/偏好由 LTM identity 单值键每轮
+    必注入承担；本节保留为当时的实施记录。
 - 新增持久化 `memory_jobs`（`app/stores/sql/schema.py` + `deploy/sql/
   005_memory_jobs.sql`，`EXPECTED_SCHEMA_VERSION=5`）：
   - 唯一键 `session_key+through_seq`；状态 pending/processing/done/failed；
@@ -173,7 +182,7 @@ SQL 正本归一化 + 异步记忆可靠性 + 事实冲突按主题锚点）。�
   AB 配置冻结形状断言（min_score 为有意冻结的校准产物）。
 - 新增契约测试 `tests/unit/test_single_agent_contract.py`（20 条）：无工具
   单调用、工具决策+终答、纠错修复、强制终答、预算 fallback、单 assistant
-  消息+metadata、旧格式折叠、跨轮确认令牌回注、不安全输出不落会话、非法
+  消息+metadata、旧格式折叠、跨轮确认令牌回注（已废止）、不安全输出不落会话、非法
   参数不执行工具、退款成功宣称拦截、越权禁重试、未注册写工具拦截、close
   零 LLM、可靠度/水位/接地/RRF 单元。
 - Ruff 接入（新增文件与改动文件清零 F/E 类问题；仓库历史风格问题不属本轮）。
@@ -197,3 +206,29 @@ SQL 正本归一化 + 异步记忆可靠性 + 事实冲突按主题锚点）。�
   P95 ≤ 基线（目标 15s）；连续三轮波动 ≤2pp。
 - 预生产压测 + 发布观察项：LLM 调用数、P95、工具错误、Handoff、memory
   backlog；Critical 失败/写异常/持久化错误 → 整体回滚。
+
+## 5. 退款流程简化（2026-09-14 追加）
+
+将退款工具解耦为**纯提交申请**：`submit_refund_application` = 身份校验 +
+幂等创建 `merchant_reviewing` 申请，订单状态不做任何前置流转。
+
+- 网关层：`ORDER_REFUND_SEMANTICS` → `REFUNDABLE_ORDER_STATUSES`（可退状态
+  统一进入商家审核）；`direct_cancel/same_turn/fulfillment_cancelled` 词汇与
+  未发货直退分支消失；HTTP 409+`REFUND_APPLICATION_EXISTS` 幂等映射保留，
+  成为删除工具层 pre-check 后的幂等兜底。
+- 工具层：`refund.py` 367 → ~150 行；删除订单 pre-check、进行中申请查询、
+  风险分层策略调用与授权签发/消费；`client_request_id` 由工具层自生成，
+  作为申请级幂等键与超时对账锚点回写在结果载荷。
+- 删除两段式写授权与跨轮确认（988 行）：`refund_policy.py`、`write_gate.py`、
+  `write_auth.py` 三个模块整体移除；确认闸门、`pending_writes` 跨轮说明、
+  执行器 `internal_args` 注入通道、MCP `user_message` meta 通道、保留字段
+  拒绝分支与相关指标全部清理；`WriteToolSpec.policy/reserved_args` 死元数据
+  与 `write_result_ttl_seconds` 等死配置一并删除。
+- 对账口径：写超时仍为 `indeterminate` 且禁止自动换键重试；对账锚点改由
+  工具结果载荷承载（`client_request_id`），外层硬超时时按 `order_id` 对账。
+- 保留不变：会话租约门禁、批内串行屏障、终答越级宣称守卫
+  （`final_reply_guard`）、`write_registry` 单一注册源、`ORDER_ACCESS_DENIED`
+  归属 fail-closed。
+- 评测口径：`expected_tools` 相应加入 `submit_refund_application`；原
+  「两轮确认流」用例改为单轮直接创建（`return_unshipped_direct`），
+  「上下文撤回」用例改为先查申请再撤回（`return_withdraw_by_context`）。

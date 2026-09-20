@@ -1,0 +1,15 @@
+# CPU-only 主机覆盖：去掉 GPU 预留并换用 TEI 的 CPU 变体镜像。
+#
+# 用法（只覆盖 reranker，其余服务不变）：
+#   docker compose -f deploy/compose/docker-compose.yml #                  -f deploy/compose/docker-compose.cpu.yml up -d reranker
+#
+# 说明：TEI 的 CUDA 变体在没有 GPU 透传时会因缺 libcuda.so.1 直接退出；
+# CPU 变体不支持 --dtype float16（GPU 专用），故一并改为 float32。
+services:
+  reranker:
+    image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.5
+    command: ["--model-id", "/data", "--dtype", "float32"]
+    deploy:
+      resources:
+        reservations:
+          devices: []

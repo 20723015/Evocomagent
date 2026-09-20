@@ -1,0 +1,77 @@
+2026-09-17T22:36:43.146542Z [info     ] ==============================================================
+2026-09-17T22:36:43.146542Z [info     ]   单轮延迟探针（P3-2）：分层抽样实测 LLM 调用延迟
+2026-09-17T22:36:43.147606Z [info     ]   数据集   : app/evaluation/cases_large.json
+2026-09-17T22:36:43.147606Z [info     ]   每层样本 : 2                    
+2026-09-17T22:36:43.147606Z [info     ]   当前预算 : turn_budget_seconds=300.0 max_react_steps=8
+2026-09-17T22:36:43.147606Z [info     ] ==============================================================
+2026-09-17T22:36:44.070494Z [info     ] react.status step=1           
+2026-09-17T22:36:54.429043Z [info     ] react.tool_result              display='{"success": true, "count": 1, "total": 1, "orders": [{"order_id": "ORD-20240115-001", "status": "已发货", "items_summary": "Nike Air Max 270 运动鞋", "total": 899.0, "created_at": "2024-01-15 10:30:00"}]}' name=list_user_orders sequence=1
+2026-09-17T22:36:54.430042Z [info     ] react.tool_result              display='{"success": false, "error": "记忆系统未启用"}' name=recall_user_memory sequence=2
+2026-09-17T22:36:54.430042Z [info     ] react.status step=2           
+WARNING:app.stores:Redis 不可用（Timeout connecting to server），状态外置降级为本地文件
+2026-09-17T22:37:16.261902Z [info     ] react.tool_result              display='{"success": true, "order": {"order_id": "ORD-20240115-001", "user": "小明", "user_id": "u1", "status": "shipped", "items": [{"name": "Nike Air Max 270 运动鞋", "sku": "SHOE-270-BK-42", "quantity": 1, "price": 899.0}], "total": 899.0, "created_at": "2024-01-15 10:30:00", "shipped_at": "2024-01-16 14:20:00...' name=query_order sequence=3
+2026-09-17T22:37:16.262908Z [info     ] react.tool_result              display='{"success": true, "backend": "numpy", "query": "商品质量问题退换货流程和赔偿", "subqueries": ["商品质量问题退换货流程和赔偿"], "results": [{"doc": "退换货政策", "section": "二、质量问题退换货", "score": 0.0328, "matched_text": "【退换货政策 · 二、质量问题退换货】\\n### 2.1 适用情形\\n- 商品存在明显瑕疵（破损、缺件、错发、漏发）。\\n- 商品功能性故障，且经客服或品牌方确认为质量问题。\\n- 商品与详情页描述严重不符。\\n\\n### 2....' name=search_knowledge sequence=4
+2026-09-17T22:37:16.262908Z [info     ] react.status step=3           
+2026-09-17T22:37:27.499740Z [info     ] react.status step=1           
+2026-09-17T22:37:32.461174Z [info     ] react.tool_result              display='{"success": true, "skill_name": "track-order", "instructions": "## 订单跟踪流程\\n\\n当用户想了解订单状态或物流进度时，按以下流程提供完整信息。\\n\\n### 第一步：确定目标订单\\n\\n- 如果用户提供了订单号，直接进入第二步\\n- 如果用户没提供订单号，调用 `list_user_orders` 列出订单列表，让用户确认要查哪个\\n\\n### 第二步：查询订单详情\\n\\n调用 `query_order` 获取订单信息，向用户报告：\\n- 订单内的商品和金额\\n- 当前订单状态\\n\\n根据状态给出不同的后续处理：\\n\\n- ...' name=load_skill sequence=1
+2026-09-17T22:37:32.462569Z [info     ] react.tool_result              display='{"success": true, "count": 1, "total": 1, "orders": [{"order_id": "ORD-20240115-001", "status": "已发货", "items_summary": "Nike Air Max 270 运动鞋", "total": 899.0, "created_at": "2024-01-15 10:30:00"}]}' name=list_user_orders sequence=2
+2026-09-17T22:37:32.462569Z [info     ] react.status step=2           
+2026-09-17T22:37:34.838384Z [info     ] react.tool_result              display='{"success": true, "order": {"order_id": "ORD-20240115-001", "user": "小明", "user_id": "u1", "status": "shipped", "items": [{"name": "Nike Air Max 270 运动鞋", "sku": "SHOE-270-BK-42", "quantity": 1, "price": 899.0}], "total": 899.0, "created_at": "2024-01-15 10:30:00", "shipped_at": "2024-01-16 14:20:00...' name=query_order sequence=3
+2026-09-17T22:37:34.838384Z [info     ] react.tool_result              display='{"success": true, "logistics": {"tracking_number": "SF1234567890", "carrier": "顺丰速运", "status": "in_transit", "events": [{"time": "2024-01-16 14:20", "location": "深圳南山区", "description": "快件已揽收"}, {"time": "2024-01-17 06:00", "location": "广州转运中心", "description": "已到达"}, {"time": "2024-01-17 22:00", "...' name=query_logistics sequence=4
+2026-09-17T22:37:34.838384Z [info     ] react.status step=3           
+2026-09-17T22:37:57.567831Z [info     ] react.status step=1           
+2026-09-17T22:38:00.644633Z [info     ] react.status step=2           
+2026-09-17T22:38:03.743824Z [info     ] react.status step=1           
+2026-09-17T22:38:08.546758Z [info     ] react.status step=1           
+2026-09-17T22:38:12.128602Z [info     ] react.tool_result              display='{"success": true, "skill_name": "track-order", "instructions": "## 订单跟踪流程\\n\\n当用户想了解订单状态或物流进度时，按以下流程提供完整信息。\\n\\n### 第一步：确定目标订单\\n\\n- 如果用户提供了订单号，直接进入第二步\\n- 如果用户没提供订单号，调用 `list_user_orders` 列出订单列表，让用户确认要查哪个\\n\\n### 第二步：查询订单详情\\n\\n调用 `query_order` 获取订单信息，向用户报告：\\n- 订单内的商品和金额\\n- 当前订单状态\\n\\n根据状态给出不同的后续处理：\\n\\n- ...' name=load_skill sequence=1
+2026-09-17T22:38:12.129607Z [info     ] react.tool_result              display='{"success": true, "order": {"order_id": "ORD-20240115-001", "user": "小明", "user_id": "u1", "status": "shipped", "items": [{"name": "Nike Air Max 270 运动鞋", "sku": "SHOE-270-BK-42", "quantity": 1, "price": 899.0}], "total": 899.0, "created_at": "2024-01-15 10:30:00", "shipped_at": "2024-01-16 14:20:00...' name=query_order sequence=2
+2026-09-17T22:38:12.129607Z [info     ] react.status step=2           
+2026-09-17T22:38:14.702690Z [info     ] react.tool_result              display='{"success": true, "logistics": {"tracking_number": "SF1234567890", "carrier": "顺丰速运", "status": "in_transit", "events": [{"time": "2024-01-16 14:20", "location": "深圳南山区", "description": "快件已揽收"}, {"time": "2024-01-17 06:00", "location": "广州转运中心", "description": "已到达"}, {"time": "2024-01-17 22:00", "...' name=query_logistics sequence=3
+2026-09-17T22:38:14.702690Z [info     ] react.status step=3           
+2026-09-17T22:38:19.506966Z [info     ] react.status step=1           
+2026-09-17T22:38:23.705701Z [info     ] react.tool_result              display='{"success": true, "skill_name": "track-order", "instructions": "## 订单跟踪流程\\n\\n当用户想了解订单状态或物流进度时，按以下流程提供完整信息。\\n\\n### 第一步：确定目标订单\\n\\n- 如果用户提供了订单号，直接进入第二步\\n- 如果用户没提供订单号，调用 `list_user_orders` 列出订单列表，让用户确认要查哪个\\n\\n### 第二步：查询订单详情\\n\\n调用 `query_order` 获取订单信息，向用户报告：\\n- 订单内的商品和金额\\n- 当前订单状态\\n\\n根据状态给出不同的后续处理：\\n\\n- ...' name=load_skill sequence=1
+2026-09-17T22:38:23.705701Z [info     ] react.tool_result              display='{"success": true, "order": {"order_id": "ORD-20240115-001", "user": "小明", "user_id": "u1", "status": "shipped", "items": [{"name": "Nike Air Max 270 运动鞋", "sku": "SHOE-270-BK-42", "quantity": 1, "price": 899.0}], "total": 899.0, "created_at": "2024-01-15 10:30:00", "shipped_at": "2024-01-16 14:20:00...' name=query_order sequence=2
+2026-09-17T22:38:23.705701Z [info     ] react.status step=2           
+2026-09-17T22:38:25.393109Z [info     ] react.tool_result              display='{"success": true, "logistics": {"tracking_number": "SF1234567890", "carrier": "顺丰速运", "status": "in_transit", "events": [{"time": "2024-01-16 14:20", "location": "深圳南山区", "description": "快件已揽收"}, {"time": "2024-01-17 06:00", "location": "广州转运中心", "description": "已到达"}, {"time": "2024-01-17 22:00", "...' name=query_logistics sequence=3
+2026-09-17T22:38:25.393109Z [info     ] react.status step=3           
+2026-09-17T22:38:31.186290Z [info     ] react.status step=1           
+2026-09-17T22:38:34.628244Z [info     ] react.tool_result              display='{"success": true, "products": [{"product_id": "SHOE-270-BK-42", "name": "Nike Air Max 270 运动鞋", "category": "运动鞋", "price": 899.0, "stock": 156, "description": "经典气垫缓震，透气网面鞋身，适合日常跑步和休闲穿搭", "specs": {"颜色": "黑色", "尺码": "42", "材质": "网面+合成革"}}, {"product_id": "SHOE-GEN-0001", "name": "Nike Air Max 97 运动...' name=query_product sequence=1
+2026-09-17T22:38:34.628244Z [info     ] react.tool_result              display='{"success": true, "skill_name": "product-recommend", "instructions": "## 商品推荐流程\\n\\n当用户表达购买意愿或寻求推荐时，按以下流程提供个性化推荐。\\n\\n### 第一步：了解用户需求\\n\\n如果用户的需求不够明确，通过提问了解：\\n- 想买什么品类的商品？（鞋、手机、耳机、家电等）\\n- 有没有预算范围？\\n- 有没有品牌/颜色/功能偏好？\\n- 使用场景是什么？（日常、运动、送礼等）\\n\\n如果用户已经说得很清楚（比如\\"我想买红色的运动鞋\\"），直接进入第二步，不要重复追问。\\n\\n### 第二步：查询用户偏好\\...' name=load_skill sequence=2
+2026-09-17T22:38:34.628244Z [info     ] react.status step=2           
+2026-09-17T22:38:37.831237Z [info     ] react.tool_result              display='{"success": false, "error": "记忆系统未启用"}' name=recall_user_memory sequence=3
+2026-09-17T22:38:37.831237Z [info     ] react.status step=3           
+2026-09-17T22:38:43.254732Z [info     ] react.status step=1           
+2026-09-17T22:38:47.172178Z [info     ] react.tool_result              display='{"success": true, "skill_name": "product-recommend", "instructions": "## 商品推荐流程\\n\\n当用户表达购买意愿或寻求推荐时，按以下流程提供个性化推荐。\\n\\n### 第一步：了解用户需求\\n\\n如果用户的需求不够明确，通过提问了解：\\n- 想买什么品类的商品？（鞋、手机、耳机、家电等）\\n- 有没有预算范围？\\n- 有没有品牌/颜色/功能偏好？\\n- 使用场景是什么？（日常、运动、送礼等）\\n\\n如果用户已经说得很清楚（比如\\"我想买红色的运动鞋\\"），直接进入第二步，不要重复追问。\\n\\n### 第二步：查询用户偏好\\...' name=load_skill sequence=1
+2026-09-17T22:38:47.172178Z [info     ] react.tool_result              display='{"success": true, "products": [{"product_id": "SHOE-270-BK-42", "name": "Nike Air Max 270 运动鞋", "category": "运动鞋", "price": 899.0, "stock": 156, "description": "经典气垫缓震，透气网面鞋身，适合日常跑步和休闲穿搭", "specs": {"颜色": "黑色", "尺码": "42", "材质": "网面+合成革"}}, {"product_id": "SHOE-GEN-0001", "name": "Nike Air Max 97 运动...' name=query_product sequence=2
+2026-09-17T22:38:47.173211Z [info     ] react.status step=2           
+2026-09-17T22:38:53.541592Z [info     ] react.status step=1           
+2026-09-17T22:38:56.993182Z [info     ] react.tool_result              display='{"success": true, "applications": []}' name=query_refund_application sequence=1
+2026-09-17T22:38:56.993182Z [info     ] react.status step=2           
+2026-09-17T22:39:03.675206Z [info     ] react.status step=1           
+2026-09-17T22:39:07.023983Z [info     ] react.tool_result              display='{"success": true, "skill_name": "process-return", "instructions": "## 退货退款处理流程\\n\\n当用户表达退货/退款/换货意愿时，按以下流程处理。\\n\\n### 第一步：确认订单信息\\n\\n- 如果用户提供了订单号，调用 `query_order` 查询订单详情\\n- 如果用户没有提供订单号，调用 `list_user_orders` 列出用户所有订单，请用户确认是哪个订单\\n- 确认后，向用户复述订单关键信息（商品名称、金额、下单时间），请用户确认\\n\\n### 第二步：判断订单状态\\n\\n根据 `query_order` ...' name=load_skill sequence=1
+2026-09-17T22:39:07.023983Z [info     ] react.tool_result              display='{"success": false, "error": "无权访问该订单（不属于当前用户）", "code": "ORDER_ACCESS_DENIED"}' name=query_order sequence=2
+2026-09-17T22:39:07.023983Z [info     ] react.status step=2           
+2026-09-17T22:39:09.648161Z [info     ] react.tool_result              display='{"success": true, "count": 1, "total": 1, "orders": [{"order_id": "ORD-20240115-001", "status": "已发货", "items_summary": "Nike Air Max 270 运动鞋", "total": 899.0, "created_at": "2024-01-15 10:30:00"}]}' name=list_user_orders sequence=3
+2026-09-17T22:39:09.648161Z [info     ] react.status step=3           
+2026-09-17T22:39:15.949458Z [info     ] react.status step=1           
+2026-09-17T22:39:21.707336Z [info     ] react.tool_result              display='{"success": true, "backend": "numpy", "query": "七天无理由退货", "subqueries": ["七天无理由退货"], "results": [{"doc": "退换货政策", "section": "一、七天无理由退货", "score": 0.0328, "matched_text": "【退换货政策 · 一、七天无理由退货】\\n### 1.1 适用范围\\n自顾客签收商品之日起 7 天内（含第 7 天），在不影响商品二次销售的前提下，可申请「七天无理由退货」。这里的「不影响二次销售」指：商品本体、吊牌、包装、配件、赠品齐全，未洗涤、未使用、...' name=search_knowledge sequence=1
+2026-09-17T22:39:21.708336Z [info     ] react.status step=2           
+2026-09-17T22:39:27.141677Z [info     ] react.status step=1           
+2026-09-17T22:39:42.452055Z [info     ] react.tool_result              display='{"success": true, "backend": "numpy", "query": "七天无理由退货条件", "subqueries": ["七天无理由退货条件"], "results": [{"doc": "退换货政策", "section": "一、七天无理由退货", "score": 0.0328, "matched_text": "【退换货政策 · 一、七天无理由退货】\\n### 1.1 适用范围\\n自顾客签收商品之日起 7 天内（含第 7 天），在不影响商品二次销售的前提下，可申请「七天无理由退货」。这里的「不影响二次销售」指：商品本体、吊牌、包装、配件、赠品齐全，未洗涤、...' name=search_knowledge sequence=1
+2026-09-17T22:39:42.452055Z [info     ] react.status step=2           
+2026-09-17T22:39:47.587225Z [info     ] react.status step=3           
+2026-09-17T22:39:51.912707Z [info     ] 
+样本：12 例 / 30 次 LLM 调用        
+2026-09-17T22:39:51.913754Z [info     ] 总体 P50=3738.7ms P95=10047.6ms max=22116.6ms
+2026-09-17T22:39:51.913754Z [info     ]   complaint        n=6    P50=6932.2ms P95=19241.1ms
+2026-09-17T22:39:51.913754Z [info     ]   greeting         n=3    P50=2640.0ms P95=3582.9ms
+2026-09-17T22:39:51.913754Z [info     ]   order_query      n=6    P50=3533.5ms P95=4934.1ms
+2026-09-17T22:39:51.913754Z [info     ]   product_consult  n=5    P50=3481.1ms P95=5553.9ms
+2026-09-17T22:39:51.913754Z [info     ]   return_request   n=5    P50=3042.8ms P95=5994.5ms
+2026-09-17T22:39:51.913754Z [info     ]   unspecified      n=5    P50=4293.1ms P95=5067.3ms
+2026-09-17T22:39:51.913754Z [info     ] 
+建议：max_react_steps × P95(llm_call) < turn_budget_seconds
+2026-09-17T22:39:51.913754Z [info     ]   P95=10.05s × 8 步 = 80.4s    
+2026-09-17T22:39:51.913754Z [info     ]   实测最大 ReAct 步数：3.0           
+2026-09-17T22:39:51.913754Z [info     ] 
+报告已写入 artifacts\eval\p32\latency-probe.json

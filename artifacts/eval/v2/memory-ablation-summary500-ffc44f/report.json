@@ -1,0 +1,573 @@
+{
+  "summary": {
+    "total": 6,
+    "passed": 6,
+    "pass_rate": 1.0,
+    "avg_process_score": null,
+    "avg_result_score": 1.0,
+    "total_tokens": 85542,
+    "avg_tokens_per_case": 14257.0,
+    "reasoning_tokens": 2365,
+    "reasoning_token_share": 0.02764723761427135,
+    "distributions": {
+      "tool_calls": {
+        "mean": 2.5,
+        "median": 2.5,
+        "p90": 5,
+        "p95": 5,
+        "n": 6
+      },
+      "tokens": {
+        "mean": 14257.0,
+        "median": 11969.0,
+        "p90": 21920,
+        "p95": 21920,
+        "n": 6
+      }
+    },
+    "security": {
+      "critical_total": 0,
+      "critical_passed": 0
+    },
+    "react_protocol": {
+      "steps_margin_hint_rate": 0.0,
+      "forced_finalize_rate": 0.0,
+      "avg_react_steps": 2.67,
+      "protocol_corrections_total": 1
+    }
+  },
+  "cases": [
+    {
+      "case_id": "memory_synonym_paraphrase",
+      "description": "同义改述偏好：LTM 存『退款原路退回』，用户用『退货/钱打给我』改述提问（词面零重叠，纯词面预期漏注）",
+      "passed": true,
+      "process": {
+        "tool_accuracy": null,
+        "tool_efficiency": null,
+        "token_cost": 11277,
+        "reasoning_tokens": 276,
+        "token_pass": false,
+        "process_soundness": null,
+        "process_score": null
+      },
+      "result": {
+        "intent_match": null,
+        "keyword_coverage": 1.0,
+        "requires_human_match": 1.0,
+        "citation_match": null,
+        "answer_quality": null,
+        "faithfulness": null,
+        "result_score": 1.0
+      },
+      "judge_reasons": {},
+      "security": {
+        "authorization_match": null,
+        "sensitive_leakage_match": null,
+        "critical_gate_pass": null
+      },
+      "trace": {
+        "case_id": "memory_synonym_paraphrase",
+        "turns": [
+          "如果我退货，钱会怎么打给我？"
+        ],
+        "turn_replies": [
+          "根据《退换货政策》的退款流程，您的退货款项会**原路退回至您下单时的支付账户**（如微信、支付宝、银行卡等），具体说明如下：\n\n- **退货退款**：仓库签收并质检通过后，款项原路退回支付账户；\n\n- **拒收包裹**：包裹原路返回仓库后系统自动发起退款，时效约 5-7 个工作日。\n\n另外提醒一下：如果是**七天无理由退货**，退货运费由您承担（平台「上门取件」运费 12 元起，从退款金额中扣除）；如果是**质量问题**，运费由平台承担。\n\n请问您是想了解哪笔订单的退款情况呢？如果有具体订单号，我可以帮您进一步查询～。以上信息以官方政策与实际到账为准，如需精确确认可转人工核实。"
+        ],
+        "reply": "根据《退换货政策》的退款流程，您的退货款项会**原路退回至您下单时的支付账户**（如微信、支付宝、银行卡等），具体说明如下：\n\n- **退货退款**：仓库签收并质检通过后，款项原路退回支付账户；\n\n- **拒收包裹**：包裹原路返回仓库后系统自动发起退款，时效约 5-7 个工作日。\n\n另外提醒一下：如果是**七天无理由退货**，退货运费由您承担（平台「上门取件」运费 12 元起，从退款金额中扣除）；如果是**质量问题**，运费由平台承担。\n\n请问您是想了解哪笔订单的退款情况呢？如果有具体订单号，我可以帮您进一步查询～。以上信息以官方政策与实际到账为准，如需精确确认可转人工核实。",
+        "intent": "after_sale",
+        "requires_human": false,
+        "total_tokens": 11277,
+        "reasoning_tokens": 276,
+        "num_llm_calls": 2,
+        "num_tool_calls": 1,
+        "tool_calls": [
+          "search_knowledge"
+        ],
+        "tool_outcomes": [
+          {
+            "name": "search_knowledge",
+            "arguments": {
+              "query": "退货退款金额怎么退回"
+            },
+            "outcome": {
+              "success": true
+            }
+          }
+        ],
+        "retrieved_sources": [
+          "品类券适用范围细则",
+          "跨境退货特别流程",
+          "退换货政策"
+        ],
+        "citation_verdict": {
+          "cited": [
+            "退换货政策"
+          ],
+          "matched": [
+            "退换货政策"
+          ],
+          "missing": []
+        },
+        "react_steps": 2,
+        "steps_margin_hint": false,
+        "forced_finalize": false,
+        "protocol_corrections": 0,
+        "error": null
+      },
+      "error": null
+    },
+    {
+      "case_id": "memory_cross_session_identity",
+      "description": "跨会话身份：LTM 存姓名/会员身份，新会话直接问『我叫什么名字』（词面零重叠，纯词面预期漏注）",
+      "passed": true,
+      "process": {
+        "tool_accuracy": null,
+        "tool_efficiency": null,
+        "token_cost": 8391,
+        "reasoning_tokens": 115,
+        "token_pass": false,
+        "process_soundness": null,
+        "process_score": null
+      },
+      "result": {
+        "intent_match": null,
+        "keyword_coverage": 1.0,
+        "requires_human_match": 1.0,
+        "citation_match": null,
+        "answer_quality": null,
+        "faithfulness": null,
+        "result_score": 1.0
+      },
+      "judge_reasons": {},
+      "security": {
+        "authorization_match": null,
+        "sensitive_leakage_match": null,
+        "critical_gate_pass": null
+      },
+      "trace": {
+        "case_id": "memory_cross_session_identity",
+        "turns": [
+          "你还记得我叫什么名字吗？"
+        ],
+        "turn_replies": [
+          "当然记得呀，您是张三先生😊 很高兴又见到您！您是我们平台的钻石会员，有什么需要帮忙的，随时告诉我～"
+        ],
+        "reply": "当然记得呀，您是张三先生😊 很高兴又见到您！您是我们平台的钻石会员，有什么需要帮忙的，随时告诉我～",
+        "intent": "greeting",
+        "requires_human": false,
+        "total_tokens": 8391,
+        "reasoning_tokens": 115,
+        "num_llm_calls": 2,
+        "num_tool_calls": 1,
+        "tool_calls": [
+          "recall_user_memory"
+        ],
+        "tool_outcomes": [
+          {
+            "name": "recall_user_memory",
+            "arguments": {
+              "query": "用户名字"
+            },
+            "outcome": {
+              "success": true
+            }
+          }
+        ],
+        "retrieved_sources": [],
+        "citation_verdict": {
+          "cited": [],
+          "matched": [],
+          "missing": []
+        },
+        "react_steps": 2,
+        "steps_margin_hint": false,
+        "forced_finalize": false,
+        "protocol_corrections": 0,
+        "error": null
+      },
+      "error": null
+    },
+    {
+      "case_id": "memory_ttl_expired_issue",
+      "description": "TTL 过期：400 天前的 issue 事实不得注入（回复不得提及少发/补发），新鲜偏好正常注入",
+      "passed": true,
+      "process": {
+        "tool_accuracy": null,
+        "tool_efficiency": null,
+        "token_cost": 20979,
+        "reasoning_tokens": 896,
+        "token_pass": false,
+        "process_soundness": null,
+        "process_score": null
+      },
+      "result": {
+        "intent_match": null,
+        "keyword_coverage": 1.0,
+        "requires_human_match": 1.0,
+        "citation_match": null,
+        "answer_quality": null,
+        "faithfulness": null,
+        "result_score": 1.0
+      },
+      "judge_reasons": {},
+      "security": {
+        "authorization_match": null,
+        "sensitive_leakage_match": 1.0,
+        "critical_gate_pass": null
+      },
+      "trace": {
+        "case_id": "memory_ttl_expired_issue",
+        "turns": [
+          "我想要简约风格的衣服，有推荐吗？"
+        ],
+        "turn_replies": [
+          "为您找到两款简约风格的穿搭单品：\n\n**1. 简约风格衣服（热销款）**\n- ✅ 支持七天无理由退换\n\n**2. 简约 纯色（热销款）**\n- ✅ 支持七天无理由退换\n\n两款都是简约百搭的款式，很适合日常通勤和休闲穿搭～为了帮您挑得更准，想再确认一下：您偏向上衣、下装还是外套？有没有预算范围？或者喜欢的颜色、尺码也可以告诉我，我再帮您精准推荐！😊。以上信息以官方政策与实际到账为准，如需精确确认可转人工核实。"
+        ],
+        "reply": "为您找到两款简约风格的穿搭单品：\n\n**1. 简约风格衣服（热销款）**\n- ✅ 支持七天无理由退换\n\n**2. 简约 纯色（热销款）**\n- ✅ 支持七天无理由退换\n\n两款都是简约百搭的款式，很适合日常通勤和休闲穿搭～为了帮您挑得更准，想再确认一下：您偏向上衣、下装还是外套？有没有预算范围？或者喜欢的颜色、尺码也可以告诉我，我再帮您精准推荐！😊。以上信息以官方政策与实际到账为准，如需精确确认可转人工核实。",
+        "intent": "product_consult",
+        "requires_human": false,
+        "total_tokens": 20979,
+        "reasoning_tokens": 896,
+        "num_llm_calls": 4,
+        "num_tool_calls": 5,
+        "tool_calls": [
+          "load_skill",
+          "query_product",
+          "recall_user_memory",
+          "query_product",
+          "query_product"
+        ],
+        "tool_outcomes": [
+          {
+            "name": "load_skill",
+            "arguments": {
+              "skill_name": "product-recommend"
+            },
+            "outcome": {
+              "success": true
+            }
+          },
+          {
+            "name": "query_product",
+            "arguments": {
+              "keyword": "简约风格衣服"
+            },
+            "outcome": {
+              "success": true
+            }
+          },
+          {
+            "name": "recall_user_memory",
+            "arguments": {
+              "query": "简约风格"
+            },
+            "outcome": {
+              "success": true
+            }
+          },
+          {
+            "name": "query_product",
+            "arguments": {
+              "keyword": "简约 纯色"
+            },
+            "outcome": {
+              "success": true
+            }
+          },
+          {
+            "name": "query_product",
+            "arguments": {
+              "keyword": "纯色T恤"
+            },
+            "outcome": {}
+          }
+        ],
+        "retrieved_sources": [],
+        "citation_verdict": {
+          "cited": [],
+          "matched": [],
+          "missing": []
+        },
+        "react_steps": 4,
+        "steps_margin_hint": false,
+        "forced_finalize": false,
+        "protocol_corrections": 0,
+        "error": null
+      },
+      "error": null
+    },
+    {
+      "case_id": "memory_identity_ttl_exempt",
+      "description": "TTL 豁免：400 天前的 identity 事实仍应注入（身份长期有效，回归保护——before/after 都应通过）",
+      "passed": true,
+      "process": {
+        "tool_accuracy": null,
+        "tool_efficiency": null,
+        "token_cost": 12661,
+        "reasoning_tokens": 358,
+        "token_pass": false,
+        "process_soundness": null,
+        "process_score": null
+      },
+      "result": {
+        "intent_match": null,
+        "keyword_coverage": 1.0,
+        "requires_human_match": 1.0,
+        "citation_match": null,
+        "answer_quality": null,
+        "faithfulness": null,
+        "result_score": 1.0
+      },
+      "judge_reasons": {},
+      "security": {
+        "authorization_match": null,
+        "sensitive_leakage_match": null,
+        "critical_gate_pass": null
+      },
+      "trace": {
+        "case_id": "memory_identity_ttl_exempt",
+        "turns": [
+          "我是你们的老客户了，帮我看看上次说的那个会员等级还有什么权益"
+        ],
+        "turn_replies": [
+          "亲爱的小伙伴，您好！😊 根据系统记录，您是我们平台的**钻石会员**。根据《会员权益》，钻石会员可享受以下专属权益：\n\n**💰 优惠券**\n\n**🚚 物流特权**\n- 全场包邮（含偏远地区）\n- 优先发货（24 小时内出库）\n\n**🛡️ 售后特权**\n- 一年 4 次「无忧退」：无需任何理由直接退款、运费全免\n\n**🎁 专属服务**\n- 专属 1V1 客服经理\n\n另外，钻石会员在**生日当月购物可享双倍积分**，生日当周还可免费获得一次专属生日礼盒哦～🎉\n\n权益的具体使用情况（如无忧退已使用次数）可在「我的-会员中心」查看。请问还有什么需要我帮忙的吗？以上信息以官方政策与实际到账为准，如需精确确认可转人工核实。"
+        ],
+        "reply": "亲爱的小伙伴，您好！😊 根据系统记录，您是我们平台的**钻石会员**。根据《会员权益》，钻石会员可享受以下专属权益：\n\n**💰 优惠券**\n\n**🚚 物流特权**\n- 全场包邮（含偏远地区）\n- 优先发货（24 小时内出库）\n\n**🛡️ 售后特权**\n- 一年 4 次「无忧退」：无需任何理由直接退款、运费全免\n\n**🎁 专属服务**\n- 专属 1V1 客服经理\n\n另外，钻石会员在**生日当月购物可享双倍积分**，生日当周还可免费获得一次专属生日礼盒哦～🎉\n\n权益的具体使用情况（如无忧退已使用次数）可在「我的-会员中心」查看。请问还有什么需要我帮忙的吗？以上信息以官方政策与实际到账为准，如需精确确认可转人工核实。",
+        "intent": "other",
+        "requires_human": false,
+        "total_tokens": 12661,
+        "reasoning_tokens": 358,
+        "num_llm_calls": 2,
+        "num_tool_calls": 2,
+        "tool_calls": [
+          "search_knowledge",
+          "recall_user_memory"
+        ],
+        "tool_outcomes": [
+          {
+            "name": "search_knowledge",
+            "arguments": {
+              "query": "钻石会员有哪些权益",
+              "queries": [
+                "钻石会员专属权益",
+                "会员等级权益"
+              ]
+            },
+            "outcome": {
+              "success": true
+            }
+          },
+          {
+            "name": "recall_user_memory",
+            "arguments": {
+              "query": "会员等级"
+            },
+            "outcome": {
+              "success": true
+            }
+          }
+        ],
+        "retrieved_sources": [
+          "会员权益",
+          "客服sop与应答手册",
+          "平台付费会员(pro)权益"
+        ],
+        "citation_verdict": {
+          "cited": [
+            "会员权益"
+          ],
+          "matched": [
+            "会员权益"
+          ],
+          "missing": []
+        },
+        "react_steps": 2,
+        "steps_margin_hint": false,
+        "forced_finalize": false,
+        "protocol_corrections": 0,
+        "error": null
+      },
+      "error": null
+    },
+    {
+      "case_id": "memory_inject_relevance",
+      "description": "相关性注入：与 query 词面相关的偏好应注入（蓝色运动鞋）；无关事实（健身教练）不得无条件注入",
+      "passed": true,
+      "process": {
+        "tool_accuracy": null,
+        "tool_efficiency": null,
+        "token_cost": 10314,
+        "reasoning_tokens": 277,
+        "token_pass": false,
+        "process_soundness": null,
+        "process_score": null
+      },
+      "result": {
+        "intent_match": null,
+        "keyword_coverage": 1.0,
+        "requires_human_match": 1.0,
+        "citation_match": null,
+        "answer_quality": null,
+        "faithfulness": null,
+        "result_score": 1.0
+      },
+      "judge_reasons": {},
+      "security": {
+        "authorization_match": null,
+        "sensitive_leakage_match": 0.0,
+        "critical_gate_pass": null
+      },
+      "trace": {
+        "case_id": "memory_inject_relevance",
+        "turns": [
+          "我想买双运动鞋，推荐个颜色呗？"
+        ],
+        "turn_replies": [
+          "小夕记得您最喜欢蓝色的运动鞋呢～💙 刚好有一款非常合适的推荐给您：\n\n**李宁 超轻 21 运动鞋**（蓝色款）\n- 价格：¥637.36\n- 尺码：43\n- 材质：飞织（透气轻量）\n- 卖点：轻量缓震中底、透气鞋面，日常通勤和慢跑都很合适\n- 库存：有货 ✅\n\n作为健身教练，这款轻量缓震的设计对日常训练和走动都很友好，而且正好是您钟爱的蓝色，颜值和实用性都在线！\n\n另外如果您想看看其他颜色，还有这些有货的选择：\n- **Nike Air Max 270**（黑色，¥899）— 经典气垫缓震，适合日常跑步\n- **李宁 赤兔 7**（白色，¥221.11）— 性价比之选\n\n您看这款蓝色的是否合心意？或者需要我帮您了解下尺码、配送之类的信息吗？😊"
+        ],
+        "reply": "小夕记得您最喜欢蓝色的运动鞋呢～💙 刚好有一款非常合适的推荐给您：\n\n**李宁 超轻 21 运动鞋**（蓝色款）\n- 价格：¥637.36\n- 尺码：43\n- 材质：飞织（透气轻量）\n- 卖点：轻量缓震中底、透气鞋面，日常通勤和慢跑都很合适\n- 库存：有货 ✅\n\n作为健身教练，这款轻量缓震的设计对日常训练和走动都很友好，而且正好是您钟爱的蓝色，颜值和实用性都在线！\n\n另外如果您想看看其他颜色，还有这些有货的选择：\n- **Nike Air Max 270**（黑色，¥899）— 经典气垫缓震，适合日常跑步\n- **李宁 赤兔 7**（白色，¥221.11）— 性价比之选\n\n您看这款蓝色的是否合心意？或者需要我帮您了解下尺码、配送之类的信息吗？😊",
+        "intent": "product_consult",
+        "requires_human": false,
+        "total_tokens": 10314,
+        "reasoning_tokens": 277,
+        "num_llm_calls": 2,
+        "num_tool_calls": 3,
+        "tool_calls": [
+          "recall_user_memory",
+          "load_skill",
+          "query_product"
+        ],
+        "tool_outcomes": [
+          {
+            "name": "recall_user_memory",
+            "arguments": {},
+            "outcome": {
+              "success": true
+            }
+          },
+          {
+            "name": "load_skill",
+            "arguments": {
+              "skill_name": "product-recommend"
+            },
+            "outcome": {
+              "success": true
+            }
+          },
+          {
+            "name": "query_product",
+            "arguments": {
+              "keyword": "运动鞋"
+            },
+            "outcome": {
+              "success": true
+            }
+          }
+        ],
+        "retrieved_sources": [],
+        "citation_verdict": {
+          "cited": [],
+          "matched": [],
+          "missing": []
+        },
+        "react_steps": 2,
+        "steps_margin_hint": false,
+        "forced_finalize": false,
+        "protocol_corrections": 0,
+        "error": null
+      },
+      "error": null
+    },
+    {
+      "case_id": "memory_recall_fallback",
+      "description": "漏注度量：预算偏好词面零重叠（『挑个手机』vs『两千元以内』）；未注入时 Agent 应经 recall_user_memory 或语义检索拿到，否则关键词失败即漏注",
+      "passed": true,
+      "process": {
+        "tool_accuracy": null,
+        "tool_efficiency": null,
+        "token_cost": 21920,
+        "reasoning_tokens": 443,
+        "token_pass": false,
+        "process_soundness": null,
+        "process_score": null
+      },
+      "result": {
+        "intent_match": null,
+        "keyword_coverage": 1.0,
+        "requires_human_match": 1.0,
+        "citation_match": null,
+        "answer_quality": null,
+        "faithfulness": null,
+        "result_score": 1.0
+      },
+      "judge_reasons": {},
+      "security": {
+        "authorization_match": null,
+        "sensitive_leakage_match": null,
+        "critical_gate_pass": null
+      },
+      "trace": {
+        "case_id": "memory_recall_fallback",
+        "turns": [
+          "帮我挑个合适的手机"
+        ],
+        "turn_replies": [
+          "我来帮您挑选手机啦~ 根据您平时买数码产品预算在两千元以内的习惯，我为您筛选出以下 3 款性价比不错的选择：\n\n- 旗舰芯片 + 6.78英寸 2K LTPO 护眼屏\n- 大底主摄，长续航快充\n- 24GB+1TB，紫色款，库存充足\n\n- 旗舰芯片 + 高刷护眼屏\n- 大底主摄，长续航快充\n- 24GB+1TB，紫色款，库存充足\n\n- 旗舰芯片 + 6.36英寸 1.5K OLED 高刷屏\n- 大底主摄，长续航快充\n- 16GB+512GB，黑色款，库存不多\n\n这三款都在您的预算范围内，配置和性价比都很棒！\n\n再帮您精准挑选的话，想了解一下：\n1. 有没有偏好的**品牌**（小米、华为等）？\n2. 更看重**拍照、屏幕还是续航**？\n3. 喜欢什么**颜色**？\n\n您告诉我需求，我再帮您锁定最合适的那一款~ 😊。以上信息以官方政策与实际到账为准，如需精确确认可转人工核实。"
+        ],
+        "reply": "我来帮您挑选手机啦~ 根据您平时买数码产品预算在两千元以内的习惯，我为您筛选出以下 3 款性价比不错的选择：\n\n- 旗舰芯片 + 6.78英寸 2K LTPO 护眼屏\n- 大底主摄，长续航快充\n- 24GB+1TB，紫色款，库存充足\n\n- 旗舰芯片 + 高刷护眼屏\n- 大底主摄，长续航快充\n- 24GB+1TB，紫色款，库存充足\n\n- 旗舰芯片 + 6.36英寸 1.5K OLED 高刷屏\n- 大底主摄，长续航快充\n- 16GB+512GB，黑色款，库存不多\n\n这三款都在您的预算范围内，配置和性价比都很棒！\n\n再帮您精准挑选的话，想了解一下：\n1. 有没有偏好的**品牌**（小米、华为等）？\n2. 更看重**拍照、屏幕还是续航**？\n3. 喜欢什么**颜色**？\n\n您告诉我需求，我再帮您锁定最合适的那一款~ 😊。以上信息以官方政策与实际到账为准，如需精确确认可转人工核实。",
+        "intent": "product_consult",
+        "requires_human": false,
+        "total_tokens": 21920,
+        "reasoning_tokens": 443,
+        "num_llm_calls": 4,
+        "num_tool_calls": 3,
+        "tool_calls": [
+          "load_skill",
+          "recall_user_memory",
+          "query_product"
+        ],
+        "tool_outcomes": [
+          {
+            "name": "load_skill",
+            "arguments": {
+              "skill_name": "product-recommend"
+            },
+            "outcome": {
+              "success": true
+            }
+          },
+          {
+            "name": "recall_user_memory",
+            "arguments": {
+              "query": "手机偏好"
+            },
+            "outcome": {
+              "success": true
+            }
+          },
+          {
+            "name": "query_product",
+            "arguments": {
+              "keyword": "手机"
+            },
+            "outcome": {
+              "success": true
+            }
+          }
+        ],
+        "retrieved_sources": [],
+        "citation_verdict": {
+          "cited": [],
+          "matched": [],
+          "missing": []
+        },
+        "react_steps": 4,
+        "steps_margin_hint": false,
+        "forced_finalize": false,
+        "protocol_corrections": 1,
+        "error": null
+      },
+      "error": null
+    }
+  ]
+}

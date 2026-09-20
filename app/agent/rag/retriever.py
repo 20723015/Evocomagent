@@ -11,13 +11,44 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass, field
 from typing import Optional
 
 from app.agent.rag.backends.base import RetrievedChunk, VectorBackend
 from app.agent.rag.embedder import Embedder
 
 __all__ = ["KnowledgeRetriever", "RetrievedChunk", "collapse_by_parent",
-           "filter_hits_by_score"]
+           "filter_hits_by_score", "RetrievalResult", "SCORE_SOURCE_RRF",
+           "SCORE_SOURCE_VECTOR", "SCORE_SOURCE_RERANK",
+           "DEGRADED_RERANKER_UNAVAILABLE"]
+
+SCORE_SOURCE_RRF = "rrf"
+SCORE_SOURCE_VECTOR = "vector"
+SCORE_SOURCE_RERANK = "rerank"
+DEGRADED_RERANKER_UNAVAILABLE = "reranker_unavailable"
+
+
+@dataclass
+class RetrievalResult:
+    """一次检索的显式结果状态（RAG 修复计划·1）。
+
+    score_source 决定分数是否有绝对语义：
+    - vector / rerank：分数可比阈值；
+    - rrf：秩融合分无语义（不得做阈值门控）。
+    degraded=True 时下游必须按降级处理（生产默认 fail-closed）。
+    """
+
+    hits: list = field(default_factory=list)
+    score_source: str = SCORE_SOURCE_VECTOR
+    degraded: bool = False
+    degraded_reason: str = ""
+
+    @property
+    def scores_meaningful(self) -> bool:
+        return (
+            self.score_source in (SCORE_SOURCE_VECTOR, SCORE_SOURCE_RERANK)
+            and not self.degraded
+        )
 
 
 def filter_hits_by_score(
@@ -87,7 +118,13 @@ class KnowledgeRetriever:
 
     def search(self, query: str, top_k: int = 3,
                timeout: Optional[float] = None) -> list[RetrievedChunk]:
+        return self.search_with_status(query, top_k, timeout=timeout).hits
+
+    def search_with_status(self, query: str, top_k: int = 3,
+                           timeout: Optional[float] = None) -> RetrievalResult:
+        """纯向量检索：score_source=vector，分数有绝对语义。"""
         if not self._loaded:
             self.load()
         q_vec = self._embedder.encode_one(query, timeout=timeout)
-        return self._backend.search(q_vec, top_k=top_k, timeout=timeout)
+        hits = self._backend.search(q_vec, top_k=top_k, timeout=timeout)
+        return RetrievalResult(hits=hits, score_source=SCORE_SOURCE_VECTOR)

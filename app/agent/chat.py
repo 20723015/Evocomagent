@@ -1,4 +1,5 @@
 import uuid
+from collections.abc import Callable
 from pathlib import Path
 
 from openai import OpenAI
@@ -6,7 +7,11 @@ from openai import OpenAI
 from app.agent.context import ToolContext
 from app.agent.context_builder import ContextBuilder
 from app.agent.input_policy import evaluate_input
-from app.agent.react_runner import ForcedFinalizeFailed, ReactRunner
+from app.agent.react_runner import (
+    PLAIN_TEXT_CORRECTION,
+    ForcedFinalizeFailed,
+    ReactRunner,
+)
 from app.agent.tools.batch_executor import ToolBatchExecutor, ToolTurnState
 from app.agent.tools.manager import ToolManager
 from app.agent.turn_budget import (
@@ -20,6 +25,8 @@ from app.agent.turn_finalizer import (
     TurnFinalizer,
 )
 from app.agent.turn_repository import TurnRepository
+from app.agent import write_gate
+from app.agent.write_ops import DRAFT_CANCELLED_STATUS, WriteOpTracker
 from app.config.settings import settings
 from app.observability.logging import get_logger
 from app.observability.metrics import record_budget_exhausted
@@ -34,8 +41,32 @@ from app.stores.session_store import LocalFileSessionStore
 
 log = get_logger("app.agent.chat")
 
+# flush_session 的哨兵默认值：未显式传 pending_write 时保持会话现值
+# （与「显式传 None = 作废草稿」区分开）
+_KEEP_PENDING_WRITE = object()
+
 # 预算耗尽的确定性 fallback 话术（零 LLM 收尾）
 BUDGET_FALLBACK_REPLY = "很抱歉，本轮处理时间已达上限，已为您转接人工客服，请稍候。"
+
+
+def _memory_job_payload(folded: list[dict]) -> list[dict]:
+    """memory job 巩固负载：模型可见的 user + 最终 assistant 消息。
+
+    工具中间消息不进负载；纯文本协议纠错的 assistant 稿（react_runner 在其后
+    成对压入 PLAIN_TEXT_CORRECTION system 消息）是中间纠错文本而非终答，
+    带前瞻跳过——不改变模型可见消息结构，只过滤巩固负载（低危修复 A4）。
+    """
+    correction_starts = {
+        i for i, m in enumerate(folded)
+        if m.get("role") == "system" and m.get("content") == PLAIN_TEXT_CORRECTION
+    }
+    return [
+        m for i, m in enumerate(folded)
+        if m.get("role") in ("user", "assistant")
+        and "tool_calls" not in m
+        and str(m.get("content") or "").strip()
+        and not (m.get("role") == "assistant" and i + 1 in correction_starts)
+    ]
 
 
 class EcomAgent:
@@ -43,7 +74,7 @@ class EcomAgent:
 
     输入策略 → 上下文构建 → ReAct/工具执行（final_response 终止协议）→
     结构化终答 → 安全与事实校验（TurnFinalizer 固定顺序）→ 持久化
-    （TurnRepository）→ 异步记忆（memory job / 确定性 STM）。
+    （TurnRepository）→ 异步记忆（memory job 增量巩固 LTM）。
 
     Agent 是「无状态算子」：构造 → 处理一轮 → 写回 → 丢弃。
     user_id/session_id 为请求级参数，pod 级资源（client/skill_manager/
@@ -148,7 +179,6 @@ class EcomAgent:
 
         self.current_turn_query = ""
         self._last_turn_ctx = None  # 最近一轮 AgentTurnContext（观测/测试用）
-        self.current_confirmation = None  # 本轮退款确认判定（Review 修复）
 
         self._session_key = session_id or ""
         loaded = self.session_store.load(user_id, self._session_key)
@@ -160,6 +190,11 @@ class EcomAgent:
             session_id or uuid.uuid4().hex
         )
         self.memory_manager.bind_session(self.session_id)
+        # 掉线恢复（Step6）：加载时带回上次遗留的草稿标记（非空 = 上次回复
+        # 未完成）；API 层据此提示客户端重发。本轮收尾会清除它。
+        self.pending_turn = loaded.pending_turn if loaded else None
+        # 写确认两阶段（P1-2）：待确认写草稿随会话持久化，重启/崩溃后仍有效
+        self.pending_write = loaded.pending_write if loaded else None
         if loaded:
             self._state_version = loaded.version
             self.summary = loaded.summary
@@ -167,9 +202,9 @@ class EcomAgent:
             self._append_log = list(loaded.messages)
             self._append_flushed = len(self._append_log)
             self._consolidated_len = loaded.consolidated_len
-            if loaded.short_term_memory:
-                self.memory_manager.restore_stm(loaded.short_term_memory)
 
+        # 修复计划·一：会话租约校验回调（路由层持有 SessionLease 时注入）
+        self._lease_guard: Callable[[], None] | None = None
         self.ctx = ToolContext(
             user_id=user_id,
             session_id=self.session_id,
@@ -177,6 +212,8 @@ class EcomAgent:
             skill_manager=self.skill_manager,
             credentials=credentials,
             enforce_order_ownership=enforce_order_ownership,
+            pending_write=self.pending_write,
+            persist_pending_write=self._persist_pending_write,
         )
 
         if settings.evolve_capture_enabled:
@@ -187,6 +224,19 @@ class EcomAgent:
             )
         else:
             self._turn_recorder = None
+
+    def bind_lease_guard(self, guard: Callable[[], None] | None) -> None:
+        """绑定会话租约校验回调：save/reset 与写工具提交前都会调用。
+
+        回调失效（SessionLockLost）时抛出，调用方据此拒绝提交副作用/会话状态。
+        """
+        self._lease_guard = guard
+        if getattr(self, "ctx", None) is not None:
+            self.ctx.lease_guard = guard
+
+    def _assert_lease(self) -> None:
+        if self._lease_guard is not None:
+            self._lease_guard()
 
     # ============================================================
     # 构造辅助
@@ -228,6 +278,10 @@ class EcomAgent:
             with span("agent.turn", turn_id=ctx.turn_id):
                 return self._chat_pipeline(ctx)
         finally:
+            # 所有返回路径（含护栏/范围/预算兜底）都刷新观测上下文：
+            # 评估沙箱逐轮读 _last_turn_ctx，只有成功路径赋值会让被拦截轮
+            # 读到上一轮的陈旧 ctx（步数翻倍、verdict 串轮）
+            self._last_turn_ctx = ctx
             reset_budget(token)
 
     def _chat_pipeline(self, ctx: AgentTurnContext) -> CustomerServiceResponse:
@@ -274,18 +328,8 @@ class EcomAgent:
         ctx.current_query = decision.text
         self.current_turn_query = decision.text
 
-        # —— 退款确认闸门（Review 修复：服务端三态判定，程序层绝不自行执行）——
-        refund_clarification = self._judge_refund_confirmation(ctx)
-        if refund_clarification is not None:
-            # 多笔待确认且未带订单号 → 确定性澄清问题（零 LLM，不执行写操作）
-            self._open_turn_window(ctx, ctx.sanitized_input)
-            return self._finalizer.finalize_rule_response(
-                ctx, refund_clarification.clarification, requires_human=False,
-                handoff_reason="refund_confirmation_clarify",
-            )
-        # 执行器内部通道载荷（confirm 注入 / ambiguous 禁写）；
-        # 判定本体在 ctx.refund_decision（confirm/cancel/ambiguous/none）
-        state.refund_confirm = self._state_refund_confirm(ctx.refund_decision)
+        # —— 写确认两阶段协议（P1-2）：判定本轮消息对草稿的表态 ——
+        self._resolve_pending_write(ctx.sanitized_input, write_ops=ctx.write_ops)
 
         # —— 用户消息进窗口（审计切片同步记录）——
         self._open_turn_window(ctx, ctx.sanitized_input)
@@ -296,31 +340,45 @@ class EcomAgent:
         except LLMBudgetExhausted:
             record_budget_exhausted("react")
             ctx.budget_fallback = True
-            return self._finalizer.finalize_rule_response(
+            # 中危修复 B6：写超时等 indeterminate 记录可能已被截断在 state 里，
+            # fallback 收尾同样要落账（工单对账建议依赖 _indeterminate_writes）
+            ctx.extra_indeterminate = list(state.indeterminate_writes)
+            ctx.sources = set(state.sources)
+            result = self._finalizer.finalize_rule_response(
                 ctx, BUDGET_FALLBACK_REPLY, requires_human=True,
                 handoff_reason="budget_exhausted",
             )
+            self._indeterminate_writes = list(ctx.indeterminate_writes)
+            return result
         except ForcedFinalizeFailed as e:
             log.warning("react.forced_finalize_failed user=%s err=%s", self.user_id, e)
             ctx.forced_finalize_failed = True
             ctx.budget_fallback = True  # 无法生成有效终答 → 可靠度 0.0
+            ctx.extra_indeterminate = list(state.indeterminate_writes)
+            ctx.sources = set(state.sources)
             from app.observability.metrics import record_turn_missing_final
 
             record_turn_missing_final()
-            return self._finalizer.finalize_rule_response(
+            result = self._finalizer.finalize_rule_response(
                 ctx, BUDGET_FALLBACK_REPLY, requires_human=True,
                 handoff_reason="forced_finalize_failed",
             )
+            self._indeterminate_writes = list(ctx.indeterminate_writes)
+            return result
         if ctx.budget.expired():
             record_budget_exhausted("react")
             ctx.budget_fallback = True
+            ctx.extra_indeterminate = list(state.indeterminate_writes)
+            ctx.sources = set(state.sources)
             from app.observability.metrics import record_turn_missing_final
 
             record_turn_missing_final()
-            return self._finalizer.finalize_rule_response(
+            result = self._finalizer.finalize_rule_response(
                 ctx, BUDGET_FALLBACK_REPLY, requires_human=True,
                 handoff_reason="budget_exhausted",
             )
+            self._indeterminate_writes = list(ctx.indeterminate_writes)
+            return result
 
         ctx.final_args = final  # Review 修复：唯一成功路径 = final_response 协议
         ctx.extra_indeterminate = list(state.indeterminate_writes)
@@ -342,97 +400,103 @@ class EcomAgent:
         # —— 收尾管线（固定顺序 1-7）——
         result = self._finalizer.finalize(ctx)
         self._indeterminate_writes = list(ctx.indeterminate_writes)
-        self._last_turn_ctx = ctx
         return result
 
     # ============================================================
     # 流水线支撑（供 ReactRunner/TurnRepository 调用）
     # ============================================================
-    def _confirmation_store(self):
-        from app.agent.tools.refund import _confirmation_store
+    def _resolve_pending_write(
+        self, user_text: str, write_ops: WriteOpTracker | None = None,
+    ) -> None:
+        """写确认两阶段协议（P1-2）：判定本轮消息对草稿的表态并注入工具上下文。
 
-        return _confirmation_store()
+        判定在**工具执行之前**完成（ReAct 之前），工具只读结论——写与不写的
+        决定权在服务端，不在模型。语义：
+        - confirm → 工具可复用草稿幂等键真正提交；
+        - cancel → 立即作废草稿（不依赖模型是否调用工具）；
+        - ambiguous/none → 草稿保留，本轮禁止任何写落库。
+        超期草稿在此作废（避免陈旧草稿被后来一句无关的确认词触发）。
 
-    def _judge_refund_confirmation(self, ctx: AgentTurnContext):
-        """服务端退款确认三态判定（Review 修复）。
-
-        返回 None = 正常继续（confirm/cancel/none/单笔 ambiguous）；
-        返回 ConfirmationDecision（含 clarification）= 确定性澄清规则响应。
+        **每轮复位**：`write_executed` 是「本轮已执行过写」的标记，必须与
+        `write_confirm` 一样每轮重算——否则上一轮确认提交后置位的 True 会
+        残留到后续轮次，把新一轮的草稿登记误判成「同轮重复提交」。
         """
-        from app.agent.refund_gate import (
-            cancel_pending,
-            get_session_pending,
-            judge_refund_confirmation,
-            migrate_legacy_metadata_tokens,
+        # 轮边界：三个写状态一并复位（write_confirm 本来就在下面每条分支重算，
+        # 这里统一置位以免漏项）
+        self.ctx.write_executed = False
+        draft = self.pending_write
+        if not draft:
+            self.ctx.pending_write = None
+            self.ctx.write_confirm = "none"
+            return
+        if write_gate.is_expired(draft):
+            log.info("write.draft_expired user=%s", self.user_id)
+            self._persist_pending_write(None)
+            self.ctx.pending_write = None
+            self.ctx.write_confirm = "none"
+            return
+
+        decision = write_gate.judge_write_confirmation(
+            user_text, write_gate.pending_of(draft),
         )
-        from app.observability.metrics import record_refund_confirmation_blocked
+        self.ctx.pending_write = draft
+        self.ctx.write_confirm = decision.action
+        if decision.action == "cancel":
+            # 取消即作废：不依赖模型是否调用写工具
+            log.info("write.draft_cancelled user=%s", self.user_id)
+            self._persist_pending_write(None)
+            self.ctx.pending_write = None
+            if write_ops is not None:
+                # 服务端已确知取消事实，直接注入守卫可见的状态位：取消轮模型
+                # 可能只调读工具（终轮实测路径），observe 永远等不到取消回执。
+                write_ops.business_statuses.add(DRAFT_CANCELLED_STATUS)
+            return
+        if decision.action == "confirm":
+            self._persist_pending_write(write_gate.mark_confirmed(draft))
 
-        store = self._confirmation_store()
-        # 旧会话 metadata 中未过期 token → 服务端内部迁移（模型上下文剔除
-        # 由 pending_write_note 层保证，token 永不回注）
-        for msg in reversed(self.raw_messages):
-            if msg.get("role") == "assistant" and "tool_calls" not in msg:
-                legacy = (msg.get("metadata") or {}).get("pending_writes") or []
-                if any(entry.get("confirmation_token") for entry in legacy
-                       if isinstance(entry, dict)):
-                    migrate_legacy_metadata_tokens(
-                        store, self.user_id, self.session_id, legacy,
-                    )
-                break
-
-        pending = get_session_pending(store, self.user_id, self.session_id)
-        gate = judge_refund_confirmation(ctx.sanitized_input, pending)
-        ctx.refund_decision = gate
-        self.current_confirmation = gate
-        if gate.action == "cancel" and gate.payload is not None:
-            cancel_pending(store, self.user_id, self.session_id, gate.payload)
-            record_refund_confirmation_blocked("cancel")
-            log.info(
-                "refund.confirmation_cancelled user=%s order=%s",
-                self.user_id, gate.matched_order_id,
-            )
-        elif gate.action == "confirm":
-            log.info(
-                "refund.confirmation_confirmed user=%s order=%s",
-                self.user_id, gate.matched_order_id,
-            )
-        elif gate.action == "ambiguous" and gate.clarification:
-            record_refund_confirmation_blocked("multiple_pending")
-            return gate
-        elif gate.action == "ambiguous":
-            record_refund_confirmation_blocked("ambiguous")
-        return None
-
-    @staticmethod
-    def _state_refund_confirm(gate) -> dict | None:
-        """执行器内部通道载荷：confirm 注入凭证；取消/歧义均禁写。"""
-        if gate is None:
-            return None
-        if gate.action == "confirm" and gate.payload is not None:
-            return {
-                "action": "confirm",
-                "token": gate.payload.token,
-                "refund_id": gate.payload.refund_id,
-                "order_id": gate.payload.order_id,
-                "reason": gate.payload.reason,
-            }
-        if gate.action in ("ambiguous", "cancel"):
-            # cancel 不能返回 None：否则模型会在同一轮重新调用 apply_refund
-            # 发起一笔新的待确认请求，绕过用户刚刚的取消意图。
-            return {"action": gate.action}
-        return None
+    def _persist_pending_write(self, draft: dict | None) -> None:
+        """登记/清除待确认写草稿（与消息同一 save 事务落库，崩溃可恢复）。"""
+        self.pending_write = draft
+        self.ctx.pending_write = draft
+        self.flush_session(
+            pending_turn=self.pending_turn, pending_write=draft,
+        )
 
     def _open_turn_window(self, ctx: AgentTurnContext, user_text: str) -> None:
-        """本轮窗口起点：追加用户消息并记录审计切片起点。"""
         ctx.slice_start = len(self.raw_messages)
         message = {"role": "user", "content": user_text}
         self.raw_messages.append(message)
         ctx.full_turn_messages.append(message)
+        # 掉线恢复（Step6）：user 消息先落库并置 pending_turn 草稿标记。
+        # 必须在本轮（ReAct 循环）开始前置位——若放在收尾阶段，只能覆盖
+        # 收尾窗口的崩溃，ReAct 中途掉线（最常见）仍会整轮丢失。
+        self._finalizer.begin_turn(ctx)
 
     def emit_status(self, text: str, step: int = 0) -> None:
         """SSE thought 事件：受控状态说明（不透出模型原始思考）。"""
         log.info("react.status step=%s", step)
         self._emit_event("thought", {"text": text, "step": step})
+
+    def emit_reasoning(self, text: str, step: int = 0) -> None:
+        """SSE reasoning 事件：模型推理原文（推理模型适配 T6）。
+
+        **默认关闭**（`settings.sse_reasoning_enabled=False`）。开启是对
+        「thought 只发受控文案、不透出模型原始思考」这一有意设计的反向修改，
+        属产品/合规决策：推理原文可能含内部措辞与未过滤内容，因此开启时先过
+        输出 guardrails（复用 `guardrails_enabled` 管道），命中敏感词即不透出
+        （审计仍留存，见 T3）。关闭时本方法是纯 no-op——断言"不透出"的现有
+        测试因此继续成立。
+        """
+        if not settings.sse_reasoning_enabled or not text:
+            return
+        if settings.guardrails_enabled:
+            from app.security.guardrails import check_output
+
+            verdict = check_output(text)
+            if verdict.blocked:
+                log.warning("react.reasoning_blocked reason=%s", verdict.reason)
+                return
+        self._emit_event("reasoning", {"text": text, "step": step})
 
     def log_tool_result(self, name: str, sequence: int, display: str) -> None:
         """工具结果审计日志：摘要展示（完整结果不进日志）。"""
@@ -444,14 +508,25 @@ class EcomAgent:
 
     def flush_session(self, enqueue_memory_job: bool = False,
                       turn_messages: list[dict] | None = None,
-                      turn_id: str = "") -> None:
+                      turn_id: str = "",
+                      pending_turn: dict | None = None,
+                      pending_write=_KEEP_PENDING_WRITE) -> None:
         """经 SessionStore 保存（CAS）；SQL 同事务入队 memory job。
 
+        pending_turn：掉线恢复草稿标记（None = 清空）。轮次开始置位、成功
+        收尾清除，与消息同一 save 事务落库——崩溃后遗留非空即「半截回复」。
+        pending_write：写确认两阶段草稿（P1-2）。**未显式传参时保持会话现值**
+        （哨兵默认值）——收尾保存等既有调用点不关心该字段，若默认成 None 会把
+        本轮刚登记的草稿误清空；显式传 None 才是「作废草稿」。
         非 SQL 开发模式（文件/Redis）：走轻量文件队列（阶段F），任务条目
         携带本轮待巩固消息负载（Review 修复：不再依赖可能回退的消息长度）。
         """
+        if pending_write is _KEEP_PENDING_WRITE:
+            pending_write = self.pending_write
         pending = self._append_log[self._append_flushed:]
         supports_jobs = getattr(self.session_store, "memory_jobs_enabled", False)
+        # 修复计划·一：保存会话前再次校验租约——失效则拒绝落库（防无锁写入）
+        self._assert_lease()
         # idle consolidator is the explicit fallback when the durable worker is
         # disabled; do not leave a second queue behind for a future worker to
         # replay the same turns.
@@ -464,7 +539,8 @@ class EcomAgent:
                 user_id=self.user_id,
                 summary=self.summary,
                 messages=self.raw_messages,
-                short_term_memory=self.memory_manager.stm_to_dict(),
+                pending_turn=pending_turn,
+                pending_write=pending_write,
                 version=self._state_version,
                 consolidated_len=self._consolidated_len,
             ),
@@ -480,13 +556,9 @@ class EcomAgent:
             from app.agent.memory.jobs import FileMemoryJobStore
 
             slice_msgs = turn_messages if turn_messages is not None else pending
-            # 负载只含模型可见消息（user + 最终 assistant），工具中间消息不进巩固
-            payload = [
-                m for m in fold_history(slice_msgs)
-                if m.get("role") in ("user", "assistant")
-                and "tool_calls" not in m
-                and str(m.get("content") or "").strip()
-            ]
+            # 负载只含模型可见消息（user + 最终 assistant）；工具中间消息与
+            # 纯文本协议纠错稿不进巩固（见 _memory_job_payload）
+            payload = _memory_job_payload(fold_history(slice_msgs))
             store = FileMemoryJobStore(str(_P(settings.memory_dir) / "jobs"))
             store.enqueue(
                 session_key=f"{self.user_id}/{self._session_key or 'session'}",
@@ -537,9 +609,10 @@ class EcomAgent:
     # 会话管理
     # ============================================================
     def reset(self):
+        # 修复计划·一：删除会话前校验租约——失效则拒绝删除（防无锁破坏状态）
+        self._assert_lease()
         # Review 修复：以重置前的会话标识清理（确认存储按 session_id(uuid)
         # 注册；SQL memory_jobs 随 delete 同事务清理；文件模式按 session_key）
-        old_session_id = self.session_id
         old_session_key = self._session_key or "session"
         self.raw_messages = []
         self.summary = None
@@ -550,24 +623,22 @@ class EcomAgent:
         self._consolidated_len = 0
         self._append_log = []
         self._append_flushed = 0
-        self.memory_manager.reset_short_term()
-        self.current_confirmation = None
+        self.pending_turn = None  # reset 清空掉线草稿标记（新会话无半截轮次）
+        # 写确认两阶段：reset 一并作废待确认草稿（超时/取消的第三种出口）
+        self.pending_write = None
+        self.ctx.pending_write = None
+        self.ctx.write_confirm = "none"
+        self.ctx.write_executed = False
         self.session_store.delete(self.user_id, old_session_key)
-        try:
-            from app.agent.refund_gate import cancel_pending, get_session_pending
-
-            store = self._confirmation_store()
-            for key in (old_session_id, old_session_key):
-                for entry in get_session_pending(store, self.user_id, key):
-                    cancel_pending(store, self.user_id, key, entry)
-        except Exception:
-            log.warning("reset.refund_pending_cleanup_failed", exc_info=True)
         try:
             from app.agent.memory.jobs import purge_session_file_jobs
 
             purge_session_file_jobs(self.user_id, old_session_key)
         except Exception:
             log.warning("reset.memory_jobs_cleanup_failed", exc_info=True)
+        # 轮次状态一并复位：indeterminate 对账清单与上一轮 ctx 不跨会话残留
+        self._indeterminate_writes = []
+        self._last_turn_ctx = None
 
     def save(self) -> None:
         self.flush_session()

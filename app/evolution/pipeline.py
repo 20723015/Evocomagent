@@ -631,11 +631,16 @@ class EvolutionPipeline:
     # 4：挖掘
     # ============================================================
     def _mine(self, report: EvolutionReport) -> list[TurnRecord]:
-        turns = mine_turns(self._turns_dir, self._ledger.processed_set())
+        processed = self._ledger.processed_set()
+        turns = mine_turns(self._turns_dir, processed)
         for session_path in self._session_paths:
             p = Path(session_path)
             if p.exists():
-                turns.extend(scan_legacy_session(p))
+                # legacy 会话同走 processed 游标：_finalize 会把全部挖掘轮次
+                # （含 judge 拒绝）mark_processed，重复 run 不得重复挖掘
+                turns.extend(
+                    t for t in scan_legacy_session(p) if t.turn_id not in processed
+                )
         report.mined = len(turns)
         return turns
 
@@ -776,6 +781,10 @@ class EvolutionPipeline:
     ) -> list[CandidateQA]:
         if not survivors:
             return survivors
+        # 口径说明：自动沉淀链路用单一 evolve_dedup_threshold，final_dedup
+        # 是「问题/答案任一侧命中即判重」的宽松语义，且批内去重在最终去重
+        # 之后按 question\nanswer 拼接向量做——与人工链路的 q/a 双阈值
+        # （human_dedup_*_threshold）相互独立。此处为既有行为，不改。
         try:
             retriever = self._retriever_factory()
             kept = []
@@ -1213,10 +1222,25 @@ class EvolutionPipeline:
         report = EvolutionReport()
         if not lock_held:
             self._lock.acquire(phase="approve")
+        # 重接地基准推进条件（对齐 run() 的 generation_ready 语义）：
+        # ① 发布确实完成（published_ok，零发布/失败/blocked 均不算）；
+        # ② 进入时 last_human_generation 已与活动 generation 一致（baseline_clean，
+        #    即无未核对的人工变更）。任一不满足都不推进，留给下一次 run 的
+        #    _maybe_revalidate 触发重接地。
+        active_at_entry = self._generation_store.active(
+            settings.rag_backend.lower()
+        )
+        baseline_clean = self._read_last_human_generation() == (
+            active_at_entry.generation_id if active_at_entry else ""
+        )
+        published_ok = False
         try:
             self._assert_kb_writes_allowed()
             self._recover_journal(report)
             kept: list[CandidateQA] = []
+            # 口径说明（同 _final_dedup）：审核通过落库前的去重沿用自动链路
+            # 的单一 evolve_dedup_threshold 与 final_dedup 宽松语义，未对齐
+            # 人工链路的 q/a 双阈值——既有行为，明确不改。
             try:
                 retriever = self._retriever_factory()
                 for c in candidates:
@@ -1244,6 +1268,34 @@ class EvolutionPipeline:
                 raise RuntimeError(
                     f"approve 发布失败：检索不可用（{type(e).__name__}: {e}）"
                 ) from e
+            if kept:
+                # 低危修复 C1：批内 pairwise 去重（与机器人路径 _final_dedup /
+                # human_publish 同阈值同平局规则）——同一批 approve 的近重复
+                # 候选不再双双发布
+                vectors = self._embedder.encode(
+                    [f"{c.question}\n{c.answer}" for c in kept]
+                )
+                metas = [self._meta(c) for c in kept]
+                dropped = dedup.in_run_pairwise(
+                    vectors, metas, threshold=settings.evolve_dedup_threshold
+                )
+                if dropped:
+                    report.skipped["duplicate"] = (
+                        report.skipped.get("duplicate", 0) + len(dropped)
+                    )
+                    dropped_set = set(dropped)
+                    for i in dropped:
+                        self._per_candidate(
+                            report, kept[i], "skipped", "duplicate_on_approve"
+                        )
+                        # 与 duplicate_on_approve 同口径：终结出 pending
+                        self._ledger.mark_rejected(
+                            kept[i].candidate_id,
+                            reason="duplicate_on_approve",
+                        )
+                    kept = [
+                        c for i, c in enumerate(kept) if i not in dropped_set
+                    ]
             if not kept:
                 self._write_report(report, suffix="-approve")
                 return report
@@ -1255,6 +1307,7 @@ class EvolutionPipeline:
             self._publish(
                 limited, turns=[], report=report, before_detail=None, with_eval=False
             )
+            published_ok = True
             return report
         except (EvolutionBlockedError, EvolutionRecoveryPendingError):
             raise
@@ -1262,11 +1315,13 @@ class EvolutionPipeline:
             self._rollback_publish()
             raise
         finally:
-            # approve 切代后同样记录，避免下一次 run 误判为「人工知识变更」
-            try:
-                self.record_current_generation()
-            except Exception:  # noqa: BLE001 - generation bookkeeping is best effort
-                log.info("⚠️  记录 last_human_generation 失败（不影响本次 approve）")
+            if published_ok and baseline_clean:
+                # approve 切代后同样记录，避免下一次 run 误判为「人工知识变更」；
+                # 发布失败或有未核对人工变更时不推进（见方法开头的条件注释）
+                try:
+                    self.record_current_generation()
+                except Exception:  # noqa: BLE001 - generation bookkeeping is best effort
+                    log.info("⚠️  记录 last_human_generation 失败（不影响本次 approve）")
             if not lock_held:
                 self._lock.release()
 

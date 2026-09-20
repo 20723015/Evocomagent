@@ -24,8 +24,13 @@ def main(argv: list[str]) -> int:
 
         text = normalize_document(parse_document(Path(path)))
         limit = settings.kb_upload_max_text_chars
-        if len(text) > limit:
-            text = text[:limit]
+        full_len = len(text)
+        if full_len > limit:
+            # 截断只为保护 IPC 管道；truncated 标记让父进程按「超限拒绝」
+            # 处理（UploadParseFailed），不静默截断入库
+            _emit({"ok": text[:limit], "truncated": True,
+                   "full_len": full_len, "limit": limit})
+            return 0
         _emit({"ok": text})
         return 0
     except BaseException as e:  # noqa: BLE001 —— 任何异常回传（含 KeyboardInterrupt）

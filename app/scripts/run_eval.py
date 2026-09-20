@@ -37,16 +37,45 @@ from app.evaluation.dataset import load_dataset  # noqa: E402
 from app.evaluation.evaluator import Evaluator  # noqa: E402
 from app.evaluation.manifest import build_manifest  # noqa: E402
 from app.evaluation.sandbox import Sandbox  # noqa: E402
+from app.llm.model_profile import profile_fingerprint, temperature_honored  # noqa: E402
 
 
 class JudgeModelConfigError(RuntimeError):
     """正式评测未提供与被测模型不同的 Judge 模型。"""
 
 
+class JudgeProfileError(RuntimeError):
+    """Judge 模型画像不尊重 temperature（判分不确定性无法保证）。"""
+
+
+def judge_guard_reason(model: str) -> str:
+    """judge 画像守卫：temperature 必须被厂商尊重（推理模型适配 T9）。
+
+    judge 调用硬设 `temperature=0.0`（`metrics.py` 三处）：被忽略
+    （DeepSeek-reasoner）、被禁传（o 系列）或必须为 1（Claude thinking）的模型
+    无法保证判定确定性——同一条用例的判分会在游走，结论不可复算。因此 fail-fast
+    拒绝，而不是静默换值（静默换值等于悄悄改了判分口径）。
+    """
+    if temperature_honored(model):
+        return ""
+    profile = profile_fingerprint(model).get("profile") or {}
+    return (
+        f"Judge 模型 {model} 的画像 temperature_mode="
+        f"{profile.get('temperature_mode')}（非 free）：judge 调用固定 temperature=0.0，"
+        "该模型会忽略/拒绝/改写该值，判分不可复算。请换一个 temperature_mode=free "
+        "的 Judge 模型（或用 MODEL_PROFILE_OVERRIDES 更正画像）。"
+    )
+
+
 def resolve_judge_model(args_judge_model: str) -> str:
     """不同模型的 Judge：命令行 > settings.eval_judge_model；正式评测强制不同。"""
     judge = args_judge_model or settings.eval_judge_model
-    if judge and judge != settings.model_name:
+    # 比较用规范化形式（大小写/首尾空白）：精确比较会被 "GLM-4.6" vs
+    # "glm-4.6" 这类同模型异写绕过强制
+    if judge and judge.strip().lower() != settings.model_name.strip().lower():
+        reason = judge_guard_reason(judge)
+        if reason:
+            raise JudgeProfileError(reason)
         return judge
     raise JudgeModelConfigError(
         "正式评测要求提供与被测模型不同的 Judge 模型（EVAL_JUDGE_MODEL 或 --judge-model），"
@@ -113,11 +142,6 @@ def main():
         help=f"测试集 JSON 路径（默认: {settings.eval_dataset_path}）",
     )
     parser.add_argument(
-        "--mode", choices=["single", "multi"],
-        default="multi" if settings.multi_agent_enabled else "single",
-        help="被测 Agent 模式（默认据 multi_agent_enabled）",
-    )
-    parser.add_argument(
         "--judge", dest="judge", action="store_true", default=settings.eval_use_judge,
         help="启用 LLM-as-judge（默认开）",
     )
@@ -144,7 +168,6 @@ def main():
 
     log.info("=" * 78)
     log.info("  并夕夕 · Agent 评估体系（eval-v2 冻结协议）")
-    log.info(f"  模式      : {args.mode}")
     log.info(f"  数据集    : {dataset_path}")
     log.info(f"  LLM judge : {'开启' if args.judge else '关闭（仅规则）'}")
     log.info(f"  被测模型  : {settings.model_name}")
@@ -161,13 +184,13 @@ def main():
         sys.exit(1)
     log.info(f"   共 {len(cases)} 条用例")
 
-    log.info(f"\n[2/3] 在沙箱中重跑测试集（{args.mode} 模式）...")
+    log.info("\n[2/3] 在沙箱中重跑测试集...")
     client = OpenAI(api_key=settings.openai_api_key, base_url=settings.openai_base_url)
     judge_client = (
         OpenAI(api_key=settings.openai_api_key, base_url=settings.openai_base_url)
         if judge_model else None
     )
-    sandbox = Sandbox(mode=args.mode)
+    sandbox = Sandbox()
     evaluator = Evaluator(
         sandbox=sandbox,
         client=client,
@@ -197,7 +220,7 @@ def main():
     manifest = build_manifest(
         dataset_path=str(dataset_path), num_cases=len(cases),
         model=settings.model_name, judge_model=judge_model,
-        mode=args.mode, use_judge=args.judge,
+        use_judge=args.judge,
     )
     (out_dir / "manifest.json").write_text(
         json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8"

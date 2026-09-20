@@ -17,9 +17,28 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 from app.config.settings import settings
+from app.llm.model_profile import profile_fingerprint, temperature_honored
 from app.observability.logging import get_logger
 
 log = get_logger("app.scripts.online_quality")
+
+
+def judge_guard_reason(model: str) -> str:
+    """judge 画像守卫（推理模型适配 T9，与 run_eval 同一口径）。
+
+    lite judge 同样硬设 `temperature=0.0`：非 free 画像的模型会忽略/拒绝该值，
+    抽样判分不可复算——在线信号一旦不可复算，看板上的解决率趋势就失去意义
+    （抽样本身随机，但同一批 turn 重跑应得同一结论）。
+    """
+    if temperature_honored(model):
+        return ""
+    profile = profile_fingerprint(model).get("profile") or {}
+    return (
+        f"lite judge 模型 {model} 的画像 temperature_mode="
+        f"{profile.get('temperature_mode')}（非 free），temperature=0.0 不生效；"
+        "请换 free 画像的 judge（--judge-model 或 EVAL_JUDGE_MODEL）。"
+    )
+
 
 
 def _recent_turns(turns_dir: Path, hours: int) -> list[dict]:
@@ -39,9 +58,14 @@ def _recent_turns(turns_dir: Path, hours: int) -> list[dict]:
 def judge_turn(question: str, reply: str, judge_prompt: str, client, model: str) -> dict:
     """Lite 裁判：判断本轮是否已解决（0/1 + 一句话理由）。
 
-    judge 调用失败即标记 unknown（在线信号不打断业务）。
+    judge 调用失败即标记 unknown（在线信号不打断业务）；画像守卫失败同样标记
+    unknown —— 采样任务不因单个模型配置问题整体崩掉，但 main() 已 fail-fast。
     """
+    reason = judge_guard_reason(model)
+    if reason:
+        return {"resolved": None, "reason": reason}
     try:
+
         resp = client.chat.completions.create(
             model=model,
             temperature=0.0,
@@ -76,7 +100,19 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--hours", type=int, default=24)
     parser.add_argument("--sample", type=int, default=50)
     parser.add_argument("--output", default="app/sessions/online_quality.json")
+    parser.add_argument(
+        "--judge-model", default="",
+        help="lite judge 模型（缺省 EVAL_JUDGE_MODEL，再缺省被测模型；"
+             "推理模型适配 T9：非 free 画像直接拒绝运行）",
+    )
     args = parser.parse_args(argv)
+
+    judge_model = args.judge_model or settings.eval_judge_model or settings.model_name
+    guard = judge_guard_reason(judge_model)
+    if guard:
+        # fail-fast 而不是让整批采样变成 unknown：静默的全 unknown 看板比报错更危险
+        log.error("❌ %s", guard)
+        return 2
 
     turns = _recent_turns(Path(args.turns), args.hours)
     if not turns:
@@ -93,7 +129,7 @@ def main(argv: list[str] | None = None) -> int:
             "turn_id": t["turn_id"],
             "ts": t["ts"],
             "question_preview": t["question"][:80],
-            **judge_turn(t["question"], t["reply"], JUDGE_PROMPT, client, settings.model_name),
+            **judge_turn(t["question"], t["reply"], JUDGE_PROMPT, client, judge_model),
         })
 
     resolved = [v for v in verdicts if v["resolved"] is True]

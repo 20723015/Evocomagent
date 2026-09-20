@@ -205,3 +205,219 @@ def _read_jsonl(path):
         if line:
             out.append(_json.loads(line))
     return out
+
+
+def test_ltm_write_side_timestamps_are_utc(tmp_path):
+    """低危修复 B6：LTM 写侧时间戳统一 UTC（+00:00），与读侧
+    _created_at_utc 的 tz-aware 解析、recency/TTL 计算对齐。"""
+    from datetime import datetime, timedelta, timezone
+
+    from app.agent.memory.models import MemoryFact
+
+    ltm = LongTermMemory(user_id="u1", memory_dir=str(tmp_path))
+    ltm.add_interaction_summary("老客户，偏好顺丰")
+    ltm.add_facts([MemoryFact(
+        content="偏好顺丰快递", category="preference",
+        created_at=datetime.now(timezone.utc).isoformat(),
+    )])
+    ltm.save()
+    data = json.loads((tmp_path / "u1.json").read_text(encoding="utf-8"))
+    assert data["updated_at"].endswith("+00:00")
+    assert data["interaction_summaries"][-1]["timestamp"].endswith("+00:00")
+
+    # 读写一致性：新事实不被 TTL 过滤；超期（>365d）事实不注入
+    fresh = LongTermMemory(user_id="u2", memory_dir=str(tmp_path / "b"))
+    fresh.add_facts([MemoryFact(
+        content="偏好顺丰", category="preference",
+        created_at=datetime.now(timezone.utc).isoformat(),
+    )])
+    assert fresh.select_facts_for_prompt("", max_facts=8)
+
+    # 批次7 TTL 类别豁免：超期 preference 不再被过滤（身份/偏好长期有效，
+    # 有意行为变更）；issue 类别仍受 memory_fact_ttl_days 约束
+    stale = LongTermMemory(user_id="u3", memory_dir=str(tmp_path / "c"))
+    stale.add_facts([MemoryFact(
+        content="很老的事实", category="issue",
+        created_at=(
+            datetime.now(timezone.utc) - timedelta(days=400)
+        ).isoformat(),
+    )])
+    assert stale.select_facts_for_prompt("", max_facts=8) == []
+    exempt = LongTermMemory(user_id="u4", memory_dir=str(tmp_path / "d"))
+    exempt.add_facts([MemoryFact(
+        content="一年前的偏好", category="preference",
+        created_at=(
+            datetime.now(timezone.utc) - timedelta(days=400)
+        ).isoformat(),
+    )])
+    assert exempt.select_facts_for_prompt("", max_facts=8) != []
+
+
+def test_incremental_identity_extraction_end_to_end(tmp_path, reset_settings, monkeypatch):
+    """记忆系统重构·Step4：增量提取默认开启（memory_job_worker_enabled=True）。
+
+    「我叫李四」→ 轮末 flush 同事务入队 memory job → worker 用**真实**提取链路
+    消费 → LTM 落库 identity.name=李四。覆盖「接线存在」之外的默认开关与
+    端到端落库，防止开关被误关或链路断裂时静默丢记忆。
+    """
+    from app.agent.chat import EcomAgent
+    from app.agent.memory.jobs import FileMemoryJobStore, MemoryJobWorker
+    from conftest import FakeChatClient
+
+    assert settings.memory_job_worker_enabled is True  # 生产默认：增量提取开启
+    monkeypatch.setattr(settings, "memory_dir", str(tmp_path / "memory"))
+    settings.session_dir = str(tmp_path / "sessions")
+    settings.evolve_capture_enabled = False
+
+    client = FakeChatClient()
+    client.enqueue_final_response("好的，李四先生。")
+    # 提取调用（真实 extract_long_term_facts）：模型输出 identity.name 变更
+    client.enqueue(json.dumps({
+        "mutations": [{
+            "operation": "upsert", "fact_key": "identity.name",
+            "content": "用户名叫李四", "category": "identity",
+            "confidence": 0.95, "target_fact_id": "", "explicit": True,
+            "evidence": "我叫李四",
+        }],
+        "interaction_summary": "用户自报姓名",
+    }, ensure_ascii=False))
+
+    agent = EcomAgent(user_id="u1", client=client, memory_enabled=True, use_mcp=False)
+    agent.context_builder._window = 8192  # 不触发历史压缩
+    agent.chat("我叫李四")
+
+    jobs_dir = str(tmp_path / "memory" / "jobs")
+    assert len(_read_jsonl(FileMemoryJobStore(jobs_dir)._queue)) == 1  # 已入队
+
+    ltm = LongTermMemory(user_id="u1", memory_dir=str(tmp_path / "memory"))
+    worker = MemoryJobWorker(
+        FileMemoryJobStore(jobs_dir), lambda uid, sid="": ltm,
+        client, "fake-model", worker_id="w1",
+    )
+    assert worker.process_once(limit=10) == 1
+
+    ltm.load()
+    by_key = {f.fact_key: f.content for f in ltm.active_facts}
+    assert by_key.get("identity.name") == "用户名叫李四"
+    assert [s["summary"] for s in ltm.interaction_summaries] == ["用户自报姓名"]
+
+
+# ------------------------------------------------------------
+# 记忆系统重构·Step5：LTM cache-aside（SQL 唯一正本 + Redis 读缓存）
+# ------------------------------------------------------------
+def _sql_ltm(tmp_path, name="ltm.sqlite"):
+    from sqlalchemy import create_engine
+
+    from app.stores.sql.memory_store import SqlLTMStore
+    from app.stores.sql.schema import metadata
+
+    engine = create_engine(f"sqlite:///{tmp_path / name}")
+    metadata.create_all(engine)
+    return SqlLTMStore(engine)
+
+
+def _payload(content: str) -> dict:
+    return {
+        "schema_version": 3, "version": 1,
+        "facts": [{
+            "content": content, "category": "identity",
+            "created_at": "2026-09-01T10:00:00+00:00",
+            "fact_id": "f1", "fact_key": "identity.name",
+            "status": "active", "confidence": 1.0, "evidence": "",
+            "updated_at": "2026-09-01T10:00:00+00:00",
+        }],
+        "interaction_summaries": [],
+    }
+
+
+def test_cached_ltm_miss_backfills_and_hit_serves_cache(tmp_path):
+    from app.stores.memory_store import CachedLTMStore
+
+    redis = _make_redis()
+    inner = _sql_ltm(tmp_path)
+    store = CachedLTMStore(inner, redis)
+    inner.save("u1", _payload("name:张三"))
+
+    loaded = store.load("u1")                      # 未命中 → 回源并回填
+    assert loaded["facts"][0]["content"] == "name:张三"
+    assert redis.hgetall("memory:u1")              # 缓存已回填
+
+    class _BoomInner:
+        def load(self, user_id):
+            raise AssertionError("命中缓存时不得回源正本")
+
+    assert CachedLTMStore(_BoomInner(), redis).load("u1")["facts"][0]["content"] == "name:张三"
+
+
+def test_cached_ltm_save_and_merge_refresh_cache(tmp_path):
+    from app.stores.memory_store import CachedLTMStore
+
+    redis = _make_redis()
+    store = CachedLTMStore(_sql_ltm(tmp_path), redis)
+
+    store.save("u1", _payload("name:张三"))
+    assert store.load("u1")["facts"][0]["content"] == "name:张三"
+    assert CachedLTMStore(_sql_ltm(tmp_path), redis).load("u1")["facts"][0]["content"] == "name:张三"
+
+    def _merge(current):
+        payload = current or _payload("name:张三")
+        payload["facts"] = [*payload["facts"], {
+            **_payload("preference:蓝色")["facts"][0],
+            "fact_id": "f2", "fact_key": "preference.color",
+            "category": "preference", "content": "preference:蓝色",
+        }]
+        return payload
+
+    store.merge("u1", _merge)
+    cached = CachedLTMStore(_sql_ltm(tmp_path), redis).load("u1")
+    assert [f["content"] for f in cached["facts"]] == ["name:张三", "preference:蓝色"]
+
+
+def test_cached_ltm_corrupt_cache_falls_through_and_repairs(tmp_path):
+    """损坏缓存不得冒充正本（坏字段被解码成空表 = 静默清空记忆）。"""
+    from app.stores.memory_store import CachedLTMStore
+
+    redis = _make_redis()
+    inner = _sql_ltm(tmp_path)
+    inner.save("u1", _payload("name:张三"))
+    redis.hset("memory:u1", mapping={"facts": "{not json", "interaction_summaries": "[]"})
+
+    store = CachedLTMStore(inner, redis)
+    assert store.load("u1")["facts"][0]["content"] == "name:张三"  # 回源
+    assert store.load("u1")["facts"][0]["content"] == "name:张三"  # 缓存已修复
+
+
+def test_cached_ltm_redis_failure_degrades_to_inner(tmp_path):
+    """Redis 读/写异常都不得影响正本读写（缓存只是加速层）。"""
+    from app.stores.memory_store import CachedLTMStore
+
+    class _BrokenRedis:
+        def hgetall(self, key):
+            raise ConnectionError("redis down")
+
+        def hset(self, key, mapping=None):
+            raise ConnectionError("redis down")
+
+        def expire(self, key, ttl):
+            raise ConnectionError("redis down")
+
+    inner = _sql_ltm(tmp_path)
+    store = CachedLTMStore(inner, _BrokenRedis())
+
+    store.save("u1", _payload("name:张三"))                     # 写正本成功
+    assert store.load("u1")["facts"][0]["content"] == "name:张三"  # 读回源成功
+    assert inner.load("u1")["facts"][0]["content"] == "name:张三"
+
+
+def test_cached_ltm_propagates_storage_unavailable(tmp_path):
+    """正本不可用 → StorageUnavailableError 直透（绝不拿缓存冒充正本）。"""
+    from app.stores.base import StorageUnavailableError
+    from app.stores.memory_store import CachedLTMStore
+
+    class _DownInner:
+        def load(self, user_id):
+            raise StorageUnavailableError("SQL down")
+
+    store = CachedLTMStore(_DownInner(), _make_redis())
+    with pytest.raises(StorageUnavailableError):
+        store.load("u1")

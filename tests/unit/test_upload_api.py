@@ -19,7 +19,7 @@ DOC = _pad("## 上传政策补充\n\n七天无理由退货细则。\n".encode("u
 class _FakeComponents:
     redis = None
     db_engine = None
-    es_client = None
+    es_provider = None
     message_index = ""
     tool_executor = None
     mcp_client = None  # lifespan 收尾访问
@@ -141,3 +141,20 @@ class TestUploadApi:
         client, _ = api_ctx  # with_service 默认 True；503 分支单独用 direct fixture 覆盖
         r = client.get("/v1/kb/documents")
         assert r.status_code in (200, 503)
+
+    def test_create_upload_non_integer_size_422(self, api_ctx):
+        """低危修复 C7：size_bytes/chunk_size 非整数 → 422（修复前 int()
+        ValueError 逃逸 → 500）。"""
+        client, _ = api_ctx
+        r = client.post("/v1/kb/uploads", json={
+            "uploader": "ops-a", "filename": "x.md", "size_bytes": "abc",
+            "chunk_size": 512,
+        })
+        assert r.status_code == 422
+        assert "整数" in r.json()["detail"]
+
+        r2 = client.post("/v1/kb/uploads", json={
+            "uploader": "ops-a", "filename": "x.md", "size_bytes": 100,
+            "chunk_size": "abc",
+        })
+        assert r2.status_code == 422

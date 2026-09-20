@@ -5,6 +5,9 @@
 # 组件：MySQL 8 / Redis 7 / Elasticsearch 8.11.4（RRF 用 trial license）/
 # MinIO / bge-reranker（TEI）/ fake OpenAI+embedding+commerce（确定性无密钥）。
 # 应用服务默认不启动（评测脚本/CLI 直连依赖即可）；需要时 uncomment app。
+#
+# reranker 需要 GPU 透传（CUDA 镜像无 libcuda.so.1 会直接退出）。CPU-only 机器用：
+#   docker compose -f deploy/compose/docker-compose.yml #                  -f deploy/compose/docker-compose.cpu.yml up -d reranker
 
 name: ecom-eval
 
@@ -69,12 +72,23 @@ services:
 
   reranker:
     # bge-reranker-v2-m3（TEI 协议；模型目录挂载自 ./models）
-    image: ghcr.io/huggingface/text-embeddings-inference:1.5
+    # 镜像经 TEI_IMAGE 可覆盖（CPU-only 机器见 docker-compose.cpu.yml）
+    image: ${TEI_IMAGE:-ghcr.io/huggingface/text-embeddings-inference:1.5}
     command: ["--model-id", "/data", "--dtype", "float16"]
     volumes:
       - ../../models/bge-reranker-v2-m3:/data
     ports:
       - "8001:80"
+    # GPU 透传：CUDA 镜像缺 libcuda.so.1 会立即退出（实测无透传时
+    # `error while loading shared libraries: libcuda.so.1`）。
+    # 需 Docker 宿主具备 nvidia runtime（`docker info` 的 Runtimes 含 nvidia）。
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
     healthcheck:
       test: ["CMD-SHELL", "curl -fs http://localhost:80/health || exit 1"]
       interval: 10s

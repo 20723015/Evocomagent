@@ -9,7 +9,11 @@ from app.agent.tools.logistics import query_logistics
 from app.agent.tools.memory_tool import recall_user_memory
 from app.agent.tools.order import query_order
 from app.agent.tools.product import query_product
-from app.agent.tools.refund import apply_refund
+from app.agent.tools.refund import (
+    cancel_refund_application,
+    query_refund_application,
+    submit_refund_application,
+)
 from app.agent.tools.skill_tool import load_skill
 from app.agent.tools.user_orders import list_user_orders
 
@@ -17,7 +21,9 @@ _TOOL_MAP: dict[str, Callable] = {
     "query_order": query_order,
     "query_product": query_product,
     "query_logistics": query_logistics,
-    "apply_refund": apply_refund,
+    "submit_refund_application": submit_refund_application,
+    "query_refund_application": query_refund_application,
+    "cancel_refund_application": cancel_refund_application,
     "search_knowledge": search_knowledge,
     "list_user_orders": list_user_orders,
     "recall_user_memory": recall_user_memory,
@@ -133,26 +139,84 @@ TOOL_DEFINITIONS: list[dict] = [
     {
         "type": "function",
         "function": {
-            "name": "apply_refund",
+            "name": "submit_refund_application",
             "description": (
-                "为指定订单申请退款（敏感操作，必须先与用户确认）。"
-                "首次调用签发待确认请求；用户明确确认后再次调用（相同订单号与原因）"
-                "即由系统自动完成提交——确认凭证与幂等键由系统内部保管与注入，"
-                "你不需要也无法提交任何凭证字段。"
+                "为指定订单提交退款申请（敏感写操作，两阶段协议）。"
+                "首次调用只生成草稿、不提交：请把订单号与退款原因复述给用户并请求确认；"
+                "用户明确确认后，带 confirm=true 再次调用本工具才会真正提交。"
+                "只有当用户当前消息明确要求退款或退货、且给出准确订单号时才调用；"
+                "申请提交后进入商家审核，审核通过前可撤回。"
+                "咨询、否定、条件句、订单指代（如「这单」）不要调用。"
             ),
             "parameters": {
                 "type": "object",
                 "properties": {
                     "order_id": {
                         "type": "string",
-                        "description": "要退款的订单号",
+                        "description": "要退款的订单号（必须是用户当前消息中逐字出现的订单号）",
                     },
                     "reason": {
                         "type": "string",
                         "description": "退款原因，例如「尺码不合适」「质量问题」「不想要了」",
                     },
+                    "confirm": {
+                        "type": "boolean",
+                        "description": (
+                            "仅当用户已在对话中明确确认该笔退款时才置 true；"
+                            "首次调用（生成草稿）不要传或传 false。"
+                        ),
+                    },
                 },
                 "required": ["order_id", "reason"],
+                "additionalProperties": False,
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "query_refund_application",
+            "description": (
+                "查询退款申请的状态（订单号与申请编号必须且只能提供一个）。"
+                "返回 applications 数组，每项含 application_id/order_id/status/"
+                "reason/created_at/updated_at/can_withdraw。"
+                "用户询问退款进度、或需要确认目标申请时使用。"
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "application_id": {
+                        "type": "string",
+                        "description": "退款申请编号，例如 RA-1a2b3c4d5e6f",
+                    },
+                    "order_id": {
+                        "type": "string",
+                        "description": "订单号，例如 ORD-20240115-001",
+                    },
+                },
+                "required": [],
+                "additionalProperties": False,
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "cancel_refund_application",
+            "description": (
+                "撤回退款申请（仅审核中的申请可撤回）。"
+                "当用户当前消息明确表达撤回、并给出准确申请编号或订单号时调用。"
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "application_id": {
+                        "type": "string",
+                        "description": "要撤回的退款申请编号，例如 RA-1a2b3c4d5e6f",
+                    },
+                },
+                "required": ["application_id"],
+                "additionalProperties": False,
             },
         },
     },
@@ -161,7 +225,7 @@ TOOL_DEFINITIONS: list[dict] = [
         "function": {
             "name": "recall_user_memory",
             "description": (
-                "查询当前用户的记忆信息，包括本次对话提取的短期记忆和跨会话的长期记忆。"
+                "查询当前用户的记忆信息，即跨会话的长期记忆。"
                 "当需要回顾用户的偏好、历史问题、会员信息等时使用。"
             ),
             "parameters": {
@@ -208,18 +272,11 @@ _SCHEMA_BY_NAME: dict[str, dict] = {
 }
 
 
-# Review 修复：模型不得提交的保留字段（确认凭证/幂等键由执行器内部注入）
-_RESERVED_TOOL_ARGS: dict[str, frozenset[str]] = {
-    "apply_refund": frozenset({"confirmation_token", "idempotency_key", "refund_id"}),
-}
-
-
 def _validate_arguments(name: str, arguments: dict) -> tuple[dict | None, str | None]:
     """阶段2.3：工具参数严格校验（Pydantic 语义的注册表驱动版）。
 
     - 参数必须是 JSON 对象（数组/标量拒绝）；
     - 未知参数不得进入实际工具函数（additionalProperties=False 语义）；
-    - 保留字段（确认凭证等）模型提交一律拒绝（Review 修复）；
     - required 缺失 → 结构化错误（模型可自愈）；
     - 递归剔除 schema 未声明的嵌套额外字段（防注入膨胀）。
     """
@@ -228,22 +285,6 @@ def _validate_arguments(name: str, arguments: dict) -> tuple[dict | None, str | 
             {"error": "INVALID_TOOL_ARGUMENTS", "message": "工具参数必须是 JSON 对象"},
             ensure_ascii=False,
         )
-    reserved = _RESERVED_TOOL_ARGS.get(name) or frozenset()
-    for key in arguments:
-        if key in reserved:
-            from app.observability.metrics import record_refund_confirmation_blocked
-
-            record_refund_confirmation_blocked("reserved_args")
-            return None, json.dumps(
-                {
-                    "error": "RESERVED_TOOL_ARGUMENT",
-                    "message": (
-                        f"参数 {key!r} 由系统内部保管与注入，不接受模型提交；"
-                        "请只传订单号与退款原因"
-                    ),
-                },
-                ensure_ascii=False,
-            )
     schema = _SCHEMA_BY_NAME.get(name)
     if schema is None:
         return dict(arguments), None
@@ -259,7 +300,13 @@ def _validate_arguments(name: str, arguments: dict) -> tuple[dict | None, str | 
                 },
                 ensure_ascii=False,
             )
-        cleaned[key] = _clean_value(properties[key], value)
+        cleaned_value = _clean_value(properties[key], value)
+        if cleaned_value is _INVALID:
+            # schema 声明 array 但值不是 list（如模型把 queries 传成字符串）：
+            # 丢弃该键——可选参数回退默认路径，必需参数走下方 missing 报错，
+            # 绝不把错误类型原样放行（历史缺陷：queries 字符串被逐字符当子查询）
+            continue
+        cleaned[key] = cleaned_value
     missing = required - set(cleaned)
     if missing:
         return None, json.dumps(
@@ -272,31 +319,47 @@ def _validate_arguments(name: str, arguments: dict) -> tuple[dict | None, str | 
     return cleaned, None
 
 
+# 类型不符的裁剪结果哨兵：该键不进入 cleaned（见 execute_tool 的清洗循环）
+_INVALID = object()
+
+
 def _clean_value(prop_schema, value):
-    """按属性 schema 递归清洗：数组/对象按 items/additionalProperties 裁剪。"""
+    """按属性 schema 递归清洗：数组/对象按 items/additionalProperties 裁剪。
+
+    schema 声明 array 但值不是 list → 返回哨兵 _INVALID（调用方丢键）。
+    """
     if not isinstance(prop_schema, dict):
         return value
     prop_type = prop_schema.get("type")
-    if prop_type == "array" and isinstance(value, list):
+    if prop_type == "array":
+        if not isinstance(value, list):
+            return _INVALID
         item_schema = prop_schema.get("items")
         if isinstance(item_schema, dict):
-            return [_clean_value(item_schema, item) for item in value]
+            cleaned_items = [_clean_value(item_schema, item) for item in value]
+            if any(item is _INVALID for item in cleaned_items):
+                return _INVALID
+            return cleaned_items
         return value
     if prop_type == "object" and isinstance(value, dict):
         properties = prop_schema.get("properties")
         if properties is None:
             return value
-        return {
-            k: _clean_value(properties.get(k, {}), v)
-            for k, v in value.items()
-            if k in properties
-        }
+        cleaned_obj = {}
+        for k, v in value.items():
+            if k not in properties:
+                continue
+            cleaned_child = _clean_value(properties[k], v)
+            if cleaned_child is _INVALID:
+                continue
+            cleaned_obj[k] = cleaned_child
+        return cleaned_obj
     return value
 
 
 def execute_tool(
     name: str, arguments: dict, ctx: ToolContext | None = None,
-    timeout: float | None = None, internal_args: dict | None = None,
+    timeout: float | None = None,
 ) -> str:
     """根据工具名称分发执行，返回 JSON 字符串结果。
 
@@ -308,12 +371,12 @@ def execute_tool(
     func = _TOOL_MAP.get(name)
     if not func:
         return json.dumps({"error": f"未知工具: {name}"}, ensure_ascii=False)
+    # 注：写工具租约门禁统一在 ToolManager.execute_tool（本地/MCP 分流前）执行，
+    # 此处不再重复（修复计划·二轮 1：避免本地/MCP 行为不一致）。
     cleaned, error = _validate_arguments(name, arguments)
     if error is not None:
         return error
-    # Review 修复：内部参数通道在**校验之后**合并（仅执行器可写，
-    # 不受保留字段校验约束，也绝不进入模型可见参数面）
-    arguments = {**(cleaned or {}), **(internal_args or {})}
+    arguments = cleaned or {}
     try:
         if name == "search_knowledge":
             result = func(**arguments, ctx=ctx, timeout=timeout)

@@ -34,14 +34,15 @@ def create_backend(name: str, **kwargs) -> VectorBackend:
         from app.agent.rag.es_util import get_es_client
         from app.config.settings import settings
 
-        es = kwargs.pop("es", None) or get_es_client()
-        if es is None:
-            raise ValueError(
-                "ES 后端已选择（rag_backend=es）但 ES 不可达："
-                "请配置 ES_URL 或改用 numpy/chroma"
-            )
+        # 修复计划·二轮 5：不在此处固定客户端——注入可恢复 provider，
+        # 每次操作动态获取（ES 恢复无需重建后端）。
+        es = kwargs.pop("es", None)
+        es_provider = kwargs.pop("es_provider", None)
+        if es is None and es_provider is None:
+            es_provider = get_es_client
         return ESBackend(
             es=es,
+            es_provider=es_provider,
             index_name=kwargs.get("index_name", ""),
             alias=kwargs.get("collection_name", ""),  # 缺省按 prefix 派生 alias
             index_prefix=settings.es_index_prefix,

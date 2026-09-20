@@ -25,19 +25,33 @@ class Settings(BaseSettings):
     model_name: str = "gpt-4o-mini"
     temperature: float = 0.7
 
-    # ReAct 循环（Agent能力强化计划·改造一）
+    # ReAct 循环（Agent能力强化计划·改造一；推理模型适配 T8 重新定参）
     max_react_steps: int = 8  # 5→8：配合 turn_budget_seconds 熔断，步数不再是墙钟上界
-    turn_budget_seconds: float = 120  # 单轮墙钟预算（安全熔断值；与 15s P95 SLO 无关）
+    # 单轮墙钟预算（安全熔断值）。推理模型适配 T8 曾由 120 抬到 300（8 步 ×
+    # 单调用 30–60s 几乎必撞 120s）。**P3-2 已按实测校准回 120s**：
+    # `app/scripts/probe_turn_latency.py` 分层抽样 12 例 / 30 次 LLM 调用实测
+    # 单调用 P50=3.74s、P95=10.05s、max=22.1s，实测最大 ReAct 步数 3；
+    # 按 `max_react_steps × P95 = 8 × 10.05 ≈ 80.4s < 120s`（约 1.5 倍余量）。
+    # 300s 对客服场景意味着「挂死 5 分钟才熔断」，不符合首响预期。
+    # 依据、样本口径与未验证项见 `docs/P3-2-延迟预算校准.md`。
+    turn_budget_seconds: float = 120
 
     # 上下文 token 水位（单 Agent 全量优化计划·阶段B）
     # 份额：system+skill 20% / memory 10% / dialog+tool 50% / 输出预留 20%
-    context_window_tokens: int = 32768
+    # 大窗口（如 256k）下各份额受 token_budget.CAP_* 绝对上限收敛
+    # 推理模型适配 T2：输出上限抬到 8192 后旧窗口的输出预留
+    # （32768×20%≈6.5k）不再覆盖输出上限，水位失衡 → 窗口抬到 65536
+    # （份额不变，预留≈13k > 8192；dialog 预算同时从 16k 到 32k）。
+    context_window_tokens: int = 65536
+    # 会话摘要字数上限：prompt 约束 + 代码硬截断双保险。
+    # 阶段4 消融口径直接取候选值（300→500）：长会话摘要信息损失优先于 token 成本。
+    summary_max_chars: int = 500
     fact_guard_enabled: bool = True  # 声明级事实接地（阶段D）；无证据数字删除并转核实
     memory_job_worker_enabled: bool = True  # 服务端异步记忆 worker（SQL 模式）
     memory_job_max_attempts: int = 5  # memory job 重试上限（超过置 failed 死信）
     memory_job_lease_seconds: int = 300  # memory job 租约时长（接管崩溃任务）
-    memory_fact_ttl_days: int = 365  # 记忆注入有效期（阶段F；超期事实不注入）
-    memory_relevance_threshold: float = 0.02  # 记忆注入相关性下限（dice；阶段F）
+    memory_fact_ttl_days: int = 365  # 记忆注入有效期（issue/behavior/other 按 created_at；批次7：identity/preference 豁免）
+    memory_relevance_threshold: float = 0.02  # 仅挡零交集（dice<0.02 视为不相关），非有效语义筛选——相关性依赖词面重叠，勿当作语义判别
 
     # MCP 配置
     mcp_enabled: bool = False
@@ -81,18 +95,90 @@ class Settings(BaseSettings):
     # 最终检索结果的相关度下限；None 表示尚未校准、保持兼容行为。
     # 分数尺度依赖 embedding/backend/hybrid/reranker 组合，切换配置后必须重校准。
     rag_min_relevance_score: float | None = None
+    # RAG 修复计划·1：精排器不可用时是否 fail-closed（生产默认 true）——
+    # true 时 search_knowledge 返回 success=false，禁止 Agent 用未验证证据回答；
+    # 仅开发/离线诊断可置 false（降级返回 RRF 结果并标注 degraded）。
+    rag_rerank_fail_closed: bool = True
+    # 检索 hard 侧工作流 A：query 表层规范化（同音错字/拼音缩写 → 词表规范词）。
+    # P1-3 起默认开启（能力默认启用，无开关）；词表由
+    # app/scripts/build_query_lexicon.py 构建期生成（pypinyin/jieba 仅构建期依赖，
+    # 运行时零依赖）；词表缺失/损坏时恒等并打点（fail-open）。
+    rag_query_normalize: bool = True
+    rag_query_normalize_lexicon_path: str = "app/agent/rag/query_lexicon.json"
+    # P1-4 四信号联合拒绝（top1 / gap / coverage / rerank）：阈值来自
+    # app/scripts/calibrate_rejection.py --dev 冻结产物
+    # （artifacts/eval/v2/retrieval-rejection/params.json）。
+    # **2026-09-18 重校准**（Docker 评测口径：ES + bge-reranker-v2-m3 精排）：
+    #   dev 784 例 → 负例拒绝 58.3% / 正例误拒 3.6%；
+    #   holdout 175 例一次性验证 → 负例拒绝 60.0% / 正例误拒 5.3%（未过拟合）。
+    #   双门禁（负例≥90% 且正例≤5%）仍不可达 → best_effort 冻结，如实留痕；
+    #   语料上界结论与 v3.5 立项见 docs/v3.5-负例语料补强-立项.md。
+    #   旧值 0.549 是 numpy 纯向量余弦尺度，挂上精排后量纲不再可比，已废弃。
+    # 任一非 None 即启用联合门控并替代 rag_min_relevance_score 的最终口径；
+    # 阈值与分数尺度绑定：切换 embedding/backend/hybrid/reranker 后必须重校准
+    # （校准脚本自带 RRF 守卫，无语义分数时拒绝出参）。
+    # min_rerank=None：4 号信号已具备（精排已挂）但未纳入网格搜索，暂不硬判。
+    rag_rejection_min_top1: float | None = 0.206
+    rag_rejection_min_gap: float | None = 0.0
+    rag_rejection_min_coverage: float | None = 0.0
+    rag_rejection_min_rerank: float | None = None
+    # RAG 修复计划·2：知识文档元数据强校验（status/authority/effective_date）。
+    # 开启后 strict 构建遇到缺失/非法/冲突元数据直接失败；关闭仅告警（迁移期）。
+    rag_doc_metadata_required: bool = False
+
+    # RAG 切分优化（2026-09-15 方案 P0）：检索块/生成块分离 + 前缀去重
+    # rag_parent_merge=False 回到旧装配（父块=命中子块附近的章节窗口，单块章节
+    # 无父块）；开启后同一文档的相邻小节贪心合并为「生成单元」，每个检索块都
+    # 装配所属单元原文（小块检索、大块生成）。改动切分必须同步 bump 指纹。
+    rag_parent_merge: bool = True
+    # 生成单元目标长度（贪心收口阈值）与硬上限（后者沿用旧 MAX_PARENT_CHARS）
+    rag_gen_unit_target_chars: int = 1800
+    rag_max_parent_chars: int = 4000
+    # 前缀去重：标题路径根标题只是「文档名 + 品牌前缀」时不再重复展示
+    rag_prefix_dedup: bool = True
+
+    # RAG 构建期上下文增强（P1-1 Contextual Retrieval，opt-in）
+    # 开启后构建期对每块调用 chat 模型生成 1~2 句定位上下文，只进入
+    # embedding/BM25 输入（块展示文本与证据文本不含生成内容）。
+    rag_contextual_index: bool = False
+    rag_contextual_model: str = ""  # 空 = settings.model_name
+    rag_contextual_prompt_version: str = "v1"  # 改 prompt 必须 bump（进配置指纹）
+    rag_contextual_max_chars: int = 80  # 生成上下文长度上限
+    rag_contextual_cache_path: str = "app/sessions/rag_contextual_cache.json"
+
+    # PDF 解析（P1-3）：True = 首选 Docling（未安装/解析失败自动回退现有解析器）
+    rag_pdf_docling: bool = True
+    # 跨页重复行剔除（页眉/页脚）：同一位置重复出现于该比例的页面即判为页眉页脚
+    rag_pdf_repeated_line_ratio: float = 0.6
+    rag_pdf_repeated_line_min_pages: int = 3
+
     retrieval_eval_dataset_path: str = (
         "app/evaluation/retrieval_cases.json"  # 检索质量评估集（7.6）
     )
-
-    # Multi-Agent 配置（第6期）
-    multi_agent_enabled: bool = False
 
     # Memory 配置（第7期）
     memory_enabled: bool = True
     memory_dir: str = "app/sessions/memory"
     memory_user_id: str = "default"
-    max_ltm_facts: int = 50
+    max_ltm_facts: int = 80  # 阶段4：50→80（与 memory_budget_share 15% 同批）
+    memory_summary_keep: int = 20  # 批次6：interaction_summaries 保留最近 N 条
+    memory_version_keep_days: int = 90  # 批次6：superseded/deleted 版本保留天数（active 永不修剪）
+
+    # 记忆系统重构（2026-09-15 计划）：阶段 2/3 能力默认启用（「建好即开」）。
+    # 语义路失败/未配置 embedding 时自动降级纯词面（见 long_term._semantic_active），
+    # 因此默认 true 不引入硬依赖。
+    memory_semantic_enabled: bool = True  # 阶段 2：LTM 语义+词面混合检索
+    memory_embedding_model: str = ""  # 空=跟随 embedding_model；非空经 create_embedder(model=...) 透传，标签与向量来源一致
+    memory_semantic_weight: float = 0.6  # 融合权重 w_sem
+    memory_lexical_weight: float = 0.4  # 融合权重 w_lex
+    memory_fusion_threshold: float = 0.25  # 融合得分门槛
+    memory_sweep_enabled: bool = True  # 阶段 3：巩固清理 sweep（经 apply_memory_mutations 全校验 + 90 天版本链可恢复）
+    memory_sweep_active_threshold: int = 40  # 用户 active 事实数超过该值才排队 sweep
+    memory_sweep_max_clusters: int = 10  # 单用户单次 sweep 处理簇上限
+    memory_sweep_similarity: float = 0.92  # 语义重复簇判定余弦阈值
+    # 阶段4 消融口径直接取候选值：memory 上下文份额 10% → 15%
+    # （token_budget.budget_shares 读取；与 max_ltm_facts 80 组合）
+    memory_budget_share: float = 0.15
 
     # Skill 配置（第8期）
     skills_enabled: bool = True
@@ -170,18 +256,16 @@ class Settings(BaseSettings):
     jwt_ttl_minutes: int = 60 * 24
     guardrails_enabled: bool = True  # 3.5 运行时 guardrails（输入注入/PII、输出敏感词）
     guardrail_block_terms: str = ""  # 输出侧额外敏感词（逗号分隔）
+    # 推理模型适配 T6：SSE 透出模型推理原文。**默认关**——`react_runner` 的
+    # 「透出受控状态说明、不透出模型原始思考」是有意设计，反向开启属产品/合规决策：
+    # 需产品签字，且透出侧先过输出 guardrails（推理原文可能含内部措辞）。
+    # 不透出时 reasoning 仍进审计（T3），「可观测可审计」不依赖透出。
+    sse_reasoning_enabled: bool = False
     business_only_scope: bool = (
         False  # 业务范围闸门：非业务/闲聊 → 固定引导话术（默认关）
     )
     retrieval_fence_enabled: bool = True  # 检索内容来源围栏（KB 块视为不可信数据）
     citation_check_enabled: bool = True  # 引用来源真实性校验（降置信/转人工，不硬拦）
-    refund_confirmation_required: bool = (
-        False  # 3.3 退款两段式（生产 true；开发/CLI 保持直退）
-    )
-    refund_confirm_ttl_seconds: int = 300  # 一次性确认 token 有效期
-    refund_idempotency_ttl_seconds: int = (
-        7 * 24 * 3600
-    )  # 幂等结果账本 TTL（refund_id → 首次结果）
     enforce_order_ownership: bool = False  # 3.1/3.2 工具级授权：查询/退款校验订单归属
     rate_limit_rps: int = 5  # 3.7 per-user RPS（0=不限）
 
@@ -216,6 +300,17 @@ class Settings(BaseSettings):
         1800  # 会话热缓存 TTL（write-through，Redis 可用时生效）
     )
     message_index_outbox_enabled: bool = True  # 消息入库出站箱→ES message_search 同步
+    # 修复计划·二/三轮：**仅生产开关**——控制 Reset 是否写入新的删除事件。
+    # 消费者始终处理/重试/清理已存在的删除事件（与生产开关解耦，避免关生产
+    # 同时把消费也关掉导致存量事件积压）。两阶段上线：第一阶段 false，全部
+    # Pod 升级后再置 true；回滚前先关闭并排空。
+    message_delete_outbox_enabled: bool = True
+    outbox_max_attempts: int = 8  # 429/5xx 指数退避上限（超过进 dead-letter）
+    outbox_max_backoff_seconds: int = 300  # 单次退避上限
+    outbox_lease_seconds: int = 120  # worker 领取租约时长（崩溃后自动接管）
+    message_search_tombstone_ttl_seconds: int = (
+        7 * 86400
+    )  # reset tombstone 保留期（期间运营搜索过滤旧 UUID）
     es_url: str = ""  # 如 http://localhost:9200；空=不启用 ES 后端
     es_user: str = ""
     es_password: str = ""
@@ -228,15 +323,24 @@ class Settings(BaseSettings):
     otel_exporter_endpoint: str = ""  # OTLP HTTP 端点（空=不导出，埋点空跑）
     otel_service_name: str = "ecom-agent"
 
-    # LLM 韧性客户端（阶段四 4.4）
-    llm_timeout_seconds: float = 60  # 显式 timeout（取代 SDK 默认 600s）
+    # LLM 韧性客户端（阶段四 4.4；推理模型适配 T1/T2/T8 重新定参）
+    # T8：推理模型单调用常超 60s（思考 token 计入同一次响应），旧 60s 会成片超时
+    llm_timeout_seconds: float = 120  # 显式 timeout（取代 SDK 默认 600s）；待 T0 P95 校准
     llm_max_retries: int = 2  # 指数退避+抖动重试（仅幂等读）
     llm_max_concurrent: int = 16  # pod 级并发信号量（护系统；用户级配额见 3.7）
     llm_fallback_model: str = ""  # 降级链备用模型（空=不降级）
-    llm_max_tokens: int = 2048  # 单次回复 token 上限（单轮预算的粒度）
+    # T2：推理模型的思考 token 与可见输出共享该上限，2048 会被思考吃光；
+    # 画像 min_max_tokens 兜底（无画像的旧模型也按 8192 上限，见计划 T2）。
+    llm_max_tokens: int = 8192
+    # T1：结构化提取/STM/摘要/路由/构建期上下文走廉价**非推理**模型——不配则
+    # 这些辅助调用全部跟着主模型进推理模型（又贵又慢，temperature 冲突面扩大）
     extraction_model: str = (
         ""  # 便宜模型：结构化提取/STM/摘要/路由（解决每轮双调用成本）
     )
+    # T1：模型画像覆写（JSON：模型名前缀 → 画像字段子集）。T0 探针输出直接灌入，
+    # 免发版；部署侧覆写优先于内置 registry。示例：
+    #   {"deepseek-reasoner": {"supports_forced_tool_choice": false}}
+    model_profile_overrides: str = ""
 
     # Evolution 配置（第10期，QA 自动沉淀）
     evolve_capture_enabled: bool = True  # 每轮对话是否落盘 turn 原始记录
@@ -266,6 +370,9 @@ class Settings(BaseSettings):
     # 首次部署保持 False；开启后自动扫描已解决工单（ledger 终态幂等去重）。
     human_qa_evolution_enabled: bool = False
     human_conversation_retention_days: int = 180
+    # 常驻评审 Worker（--human-eval-worker）空闲分支的保留期清理节流间隔：
+    # monotonic 节流，默认 86400s（日频，与 humanEvalCron 的顺带清理对齐）。
+    human_eval_worker_cleanup_interval_seconds: int = 86400
     # 人工链路语义去重阈值（与 evolve_dedup_threshold 彻底分离；初始值待校准）。
     # 相似度归一化：norm = min(max(cos, 0), 1)（截断而非仿射）——0.90 语义即
     # 「余弦 0.90」，正交 → 0 而非 0.5，既有阈值可直接沿用为初始值。
@@ -346,7 +453,9 @@ class Settings(BaseSettings):
     kb_job_retention_done_days: int = 90  # succeeded/cancelled 记录保留
     kb_job_retention_failed_days: int = 180  # failed/blocked 记录保留
 
-    model_config = {"env_file": _resolve_env_file()}
+    # extra="ignore"：本地 .env 常残留已删除配置项的键（如 multi_agent_enabled），
+    # 默认的 forbid 会让服务直接起不来——环境变量里多一个陈旧键不是致命错误。
+    model_config = {"env_file": _resolve_env_file(), "extra": "ignore"}
 
 
 settings = Settings()

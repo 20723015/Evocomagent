@@ -1,20 +1,26 @@
 """HTTPCommerceGateway：真实商家后端接入（2.3 契约）。
 
-HTTP 契约（与 kind 的 fake commerce 服务对齐，见 deploy/compose/fake_commerce.py）：
+HTTP 契约（与 kind 的 fake commerce 服务对齐，见 deploy/compose/fake_services/fake_commerce.py）：
 - 归属由下游服务端执行：请求头带 X-Actor-Id（操作者），Authorization Bearer
   携带服务级凭证（从 ToolContext.credentials 取，禁止进入 prompt/轨迹/日志）；
 - GET /orders/{order_id}        → 200 {"order": {...}} | 403/404/{code,message}
 - GET /orders                   → 200 {"orders": [...]}
 - GET /orders/{order_id}/logistics → 200 {"logistics": {...}}
-- POST /orders/{order_id}/refunds  body {"reason", "refund_id"} → 200 {"message": ...}
+- POST /orders/{order_id}/refund-applications  body {"reason", "client_request_id"}
+                                → 200 {"application": {...}}
+- GET  /refund-applications/{application_id}   → 200 {"applications": [...]}
+- GET  /orders/{order_id}/refund-applications  → 200 {"applications": [...]}
+- POST /refund-applications/{application_id}/withdraw body {"client_request_id"}
+                                → 200 {"application": {...}}
 
 错误映射：401 → IDENTITY_REQUIRED；403 → ORDER_ACCESS_DENIED；
-404 → ORDER_NOT_FOUND；其余 4xx/5xx → 通用失败（message 透传）。
+404 → ORDER_NOT_FOUND（申请资源 → REFUND_APPLICATION_NOT_FOUND）；
+其余 4xx/5xx → 通用失败（透传下游 code/message）。
 
 韧性策略（2.3 硬性要求）：
 - 显式 connect/read 超时（connect 默认 2s、读取默认 5s，可配置）；
-- 只对幂等查询（GET）重试（1 次快速重试）；退款 POST 绝不自动重放；
-- 退款超时时返回 indeterminate=True（结果未知，转人工对账），
+- 只对幂等查询（GET）重试（1 次快速重试）；退款写 POST 绝不自动重放；
+- 退款写超时时返回 indeterminate=True（结果未知，转人工对账），
   禁止调用方/工具层自行重放。
 """
 
@@ -29,7 +35,12 @@ from app.agent.tools.ownership import (
     ORDER_ACCESS_DENIED,
     ORDER_NOT_FOUND,
 )
-from app.integrations.commerce.base import CommerceGateway, CommerceResult
+from app.integrations.commerce.base import (
+    REFUND_APPLICATION_EXISTS,
+    REFUND_APPLICATION_NOT_FOUND,
+    CommerceGateway,
+    CommerceResult,
+)
 
 log = logging.getLogger("app.integrations.commerce.http")
 
@@ -85,17 +96,21 @@ class HTTPCommerceGateway(CommerceGateway):
             headers["Authorization"] = f"Bearer {token}"
         return headers
 
-    def _map_status(self, status: int, payload: dict, fallback: str) -> CommerceResult:
+    def _map_status(self, status: int, payload: dict, fallback: str,
+                    not_found_code: str = ORDER_NOT_FOUND) -> CommerceResult:
         """把下游 HTTP 状态映射为机器可判定错误码。"""
         if status in (200, 201):
             return CommerceResult(True, data=payload)
         code = {
             401: IDENTITY_REQUIRED,
             403: ORDER_ACCESS_DENIED,
-            404: ORDER_NOT_FOUND,
+            404: not_found_code,
         }.get(status)
         message = str(payload.get("message") or
                       payload.get("error") or f"商家后端返回 {status}")
+        # 下游显式业务码优先（申请不可撤回/申请重复等），其余回落通用失败
+        if code is None:
+            code = payload.get("code") or None
         if code:
             return CommerceResult(False, code, message=message)
         return CommerceResult(False, message=message)
@@ -110,7 +125,10 @@ class HTTPCommerceGateway(CommerceGateway):
         """
         import httpx
 
-        url = httpx.URL(self._base_url).join(path)
+        # base_url 已 rstrip("/")、path 均以 "/" 开头 → 直接拼接。
+        # 不能用 URL.join：绝对路径会替换整个 path，丢掉 base_url 的前缀段
+        # （如 base=http://c:8080/api + /orders/x → http://c:8080/orders/x）
+        url = httpx.URL(f"{self._base_url}{path}")
         attempts = (self._read_retries + 1) if idempotent else 1
         last_exc: Exception | None = None
         for _ in range(attempts):
@@ -158,13 +176,15 @@ class HTTPCommerceGateway(CommerceGateway):
             return CommerceResult(False, message=f"订单查询失败（后端不可用）: {e}")
 
     def list_orders(self, actor_id: str,
-                    credentials: Optional[dict] = None) -> CommerceResult:
+                    credentials: Optional[dict] = None,
+                    limit: Optional[int] = None) -> CommerceResult:
         if not actor_id:
             return CommerceResult(False, IDENTITY_REQUIRED,
                                   message="无法验证操作者身份（缺少 actor_id）")
         try:
+            path = "/orders" if not limit else f"/orders?limit={int(limit)}"
             status, payload = self._request(
-                "GET", "/orders", self._headers(actor_id, credentials),
+                "GET", path, self._headers(actor_id, credentials),
                 idempotent=True,
             )
             return self._map_status(status, payload, "订单列表查询失败")
@@ -185,29 +205,98 @@ class HTTPCommerceGateway(CommerceGateway):
         except ConnectionError as e:
             return CommerceResult(False, message=f"物流查询失败（后端不可用）: {e}")
 
-    def request_refund(
+    def submit_refund_application(
         self,
         actor_id: str,
         order_id: str,
         reason: str,
-        idempotency_key: str,
+        client_request_id: str,
         credentials: Optional[dict] = None,
     ) -> CommerceResult:
-        """发起退款：必带 refund_id 幂等键；绝不自动重试；超时 → indeterminate。"""
+        """创建退款申请：必带 client_request_id；绝不自动重试；超时 → indeterminate。"""
         if not actor_id:
             return CommerceResult(False, IDENTITY_REQUIRED,
                                   message="无法验证操作者身份（缺少 actor_id）")
         try:
             status, payload = self._request(
                 "POST",
-                f"/orders/{quote(order_id, safe='')}/refunds",
+                f"/orders/{quote(order_id, safe='')}/refund-applications",
                 self._headers(actor_id, credentials),
-                json_body={"reason": reason, "refund_id": idempotency_key},
+                json_body={"reason": reason, "client_request_id": client_request_id},
             )
         except ConnectionError as e:
             # 超时/网络断开：结果未知，禁止重放
             return CommerceResult(
                 False, indeterminate=True,
-                message=f"退款结果未知（后端超时），请勿重复提交，人工对账: {e}",
+                message=f"退款申请结果未知（后端超时），请勿重复提交，人工对账: {e}",
             )
-        return self._map_status(status, payload, "退款申请失败")
+        # 防真实后端仍以 409 回应重复申请：body 携带现有申请时映射为幂等
+        # 成功（对齐 mock 网关）；其余 409 仍走通用 _map_status。
+        if (status == 409
+                and payload.get("code") == REFUND_APPLICATION_EXISTS
+                and payload.get("application")):
+            return CommerceResult(
+                True, REFUND_APPLICATION_EXISTS,
+                data={"application": payload["application"], "existing": True},
+                message=str(payload.get("message") or "该订单已有进行中的退款申请，返回现有申请"),
+            )
+        return self._map_status(status, payload, "退款申请创建失败")
+
+    def query_refund_application(
+        self,
+        actor_id: str,
+        application_id: Optional[str] = None,
+        order_id: Optional[str] = None,
+        credentials: Optional[dict] = None,
+    ) -> CommerceResult:
+        """查询退款申请：application_id 与 order_id 必须且只能提供一个。"""
+        if not actor_id:
+            return CommerceResult(False, IDENTITY_REQUIRED,
+                                  message="无法验证操作者身份（缺少 actor_id）")
+        if bool(application_id) == bool(order_id):
+            return CommerceResult(
+                False, "REFUND_APPLICATION_QUERY_INVALID",
+                message="必须且只能提供一个查询条件（application_id 或 order_id）",
+            )
+        if application_id:
+            path = f"/refund-applications/{quote(application_id, safe='')}"
+        else:
+            path = f"/orders/{quote(order_id or '', safe='')}/refund-applications"
+        try:
+            status, payload = self._request(
+                "GET", path, self._headers(actor_id, credentials), idempotent=True,
+            )
+            return self._map_status(
+                status, payload, "退款申请查询失败",
+                not_found_code=REFUND_APPLICATION_NOT_FOUND,
+            )
+        except ConnectionError as e:
+            return CommerceResult(False, message=f"退款申请查询失败（后端不可用）: {e}")
+
+    def cancel_refund_application(
+        self,
+        actor_id: str,
+        application_id: str,
+        client_request_id: str,
+        credentials: Optional[dict] = None,
+    ) -> CommerceResult:
+        """撤回退款申请：必带 client_request_id；绝不自动重试；超时 → indeterminate。"""
+        if not actor_id:
+            return CommerceResult(False, IDENTITY_REQUIRED,
+                                  message="无法验证操作者身份（缺少 actor_id）")
+        try:
+            status, payload = self._request(
+                "POST",
+                f"/refund-applications/{quote(application_id, safe='')}/withdraw",
+                self._headers(actor_id, credentials),
+                json_body={"client_request_id": client_request_id},
+            )
+        except ConnectionError as e:
+            return CommerceResult(
+                False, indeterminate=True,
+                message=f"撤回结果未知（后端超时），请勿重复提交，人工对账: {e}",
+            )
+        return self._map_status(
+            status, payload, "退款申请撤回失败",
+            not_found_code=REFUND_APPLICATION_NOT_FOUND,
+        )

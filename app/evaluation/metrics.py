@@ -4,7 +4,7 @@
 
             代码规则                          LLM judge
 过程指标   tool_accuracy / tool_efficiency    judge_process_soundness
-           / token_cost_pass / route_match
+           / token_cost_pass
 结果指标   intent_match / keyword_coverage    judge_answer_quality
            / requires_human_match             / judge_faithfulness
 
@@ -58,13 +58,6 @@ def token_cost_pass(total_tokens: int, budget: int | None) -> bool | None:
     if budget is None:
         return None
     return total_tokens <= budget
-
-
-def route_match(expected: str | None, actual: str | None) -> float | None:
-    """（多 Agent）路由是否命中。expected 为 None 返回 None。"""
-    if expected is None:
-        return None
-    return 1.0 if expected == actual else 0.0
 
 
 # ============================================================
@@ -207,6 +200,17 @@ def _parse_json(raw: str) -> dict:
     return json.loads(raw)
 
 
+def _clamp_score(value, low: float = 1.0, high: float = 5.0) -> float:
+    """judge 分数压回 [1,5]：模型偶发越界（6/0/-1）不得抬高分子平均。"""
+    try:
+        num = float(value)
+    except (TypeError, ValueError) as e:
+        raise ValueError(f"score 不可解析: {value!r}") from e
+    if num != num:  # NaN
+        raise ValueError("score 为 NaN")
+    return min(high, max(low, num))
+
+
 # ============================================================
 # 结果指标（LLM judge）
 # ============================================================
@@ -229,7 +233,7 @@ def judge_answer_quality(
             messages=[{"role": "user", "content": prompt}],
         )
         data = _parse_json(response.choices[0].message.content or "")
-        return float(data["score"]), data.get("reason", "")
+        return _clamp_score(data["score"]), data.get("reason", "")
     except (json.JSONDecodeError, KeyError, ValueError, TypeError) as e:
         return 0.0, f"质量评分解析失败: {e}"
 
@@ -259,7 +263,14 @@ def judge_faithfulness(
             messages=[{"role": "user", "content": prompt}],
         )
         data = _parse_json(response.choices[0].message.content or "")
-        faithful = bool(data["faithful"])
+        raw = data["faithful"]
+        if isinstance(raw, bool):
+            faithful = raw
+        elif isinstance(raw, str) and raw.strip().lower() in {"true", "false"}:
+            # bool("false") 是 True——字符串形态必须显式归一，否则幻觉被误判忠实
+            faithful = raw.strip().lower() == "true"
+        else:
+            raise ValueError(f"faithful 字段非布尔: {raw!r}")
         return (1.0 if faithful else 0.0), data.get("reason", "")
     except (json.JSONDecodeError, KeyError, ValueError, TypeError) as e:
         return 0.0, f"幻觉检测解析失败: {e}"
@@ -289,6 +300,6 @@ def judge_process_soundness(
             messages=[{"role": "user", "content": prompt}],
         )
         data = _parse_json(response.choices[0].message.content or "")
-        return float(data["score"]), data.get("reason", "")
+        return _clamp_score(data["score"]), data.get("reason", "")
     except (json.JSONDecodeError, KeyError, ValueError, TypeError) as e:
         return 0.0, f"过程评分解析失败: {e}"

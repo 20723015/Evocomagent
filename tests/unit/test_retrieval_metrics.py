@@ -309,11 +309,13 @@ def test_retrieval_manifest_contains_dataset_hash_and_thresholds(tmp_path, reset
         min_score=0.4, min_score_hard=0.2,
         thresholds={"min_mrr": 0.9}, variant="hybrid-rerank",
         hard_threshold_overridden=True,
+        generation_target="candidate-index",
     )
     assert manifest["protocol"] == "retrieval-eval-v1"
     assert manifest["dataset"]["sha256"]
     assert manifest["git"]["commit"]
     assert manifest["retrieval"]["backend"] == settings.rag_backend
+    assert manifest["retrieval"]["generation_target"] == "candidate-index"
     assert manifest["thresholds"]["applied_min_score"] == 0.4
     assert manifest["thresholds"]["applied_min_score_hard"] == 0.2
     assert manifest["thresholds"]["hard_threshold_overridden"] is True

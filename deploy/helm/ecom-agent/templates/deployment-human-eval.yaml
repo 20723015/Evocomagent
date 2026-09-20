@@ -1,0 +1,90 @@
+{{- if .Values.humanEvalWorker.enabled }}
+# 人工知识评审 Worker（常驻，P2-2）：循环领取评审任务（SKIP LOCKED + lease
+# token，多实例安全），空闲时顺带队列指标上报与保留期清理；镜像自
+# deployment-human-publish.yaml。Web Pod 不启动本进程。
+# 与 humanEvalCron 的关系：Worker 常驻后 Cron 可关可留——两者幂等
+# （SKIP LOCKED），留则作兜底（如 Worker 滚动更新期间的任务触发）。
+{{- $flag := "" }}
+{{- if hasKey .Values.env "HUMAN_QA_EVOLUTION_ENABLED" }}
+{{- $flag = lower (toString (index .Values.env "HUMAN_QA_EVOLUTION_ENABLED")) }}
+{{- end }}
+{{- if ne $flag "true" }}
+{{- fail (printf "humanEvalWorker.enabled=true 要求 env.HUMAN_QA_EVOLUTION_ENABLED 为 true（当前 %q）" $flag) }}
+{{- end }}
+{{- if not (hasKey .Values.env "REDIS_URL") }}
+{{- fail "humanEvalWorker.enabled=true 要求 env.REDIS_URL（generation 指针共享）" }}
+{{- end }}
+{{- if not .Values.kbSharedVolume.enabled }}
+{{- fail "humanEvalWorker.enabled=true 要求 kbSharedVolume.enabled=true（staging/journal 同卷）" }}
+{{- end }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-human-eval
+  labels:
+    app: ecom-agent-human-eval
+    app.kubernetes.io/version: {{ .Values.image.tag | quote }}
+spec:
+  # 多实例安全（租约领取），默认 1 即可；评审吞吐由任务队列天然削峰
+  replicas: {{ .Values.humanEvalWorker.replicaCount }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: ecom-agent-human-eval
+  template:
+    metadata:
+      labels:
+        app: ecom-agent-human-eval
+        app.kubernetes.io/version: {{ .Values.image.tag | quote }}
+    spec:
+      # SIGTERM → 停止领取新任务；进行中任务由租约超时自动回收重试
+      terminationGracePeriodSeconds: {{ .Values.humanEvalWorker.terminationGracePeriodSeconds }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        fsGroup: 10001
+      affinity:
+        podAntiAffinity:
+          {{- if .Values.humanEvalWorker.podAntiAffinity.required }}
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: ecom-agent-human-eval
+              topologyKey: kubernetes.io/hostname
+          {{- else }}
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app: ecom-agent-human-eval
+                topologyKey: kubernetes.io/hostname
+          {{- end }}
+      containers:
+        - name: human-eval
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["python", "-m", "app.scripts.run_evolution"]
+          args: ["--human-eval-worker"]
+          env:
+            {{- range $k, $v := .Values.env }}
+            - name: {{ $k }}
+              value: {{ $v | quote }}
+            {{- end }}
+          envFrom:
+            - secretRef:
+                name: {{ .Values.envFromSecret }}
+          resources:
+            {{- toYaml .Values.humanEvalWorker.resources | nindent 12 }}
+          volumeMounts:
+            - name: kb-shared
+              mountPath: {{ .Values.kbSharedVolume.mountPath }}
+      volumes:
+        - name: kb-shared
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-kb-shared
+{{- end }}

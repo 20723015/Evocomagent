@@ -7,8 +7,7 @@
 - 慢读段 → 预算到期退款不启动；远端退款超时 → indeterminate + 本轮禁重试 + handoff；
 - actor token 签发/校验/过期/错误签名/scope 矩阵；ToolManager 敏感工具带 actor；
 - top-8 全 identity 仍保底 preference；汉字 bigram 不跨分隔符；
-- 文件名话语前缀剥离；verdict 缺失判 0；数据集门禁 citation 规则；
-- MultiAgent 跨轮 step count 重置。
+- 文件名话语前缀剥离；verdict 缺失判 0；数据集门禁 citation 规则。
 """
 
 from __future__ import annotations
@@ -158,7 +157,7 @@ def test_executor_fixed_pool_bounded_and_close_idempotent():
             self.done = threading.Event()
             self.calls = []
 
-        def execute_tool(self, name, arguments, ctx=None, timeout=None, internal_args=None):
+        def execute_tool(self, name, arguments, ctx=None, timeout=None):
             self.calls.append(name)
             self.done.wait(timeout=3)  # 模拟长只读工具（等放行）
             return '{"ok": true}'
@@ -202,7 +201,7 @@ def test_write_barrier_not_started_when_budget_expired():
         def __init__(self):
             self.write_started = []
 
-        def execute_tool(self, name, arguments, ctx=None, timeout=None, internal_args=None):
+        def execute_tool(self, name, arguments, ctx=None, timeout=None):
             if name == "query_order":
                 time.sleep(0.4)  # 读段很慢，预算在段内耗尽
             if name == "apply_refund":
@@ -229,26 +228,28 @@ def test_write_timeout_indeterminate_and_no_auto_retry(reset_settings, tmp_path)
     executor = ToolBatchExecutor(parallelism=2, max_concurrent=16)
 
     class SlowWriteManager:
-        def execute_tool(self, name, arguments, ctx=None, timeout=None, internal_args=None):
-            if name == "apply_refund":
+        def execute_tool(self, name, arguments, ctx=None, timeout=None):
+            if name == "submit_refund_application":
                 time.sleep(0.5)  # 超过 0.2s 写超时
             return '{"ok": "refunded"}'
 
     state = ToolTurnState()
     budget = TurnBudget(deadline=time.monotonic() + 5.0)
     calls = [{
-        "id": "c1", "name": "apply_refund",
-        "arguments": '{"order_id": "O1", "reason": "x", "idempotency_key": "KEY-1"}',
+        "id": "c1", "name": "submit_refund_application",
+        "arguments": '{"order_id": "O1", "reason": "x"}',
     }]
     outcomes = executor.execute(calls, state, None, SlowWriteManager(), budget=budget)
     payload = json.loads(outcomes[0].result)
     assert payload["status"] == "indeterminate"
     assert outcomes[0].skipped is True
+    # 外层硬超时无结果载荷：对账主键是 order_id（请求标识由网关路径的载荷承载）
     assert state.indeterminate_writes == [{
-        "tool": "apply_refund", "order_id": "O1", "idempotency_key": "KEY-1",
+        "tool": "submit_refund_application", "order_id": "O1",
+        "application_id": "", "client_request_id": "",
     }]
 
-    # 本轮模型重试同签名 → 重复拦截（禁止自动重试/生成新幂等键路径）
+    # 本轮模型重试同签名 → 重复拦截（禁止自动重试/生成新请求标识路径）
     retry = executor.execute(calls, state, None, SlowWriteManager(), budget=budget)
     assert "重复调用被拦截" in retry[0].result
 
@@ -262,61 +263,135 @@ def test_write_timeout_indeterminate_and_no_auto_retry(reset_settings, tmp_path)
     agent = EcomAgent(session_path=str(tmp_path / "a.json"), client=FakeChatClient())
     ctx = _TurnCtx(user_input="退款查证", budget=TurnBudget.start(30))
     ctx.extra_indeterminate = list(state.indeterminate_writes)
-    ctx.write_ops.refund.indeterminate = list(state.indeterminate_writes)
+    ctx.write_ops.indeterminate = list(state.indeterminate_writes)
     finalizer = agent._finalizer
     result = finalizer._build_response(ctx)
     result.reply = "您的退款已成功办理。"
     result.confidence = 0.0
     finalizer._apply_write_op_state(ctx, result)
     assert result.requires_human is True
-    # 无 committed 证据的成功宣称被改写（阶段C：禁止声称退款成功）
-    assert "尚未确认退款完成" in result.reply
+    # 无业务回执的成功宣称被改写（阶段C：禁止越级声称退款完成）
+    assert "尚未返回对应的业务回执" in result.reply
     assert ctx.indeterminate_writes == state.indeterminate_writes
 
     agent._indeterminate_writes = list(ctx.indeterminate_writes or state.indeterminate_writes)
     ticket = build_handoff_ticket(agent, result)
-    on_rec = [a for a in ticket.suggested_actions if "KEY-1" in a and "O1" in a]
-    assert on_rec and "退款对账" in on_rec[0] or any("对账" in a for a in ticket.suggested_actions)
+    assert any("对账" in a for a in ticket.suggested_actions)
+    assert any("O1" in a for a in ticket.suggested_actions)
 
 
-def test_write_timeout_confirm_segment_key_from_internal_args(reset_settings):
-    """confirm 段写超时：幂等键必须取 internal_args（服务端注入通道）。
-
-    模型参数面不含保留字段（registry 拒收），arguments 兜底恒空 →
-    对账记录幂等键为空=对账失效；合并 internal_args 后键=refund_id。
-    """
+def test_budget_fallback_finalizer_books_indeterminate_writes(reset_settings, tmp_path):
+    """中危修复 B6：预算耗尽 fallback 收尾同样落账 indeterminate_writes——
+    metadata 携带对账清单 + 工单建议可读（修复前三路 fallback 丢弃写记录，
+    工单对账读到上一轮陈旧值）。"""
     settings.tool_write_timeout_seconds = 0.2
     executor = ToolBatchExecutor(parallelism=2, max_concurrent=16)
 
     class SlowWriteManager:
-        def execute_tool(self, name, arguments, ctx=None, timeout=None, internal_args=None):
-            if name == "apply_refund":
+        def execute_tool(self, name, arguments, ctx=None, timeout=None):
+            if name == "submit_refund_application":
                 time.sleep(0.5)  # 超过 0.2s 写超时
             return '{"ok": "refunded"}'
 
     state = ToolTurnState()
-    state.refund_confirm = {
-        "action": "confirm", "token": "tok-1",
-        "refund_id": "REF-9", "order_id": "O1", "reason": "x",
-    }
     budget = TurnBudget(deadline=time.monotonic() + 5.0)
     calls = [{
-        "id": "c1", "name": "apply_refund",
+        "id": "c1", "name": "submit_refund_application",
+        "arguments": '{"order_id": "O1", "reason": "x"}',
+    }]
+    executor.execute(calls, state, None, SlowWriteManager(), budget=budget)
+    assert state.indeterminate_writes  # 写超时已被执行器记录
+
+    # 预算耗尽 fallback：搬运 state 记录 → finalize_rule_response 落账
+    from app.agent.chat import BUDGET_FALLBACK_REPLY, EcomAgent
+    from app.agent.turn_context import AgentTurnContext as _TurnCtx
+    from app.handoff.board import build_handoff_ticket
+    from tests.unit.conftest import FakeChatClient
+
+    agent = EcomAgent(session_path=str(tmp_path / "b.json"), client=FakeChatClient())
+    ctx = _TurnCtx(user_input="退款查证", budget=TurnBudget.start(30))
+    ctx.budget_fallback = True
+    ctx.extra_indeterminate = list(state.indeterminate_writes)
+    # 模拟 _open_turn_window 的本轮窗口（user 消息已进 raw_messages）
+    agent.raw_messages.append({"role": "user", "content": "退款查证"})
+    ctx.slice_start = 0
+
+    real_repo = agent._finalizer._repository
+
+    class _CollapseOnlyRepo:
+        """只执行 metadata 组装与落账，跳过会话写盘/STM/演进记录。"""
+
+        def commit_turn(self, c, r):
+            real_repo._collapse_turn(c, r)
+
+    agent._finalizer._repository = _CollapseOnlyRepo()
+
+    result = agent._finalizer.finalize_rule_response(
+        ctx, BUDGET_FALLBACK_REPLY, requires_human=True,
+        handoff_reason="budget_exhausted",
+    )
+    assert ctx.indeterminate_writes == state.indeterminate_writes
+    assert ctx.reliability_signal.write_indeterminate is True
+
+    from app.agent.turn_repository import METADATA_KEY
+
+    final_msg = agent.raw_messages[-1]
+    assert final_msg["role"] == "assistant"
+    assert final_msg[METADATA_KEY]["indeterminate_writes"] == state.indeterminate_writes
+    assert final_msg[METADATA_KEY]["requires_human"] is True
+
+    agent._indeterminate_writes = list(ctx.indeterminate_writes)
+    ticket = build_handoff_ticket(agent, result)
+    assert any("O1" in a for a in ticket.suggested_actions)
+
+
+def test_resilient_llm_attempt_timeout_uses_instance_setting(reset_settings):
+    """低危修复 A6：单次尝试 timeout 基准用实例 timeout_seconds（与
+    _can_attempt/_wall_clock_budget 同口径），不再直读 settings——构造时
+    注入的自定义超时此前被忽略。"""
+    from app.llm.client import ResilientLLM
+
+    wrapper = ResilientLLM(object(), "fake-model", timeout_seconds=5.0)
+    kwargs: dict = {}
+    wrapper._apply_attempt_timeout(kwargs, budget=None)
+    assert kwargs["timeout"] == 5.0
+
+    # 与调用方既有 timeout 取小
+    kwargs2 = {"timeout": 2.0}
+    wrapper._apply_attempt_timeout(kwargs2, budget=None)
+    assert kwargs2["timeout"] == 2.0
+
+
+def test_write_timeout_books_order_target_without_hidden_args(reset_settings):
+    """写超时对账以模型可见参数为准：order_id 入账，模型参数面保持干净。"""
+    settings.tool_write_timeout_seconds = 0.2
+    executor = ToolBatchExecutor(parallelism=2, max_concurrent=16)
+
+    class SlowWriteManager:
+        def execute_tool(self, name, arguments, ctx=None, timeout=None):
+            if name == "submit_refund_application":
+                time.sleep(0.5)  # 超过 0.2s 写超时
+            return '{"ok": "refunded"}'
+
+    state = ToolTurnState()
+    budget = TurnBudget(deadline=time.monotonic() + 5.0)
+    calls = [{
+        "id": "c1", "name": "submit_refund_application",
         "arguments": '{"order_id": "O1", "reason": "x"}',
     }]
     outcomes = executor.execute(calls, state, None, SlowWriteManager(), budget=budget)
     payload = json.loads(outcomes[0].result)
     assert payload["status"] == "indeterminate"
-    # 模型参数面保持干净，注入只在 internal_args
+    # 模型参数面保持干净，无保留字段注入
     assert outcomes[0].arguments == {"order_id": "O1", "reason": "x"}
     assert state.indeterminate_writes == [{
-        "tool": "apply_refund", "order_id": "O1", "idempotency_key": "REF-9",
+        "tool": "submit_refund_application", "order_id": "O1",
+        "application_id": "", "client_request_id": "",
     }]
 
 
-def test_trace_entry_merges_internal_args_into_write_ops():
-    """结果回填必须合并 internal_args 再 observe：tokens_issued 正常回收、
-    indeterminate 条目幂等键非空（跨轮 confirm 时 record 兜底也为空）。"""
+def test_trace_entry_observes_payload_request_id():
+    """结果回填从载荷读取请求标识：工具层自生成的锚点进对账条目。"""
     from app.agent.react_runner import ReactRunner
     from app.agent.tools.batch_executor import ToolOutcome
     from app.agent.turn_context import AgentTurnContext
@@ -324,23 +399,18 @@ def test_trace_entry_merges_internal_args_into_write_ops():
     runner = ReactRunner(agent=None)
     ctx = AgentTurnContext(user_input="确认退款", budget=TurnBudget.start(30))
     outcome = ToolOutcome(
-        call_id="c1", name="apply_refund",
+        call_id="c1", name="submit_refund_application",
         arguments={"order_id": "O1", "reason": "x"},
-        result=json.dumps({"status": "indeterminate", "error": "REFUND_WRITE_TIMEOUT"}),
+        result=json.dumps({
+            "success": False, "status": "indeterminate",
+            "code": "GATEWAY_TIMEOUT", "client_request_id": "REF-9",
+        }),
         sequence=1,
-        internal_args={
-            "confirmation_token": "tok-1",
-            "idempotency_key": "REF-9",
-            "refund_id": "REF-9",
-        },
     )
-    tracker = ctx.write_ops.refund
-    tracker.tokens_issued.add("tok-1")  # 签发段在先：待回收凭证
+    tracker = ctx.write_ops
     runner._trace_entry(ctx, outcome)
-    # 合并后 observe 拿到 confirmation_token → 一次性凭证回收
-    assert "tok-1" not in tracker.tokens_issued
-    # 合并后 indeterminate 条目幂等键非空（不合并时 record 兜底为空）
-    assert tracker.indeterminate[0]["idempotency_key"] == "REF-9"
+    # 载荷携带的请求标识即对账锚点
+    assert tracker.indeterminate[0]["client_request_id"] == "REF-9"
     assert tracker.indeterminate[0]["order_id"] == "O1"
 
 
@@ -424,7 +494,6 @@ def test_validate_mcp_security_fail_fast(reset_settings):
 def test_tool_manager_injects_actor_for_sensitive_mcp(actor_secret):
     from app.mcp_client.actor import (
         SCOPE_ORDERS_READ,
-        SCOPE_REFUND_WRITE,
         require_scopes,
         validate_actor_token,
     )
@@ -432,7 +501,8 @@ def test_tool_manager_injects_actor_for_sensitive_mcp(actor_secret):
 
     calls: list[tuple[str, str | None, bool]] = []
 
-    def fake_call_tool(name, arguments, timeout=None, *, actor_token=None, write=False):
+    def fake_call_tool(name, arguments, timeout=None, *, actor_token=None,
+                       write=False):
         calls.append((name, actor_token, write))
         return json.dumps({"success": True})
 
@@ -443,13 +513,13 @@ def test_tool_manager_injects_actor_for_sensitive_mcp(actor_secret):
                 "parameters": {"type": "object", "properties": {}},
             }}
             for n in ("query_order", "query_product", "query_logistics",
-                      "apply_refund", "search_knowledge")
+                      "submit_refund_application", "search_knowledge")
         ],
         call_tool=fake_call_tool,
         close=lambda: None,
     )
     tm = ToolManager(use_mcp=True, mcp_server_url="http://fake", mcp_client=fake_client)
-    ctx = ToolContext(user_id="u1", session_id="s1")
+    ctx = ToolContext(user_id="u1", session_id="s1", lease_guard=lambda: None)
 
     tm.execute_tool("query_order", {"order_id": "O1"}, ctx)
     name, token, write = calls[-1]
@@ -458,11 +528,18 @@ def test_tool_manager_injects_actor_for_sensitive_mcp(actor_secret):
     require_scopes(claims, SCOPE_ORDERS_READ)
     assert write is False  # 读
 
-    tm.execute_tool("apply_refund", {"order_id": "O1", "reason": "x"}, ctx)
+    # P1-2：需用户确认的写工具固定本地执行（远端无会话状态，路由过去会绕过
+    # 确认闸门），因此不再产生 MCP 写调用；actor token 只服务敏感读。
+    before = len(calls)
+    tm.execute_tool("submit_refund_application", {"order_id": "O1", "reason": "x"}, ctx)
+    assert len(calls) == before  # 未走 MCP
+    assert tm._tool_source["submit_refund_application"] == "local"
+    # 敏感读仍带 actor token（refund:write 不再经 MCP 面下发）
+    tm.execute_tool("query_logistics", {"order_id": "O1"}, ctx)
     name, token, write = calls[-1]
     claims = validate_actor_token(token)
-    require_scopes(claims, SCOPE_REFUND_WRITE)
-    assert write is True  # 写
+    require_scopes(claims, SCOPE_ORDERS_READ)
+    assert write is False
 
     tm.execute_tool("query_product", {"keyword": "耳机"}, ctx)
     assert calls[-1][1] is None  # 非敏感工具不带 actor
@@ -575,29 +652,3 @@ def test_dataset_gate_citation_rules(tmp_path, monkeypatch):
     assert any("含空/非字符串项" in p for p in problems)
     assert any("含重复项" in p for p in problems)
     assert any("必须是 bool" in p for p in problems)
-
-
-# ============================================================
-# MultiAgent 跨轮 step count 重置
-# ============================================================
-def test_multiagent_steps_reset_per_turn(tmp_path):
-    from app.multi_agent.orchestrator import MultiAgentOrchestrator
-    from tests.unit.conftest import sample_response
-
-    agent = MultiAgentOrchestrator(
-        session_path=str(tmp_path / "s.json"),
-        memory_enabled=False, use_mcp=False, temperature=0.0,
-    )
-    first = list(agent.agents.keys())[0]
-    agent.router.route = lambda user_input, messages: first
-    for sub in agent.agents.values():
-        sub.handle = lambda messages, ctx=None, max_steps=5, executor=None, state=None, budget=None: (
-            "您的退款已处理。", [], 3,
-        )
-    agent._extract_structured_response = lambda text: sample_response(
-        reply="您的退款已处理。"
-    )
-    agent.chat("第一轮")
-    assert agent._react_steps_count == 3
-    agent.chat("第二轮")
-    assert agent._react_steps_count == 3  # 每轮重置：不是 6

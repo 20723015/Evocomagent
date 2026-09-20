@@ -27,7 +27,7 @@ def set_memory_manager(manager: MemoryManager) -> None:
 
 
 def recall_user_memory(query: str = "", ctx: Optional[ToolContext] = None) -> dict:
-    """查询当前用户的记忆信息（长期记忆和短期记忆）。
+    """查询当前用户的长期记忆信息（跨会话事实库）。
 
     ctx 为 None 或 ctx.memory 为空时回落到全局管理器（旧脚本兼容）。
     """
@@ -48,14 +48,37 @@ def recall_user_memory(query: str = "", ctx: Optional[ToolContext] = None) -> di
             "category": f.category,
             "fact_key": getattr(f, "fact_key", ""),
             "updated_at": getattr(f, "updated_at", ""),
+            # 记忆系统重构·阶段1.2：双时态语义透出（只读，无行为变化）——
+            # created_at 即 valid_from；superseded/deleted 的 updated_at 即
+            # invalid_at；recall 只读 active 故 invalid_at 恒空
+            "valid_from": getattr(f, "created_at", ""),
+            "invalid_at": "",
         }
         for f in ranked
     ]
 
+    # 记忆系统重构·阶段0：漏注直接度量——Agent 主动召回命中、而本轮自动注入
+    # 未命中的 fact_id（注入漏召 = recall 命中集 − 注入快照）
+    if query and query.strip():
+        try:
+            import logging
+
+            from app.observability.metrics import record_memory_recall_miss
+
+            injected = getattr(manager.ltm, "_last_injected", {}) or {}
+            missed = [f.fact_id for f in ranked if f.fact_id not in injected]
+            if missed:
+                record_memory_recall_miss(len(missed))
+                logging.getLogger("app.agent.tools.memory_tool").debug(
+                    "memory.recall_miss user=%s missed_fact_ids=%s",
+                    getattr(manager.ltm, "user_id", ""), missed,
+                )
+        except Exception:  # noqa: BLE001 —— 度量失败不影响工具返回
+            pass
+
     result: dict = {
         "success": True,
         "query": query,
-        "short_term_facts": manager.stm.facts,
         "long_term_facts": long_term_facts,
     }
 

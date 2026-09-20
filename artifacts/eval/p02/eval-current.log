@@ -1,0 +1,1017 @@
+{"event": "==============================================================================", "level": "info", "timestamp": "2026-09-17T22:31:23.664894Z"}
+{"event": "  检索质量评估（阶段七 7.6）", "level": "info", "timestamp": "2026-09-17T22:31:23.664894Z"}
+{"event": "  数据集    : E:\\ea\\app\\evaluation\\retrieval_cases_v3.json", "level": "info", "timestamp": "2026-09-17T22:31:23.664894Z"}
+{"event": "  变体      : knn", "level": "info", "timestamp": "2026-09-17T22:31:23.664894Z"}
+{"event": "  top-k     : 5", "level": "info", "timestamp": "2026-09-17T22:31:23.664894Z"}
+{"event": "  后端      : numpy", "level": "info", "timestamp": "2026-09-17T22:31:23.664894Z"}
+{"event": "  hybrid    : False", "level": "info", "timestamp": "2026-09-17T22:31:23.664894Z"}
+{"event": "  reranker  : none", "level": "info", "timestamp": "2026-09-17T22:31:23.664894Z"}
+{"event": "  最低分数  : 未配置", "level": "info", "timestamp": "2026-09-17T22:31:23.664894Z"}
+{"event": "  hard 阈值  : 与本次最低分数相同", "level": "info", "timestamp": "2026-09-17T22:31:23.664894Z"}
+{"event": "==============================================================================", "level": "info", "timestamp": "2026-09-17T22:31:23.664894Z"}
+{"event": "\n[1/3] 加载检索用例集...", "level": "info", "timestamp": "2026-09-17T22:31:23.664894Z"}
+{"event": "   共 959 条用例", "level": "info", "timestamp": "2026-09-17T22:31:23.668108Z"}
+{"event": "\n[2/3] 构建检索器...", "level": "info", "timestamp": "2026-09-17T22:31:23.668108Z"}
+{"event": "   检索器就绪", "level": "info", "timestamp": "2026-09-17T22:31:24.459480Z"}
+{"event": "\n[3/3] 逐用例评估（top_k=5）...", "level": "info", "timestamp": "2026-09-17T22:31:24.459480Z"}
+{"event": "\n==============================================================================", "level": "info", "timestamp": "2026-09-17T22:35:39.493845Z"}
+{"event": "  逐用例检索指标（正例 ranking / 负例 rejection）", "level": "info", "timestamp": "2026-09-17T22:35:39.493845Z"}
+{"event": "==============================================================================", "level": "info", "timestamp": "2026-09-17T22:35:39.493845Z"}
+{"event": "  用例                       recall@k     MRR   nDCG@k  查询", "level": "info", "timestamp": "2026-09-17T22:35:39.493845Z"}
+{"event": "  retrieval_退换货政策_1          100.0%   50.0%    63.1%  七天无理由退货可以吗", "level": "info", "timestamp": "2026-09-17T22:35:39.493845Z"}
+{"event": "  retrieval_退换货政策_2          100.0%   50.0%    63.1%  七天无理由退货有什么条件", "level": "info", "timestamp": "2026-09-17T22:35:39.493845Z"}
+{"event": "  retrieval_退换货政策_3          100.0%   50.0%    63.1%  不想要了，能七天退吗", "level": "info", "timestamp": "2026-09-17T22:35:39.493845Z"}
+{"event": "  retrieval_退换货政策_4          100.0%   50.0%    63.1%  七天无理由退货运费谁出", "level": "info", "timestamp": "2026-09-17T22:35:39.493845Z"}
+{"event": "  retrieval_退换货政策_5          100.0%   25.0%    43.1%  质量问题退货运费谁承担", "level": "info", "timestamp": "2026-09-17T22:35:39.493845Z"}
+{"event": "  retrieval_退换货政策_6          100.0%  100.0%   100.0%  质量问题退货需要什么凭证", "level": "info", "timestamp": "2026-09-17T22:35:39.493845Z"}
+{"event": "  retrieval_退换货政策_7          100.0%   50.0%    63.1%  质量问题退货时效 15 天内", "level": "info", "timestamp": "2026-09-17T22:35:39.493845Z"}
+{"event": "  retrieval_退换货政策_8          100.0%  100.0%   100.0%  退款流程怎么走", "level": "info", "timestamp": "2026-09-17T22:35:39.493845Z"}
+{"event": "  retrieval_退换货政策_9           50.0%   50.0%    38.7%  退款多久到账", "level": "info", "timestamp": "2026-09-17T22:35:39.493845Z"}
+{"event": "  retrieval_退换货政策_10         100.0%   50.0%    63.1%  不退货只退款可以吗", "level": "info", "timestamp": "2026-09-17T22:35:39.493845Z"}
+{"event": "  retrieval_退换货政策_11         100.0%  100.0%   100.0%  拒收快递怎么退款", "level": "info", "timestamp": "2026-09-17T22:35:39.493845Z"}
+{"event": "  retrieval_退换货政策_12         100.0%  100.0%   100.0%  多件商品能只退一件吗", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_退换货政策_13         100.0%   20.0%    38.7%  定制商品支持七天无理由吗", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_退换货政策_14         100.0%   50.0%    63.1%  生鲜水果能七天退吗", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_退换货政策_15           0.0%    0.0%     0.0%  化妆品拆封还能退吗", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_退换货政策_16         100.0%   25.0%    43.1%  从退款中扣除上门取件运费 12 元", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_退换货政策_17         100.0%  100.0%   100.0%  退款原因里有图片说明吗", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_退换货政策_18           0.0%    0.0%     0.0%  电子卡券激活后能退吗", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_退换货政策_19         100.0%   50.0%    63.1%  签收 7 天内怎么申请退货", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_退换货政策_20         100.0%   33.3%    50.0%  产品质量不好 15 天内退换货", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_退换货政策_21         100.0%   33.3%    50.0%  退货寄回的运费 12 元起", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_退换货政策_22         100.0%   50.0%    63.1%  商品描述不符可以退吗", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_退换货政策_23         100.0%  100.0%   100.0%  部分退款金额怎么算", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_退换货政策_24         100.0%  100.0%   100.0%  拒收后退款要等多久", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_退换货政策_25         100.0%   50.0%    63.1%  仅退款需要把货寄回吗", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_退换货政策_26           0.0%    0.0%     0.0%  维修后再出问题能退吗", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_退换货政策_27           0.0%    0.0%     0.0%  品牌方确认质量问题后怎么办", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_退换货政策_28         100.0%   20.0%    38.7%  退款审核多久通过", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_退换货政策_29           0.0%    0.0%     0.0%  质检通过后多久打款", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_退换货政策_30         100.0%   33.3%    50.0%  商品缺件漏发怎么办", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_配送说明_1           100.0%   33.3%    50.0%  偏远地区包邮吗", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_配送说明_2           100.0%   50.0%    63.1%  新疆地区送货要加运费吗", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_配送说明_3           100.0%  100.0%   100.0%  西藏阿里能送到吗", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_配送说明_4           100.0%   33.3%    50.0%  港澳台及海外配送", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_配送说明_5           100.0%  100.0%   100.0%  一线城市配送时效 2-3 天", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_配送说明_6           100.0%  100.0%   100.0%  当日达和次日达支持哪些区域", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_配送说明_7           100.0%  100.0%   100.0%  地级市几天能到", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_配送说明_8           100.0%  100.0%   100.0%  县级地区配送要多久", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_配送说明_9           100.0%  100.0%   100.0%  满 99 元包邮吗", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_配送说明_10          100.0%   50.0%    63.1%  不满 99 元运费多少", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_配送说明_11            0.0%    0.0%     0.0%  大件家电按体积重计费", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_配送说明_12          100.0%   33.3%    50.0%  青海部分区域加收运费 20 元", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_配送说明_13          100.0%  100.0%    92.0%  钻石会员全场包邮", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_配送说明_14          100.0%  100.0%   100.0%  默认用哪些快递发货", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_配送说明_15          100.0%  100.0%   100.0%  订单能指定某个快递员派送吗", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_配送说明_16          100.0%  100.0%   100.0%  能指定顺丰吗", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_配送说明_17          100.0%  100.0%   100.0%  合作快递有哪些家", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_配送说明_18          100.0%   25.0%    43.1%  发货时效从什么时候算起", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_配送说明_19          100.0%   33.3%    50.0%  预售定制家具按详情页时效", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_配送说明_20          100.0%  100.0%   100.0%  贵重商品当面验货", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_配送说明_21          100.0%   25.0%    43.1%  代收点 48 小时取件", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_配送说明_22          100.0%   25.0%    43.1%  签收后发现破损 24 小时内联系", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_配送说明_23          100.0%  100.0%   100.0%  无人签收会投递几次", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_配送说明_24          100.0%   33.3%    50.0%  物流停滞怎么催单", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_配送说明_25          100.0%   33.3%    50.0%  派件错误可以定位寻件吗", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_配送说明_26          100.0%  100.0%   100.0%  海南三沙额外发货时间", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_配送说明_27          100.0%  100.0%   100.0%  系统按什么原则分配快递", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_配送说明_28          100.0%   50.0%    63.1%  快递单号在哪里看承运商", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_配送说明_29          100.0%  100.0%   100.0%  广州支持次日达吗", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_配送说明_30          100.0%   50.0%    63.1%  偏远地区发货要多久", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_配送说明_31          100.0%   20.0%    38.7%  健身器材怎么计费", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_会员权益_1           100.0%  100.0%   100.0%  会员等级有哪些", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_会员权益_2           100.0%  100.0%   100.0%  白银会员有什么权益", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_会员权益_3           100.0%  100.0%   100.0%  黄金会员权益包括什么", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_会员权益_4           100.0%  100.0%   100.0%  钻石会员有什么特权", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_会员权益_5           100.0%  100.0%   100.0%  注册会员有什么福利", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_会员权益_6           100.0%   50.0%    63.1%  黄金会员升级门槛是多少", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_会员权益_7           100.0%  100.0%   100.0%  钻石会员门槛 2 万", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_会员权益_8           100.0%   50.0%    63.1%  会员等级每月几号结算", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_会员权益_9           100.0%  100.0%   100.0%  新人专享券多少元", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_会员权益_10          100.0%  100.0%   100.0%  生日 8.8 折券", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_会员权益_11          100.0%  100.0%   100.0%  白银会员客服优先排队", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_会员权益_12          100.0%  100.0%   100.0%  黄金会员全场免邮", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_会员权益_13          100.0%   25.0%    43.1%  钻石会员包邮含偏远地区", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_会员权益_14          100.0%  100.0%   100.0%  钻石会员优先发货", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_会员权益_15          100.0%   33.3%    50.0%  钻石无忧退一年几次", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_会员权益_16          100.0%   33.3%    50.0%  会员积分怎么获得", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_会员权益_17          100.0%   33.3%    50.0%  实付 1 元 1 积分", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_会员权益_18          100.0%   33.3%    50.0%  积分能抵现金吗", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_会员权益_19          100.0%   33.3%    50.0%  订单金额 50% 抵扣", "level": "info", "timestamp": "2026-09-17T22:35:39.494875Z"}
+{"event": "  retrieval_会员权益_20          100.0%   33.3%    50.0%  积分有效期 24 个月", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_会员权益_21          100.0%  100.0%   100.0%  生日当月双倍积分", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_会员权益_22          100.0%  100.0%   100.0%  钻石会员生日礼盒怎么领", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_会员权益_23          100.0%  100.0%   100.0%  生日当天 88 元券", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_会员权益_24          100.0%  100.0%   100.0%  会员等级能手动升级吗", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_会员权益_25          100.0%  100.0%   100.0%  退款扣减升级金额吗", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_会员权益_26          100.0%   50.0%    63.1%  会员要收费吗", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_会员权益_27          100.0%  100.0%   100.0%  黄金会员每月几张券", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_会员权益_28          100.0%  100.0%   100.0%  钻石会员每月优惠券组合", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_会员权益_29          100.0%   33.3%    50.0%  积分过期清零吗", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_会员权益_30          100.0%   50.0%    63.1%  评价晒图加多少积分", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_常见问题FAQ_1        100.0%  100.0%   100.0%  下完单一般几天发货", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_常见问题FAQ_2        100.0%  100.0%   100.0%  超过 72 小时未发货怎么办", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_常见问题FAQ_3        100.0%  100.0%   100.0%  支持哪些支付方式", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_常见问题FAQ_4        100.0%   25.0%    43.1%  支持花呗分期吗", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_常见问题FAQ_5        100.0%  100.0%   100.0%  支持货到付款吗", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_常见问题FAQ_6        100.0%  100.0%   100.0%  未发货订单能改地址吗", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_常见问题FAQ_7        100.0%   50.0%    63.1%  未发货订单地址能改几次", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_常见问题FAQ_8        100.0%  100.0%   100.0%  支付成功但平台没识别", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_常见问题FAQ_9        100.0%  100.0%   100.0%  商品降价了能退差价吗", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_常见问题FAQ_10       100.0%   20.0%    38.7%  价保期限是几天", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_常见问题FAQ_11         0.0%    0.0%     0.0%  限时秒杀参与价保吗", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_常见问题FAQ_12       100.0%  100.0%   100.0%  商品页面显示缺货", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_常见问题FAQ_13       100.0%  100.0%   100.0%  到货提醒怎么设置", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_常见问题FAQ_14       100.0%  100.0%   100.0%  怀疑买到假货怎么办", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_常见问题FAQ_15       100.0%   50.0%    63.1%  假货赔付几倍", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_常见问题FAQ_16       100.0%  100.0%   100.0%  寄回商品丢了怎么办", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_常见问题FAQ_17       100.0%  100.0%   100.0%  快递丢件证明找谁开具", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_常见问题FAQ_18       100.0%   50.0%    63.1%  微信退款多久到账", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_常见问题FAQ_19       100.0%   33.3%    50.0%  银行卡退款几天", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_常见问题FAQ_20       100.0%   50.0%    63.1%  花呗退款抵扣哪期账单", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_常见问题FAQ_21       100.0%  100.0%   100.0%  保修期内坏了怎么办", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_常见问题FAQ_22       100.0%   25.0%    43.1%  品牌维修怎么走流程", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_常见问题FAQ_23       100.0%  100.0%   100.0%  忘记密码怎么找回", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_常见问题FAQ_24       100.0%  100.0%   100.0%  账户被盗怎么办", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_常见问题FAQ_25       100.0%  100.0%   100.0%  注销账户怎么操作", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_常见问题FAQ_26       100.0%  100.0%   100.0%  注销后数据保留多久", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_常见问题FAQ_27         0.0%    0.0%     0.0%  账号申诉审核要多久", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_常见问题FAQ_28       100.0%  100.0%   100.0%  手机号停用怎么找回账号", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_优惠券与促销规则_1       100.0%  100.0%   100.0%  优惠券可以叠加使用吗", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_优惠券与促销规则_2       100.0%   50.0%    63.1%  平台券和店铺券能一起用吗", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_优惠券与促销规则_3       100.0%  100.0%   100.0%  优惠券有效期多久", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_优惠券与促销规则_4       100.0%   50.0%    63.1%  取消订单后优惠券会退回吗", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_优惠券与促销规则_5         0.0%    0.0%     0.0%  部分退款时优惠券怎么退", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_优惠券与促销规则_6       100.0%   50.0%    63.1%  限时秒杀每天几点开始", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_优惠券与促销规则_7       100.0%   25.0%    43.1%  秒杀商品参与价保吗", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_优惠券与促销规则_8         0.0%    0.0%     0.0%  预售商品定金可以退吗", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_优惠券与促销规则_9       100.0%   25.0%    43.1%  预售什么时候付尾款", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_优惠券与促销规则_10      100.0%  100.0%   100.0%  大促活动能叠加用券吗", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_优惠券与促销规则_11      100.0%  100.0%   100.0%  直播间发的券什么时候用", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_优惠券与促销规则_12      100.0%   50.0%    63.1%  优惠券使用门槛按什么算", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_发票与开票规则_1        100.0%  100.0%   100.0%  可以开发票吗", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_发票与开票规则_2        100.0%  100.0%   100.0%  电子发票多久开出来", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_发票与开票规则_3        100.0%  100.0%   100.0%  发票抬头怎么填", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_发票与开票规则_4        100.0%  100.0%   100.0%  能开增值税专用发票吗", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_发票与开票规则_5        100.0%  100.0%   100.0%  开错抬头能改吗", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_发票与开票规则_6        100.0%  100.0%   100.0%  发票丢失了怎么办", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_发票与开票规则_7        100.0%  100.0%   100.0%  企业采购能开月结发票吗", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_发票与开票规则_8        100.0%  100.0%   100.0%  发票金额包含运费吗", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_发票与开票规则_9        100.0%   50.0%    63.1%  多笔订单能合并开票吗", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_发票与开票规则_10       100.0%  100.0%   100.0%  电子发票在哪里下载", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_生鲜与定制商品规则_1      100.0%   50.0%    63.1%  生鲜坏了能退款吗", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_生鲜与定制商品规则_2      100.0%   33.3%    50.0%  生鲜签收后多久内可理赔", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_生鲜与定制商品规则_3      100.0%  100.0%   100.0%  生鲜理赔要什么凭证", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_生鲜与定制商品规则_4      100.0%   25.0%    43.1%  生鲜支持七天无理由吗", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_生鲜与定制商品规则_5      100.0%   33.3%    50.0%  定制商品工期多久", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_生鲜与定制商品规则_6      100.0%   33.3%    50.0%  定制商品能取消吗", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_生鲜与定制商品规则_7        0.0%    0.0%     0.0%  刻字商品能退吗", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_生鲜与定制商品规则_8      100.0%   50.0%    63.1%  大件家具送货上门安装吗", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_生鲜与定制商品规则_9      100.0%   33.3%    50.0%  新疆订单支持送货上门安装吗", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_生鲜与定制商品规则_10     100.0%   33.3%    50.0%  定制商品质量问题怎么售后", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_生鲜与定制商品规则_11     100.0%  100.0%   100.0%  生鲜损失一半以上怎么赔", "level": "info", "timestamp": "2026-09-17T22:35:39.495916Z"}
+{"event": "  retrieval_直播与限时活动规则_1      100.0%  100.0%   100.0%  直播间抽奖什么时候发奖", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_直播与限时活动规则_2        0.0%    0.0%     0.0%  中奖后多久发货", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_直播与限时活动规则_3      100.0%  100.0%   100.0%  直播间的商品价格只在直播时有效吗", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_直播与限时活动规则_4      100.0%  100.0%   100.0%  直播间优惠券当场有效吗", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_直播与限时活动规则_5      100.0%  100.0%   100.0%  闪购商品什么时候结束", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_直播与限时活动规则_6        0.0%    0.0%     0.0%  满赠活动赠品怎么发", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_直播与限时活动规则_7      100.0%  100.0%   100.0%  活动结束价格会恢复吗", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_直播与限时活动规则_8      100.0%  100.0%   100.0%  直播间下单能正常退换吗", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_直播与限时活动规则_9      100.0%  100.0%   100.0%  直播中奖需要什么条件", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_直播与限时活动规则_10     100.0%   50.0%    63.1%  赠品坏了能售后吗", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_价保与赔付规则_1        100.0%   33.3%    50.0%  降价了能退差价吗", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_价保与赔付规则_2        100.0%   33.3%    50.0%  价保期限几天", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_价保与赔付规则_3        100.0%   33.3%    50.0%  钻石会员价保多久", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_价保与赔付规则_4        100.0%   33.3%    50.0%  破损了怎么赔付", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_价保与赔付规则_5        100.0%   20.0%    38.7%  缺件少件怎么办", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_价保与赔付规则_6        100.0%   50.0%    63.1%  延迟发货有赔付吗", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_价保与赔付规则_7        100.0%   50.0%    63.1%  假一赔三是怎么赔", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_价保与赔付规则_8          0.0%    0.0%     0.0%  赔付金发放到哪个账户", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_价保与赔付规则_9        100.0%   20.0%    38.7%  秒杀商品能价保吗", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_价保与赔付规则_10       100.0%   33.3%    50.0%  轻微破损能赔多少", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_售后维修与延保_1        100.0%  100.0%   100.0%  保修期是多久", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_售后维修与延保_2          0.0%    0.0%     0.0%  进水损坏能保修吗", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_售后维修与延保_3        100.0%  100.0%   100.0%  怎么申请品牌维修", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_售后维修与延保_4        100.0%  100.0%   100.0%  维修需要寄回哪里", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_售后维修与延保_5        100.0%  100.0%   100.0%  维修要多久", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_售后维修与延保_6        100.0%   50.0%    63.1%  延保服务怎么买", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_售后维修与延保_7        100.0%  100.0%   100.0%  以旧换新怎么估", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_售后维修与延保_8        100.0%   50.0%    63.1%  旧手机回收估价在哪里查", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_售后维修与延保_9          0.0%    0.0%     0.0%  维修寄回运费谁承担", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_售后维修与延保_10         0.0%    0.0%     0.0%  保修需要发票吗", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_售后维修与延保_11       100.0%   50.0%    63.1%  电池属于保修范围吗", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_支付与账户安全_1        100.0%   50.0%    63.1%  支付密码忘了怎么办", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_支付与账户安全_2        100.0%  100.0%   100.0%  怎么修改支付密码", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_支付与账户安全_3        100.0%   50.0%    63.1%  账户被盗了怎么办", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_支付与账户安全_4        100.0%  100.0%   100.0%  被骗了能追回资金吗", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_支付与账户安全_5          0.0%    0.0%     0.0%  未成年人购物有什么限制", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_支付与账户安全_6        100.0%  100.0%   100.0%  大额支付要验证吗", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_支付与账户安全_7        100.0%  100.0%   100.0%  重复扣款怎么退", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_支付与账户安全_8        100.0%   25.0%    43.1%  陌生设备怎么下线", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_支付与账户安全_9        100.0%  100.0%   100.0%  客服会要验证码吗", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_支付与账户安全_10         0.0%    0.0%     0.0%  花呗分期支持几期", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_支付与账户安全_11       100.0%  100.0%   100.0%  账户安全建议有哪些", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_隐私与个人信息_1        100.0%  100.0%   100.0%  你们收集我哪些信息", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_隐私与个人信息_2        100.0%  100.0%   100.0%  能关掉个性化推荐吗", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_隐私与个人信息_3        100.0%  100.0%   100.0%  怎么删除浏览记录", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_隐私与个人信息_4        100.0%  100.0%   100.0%  换手机号怎么操作", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_隐私与个人信息_5        100.0%  100.0%   100.0%  信息会卖给第三方吗", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_隐私与个人信息_6        100.0%  100.0%   100.0%  怎么关闭位置权限", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_隐私与个人信息_7        100.0%  100.0%   100.0%  隐私政策在哪看", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_隐私与个人信息_8        100.0%  100.0%   100.0%  个人信息删除怎么操作", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_物流异常与投诉处理_1      100.0%   50.0%    63.1%  物流几天不更新怎么办", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_物流异常与投诉处理_2      100.0%   33.3%    50.0%  快递被错派给别人", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_物流异常与投诉处理_3        0.0%    0.0%     0.0%  包裹丢了怎么赔", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_物流异常与投诉处理_4      100.0%  100.0%   100.0%  没收到但显示签收", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_物流异常与投诉处理_5      100.0%   50.0%    63.1%  怎么投诉客服", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_物流异常与投诉处理_6      100.0%  100.0%   100.0%  投诉多久有回复", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_物流异常与投诉处理_7        0.0%    0.0%     0.0%  客服处理不满意怎么升级", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_物流异常与投诉处理_8        0.0%    0.0%     0.0%  拒收后退款多久", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_物流异常与投诉处理_9      100.0%   50.0%    63.1%  怎么催物流", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_物流异常与投诉处理_10     100.0%  100.0%   100.0%  物流异常找谁", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_企业采购与团购_1        100.0%  100.0%   100.0%  企业怎么开通采购", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_企业采购与团购_2        100.0%  100.0%   100.0%  团购怎么拼单", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_企业采购与团购_3        100.0%   50.0%    63.1%  企业能月结吗", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_企业采购与团购_4        100.0%  100.0%   100.0%  批量采购有优惠吗", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_企业采购与团购_5        100.0%   50.0%    63.1%  企业发票怎么开", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_企业采购与团购_6        100.0%   33.3%    50.0%  大客户有专属客服吗", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_企业采购与团购_7          0.0%    0.0%     0.0%  拼团不成功会退款吗", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_企业采购与团购_8        100.0%   50.0%    63.1%  企业采购订单怎么售后", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_企业采购与团购_9        100.0%  100.0%   100.0%  对公转账怎么付", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_企业采购与团购_10       100.0%  100.0%   100.0%  采购框架协议怎么签", "level": "info", "timestamp": "2026-09-17T22:35:39.496939Z"}
+{"event": "  retrieval_跨境与海外购_1         100.0%   50.0%    63.1%  跨境商品要实名吗", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_跨境与海外购_2         100.0%  100.0%   100.0%  海外购商品要交税吗", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_跨境与海外购_3         100.0%   50.0%    63.1%  跨境限购多少", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_跨境与海外购_4         100.0%  100.0%   100.0%  保税仓发货多久到", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_跨境与海外购_5         100.0%   50.0%    63.1%  海外直邮要多久", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_跨境与海外购_6         100.0%   33.3%    50.0%  跨境退货运费谁出", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_跨境与海外购_7         100.0%   50.0%    63.1%  行邮税怎么算", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_跨境与海外购_8         100.0%  100.0%   100.0%  跨境能七天无理由吗", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_跨境与海外购_9         100.0%  100.0%   100.0%  跨境商品退运要扣钱吗", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_跨境与海外购_10        100.0%  100.0%   100.0%  海外仓发货靠谱吗", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_礼品卡与储值卡_1        100.0%  100.0%   100.0%  礼品卡怎么买", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_礼品卡与储值卡_2        100.0%  100.0%   100.0%  礼品卡怎么绑定到账户", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_礼品卡与储值卡_3        100.0%  100.0%   100.0%  礼品卡能提现吗", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_礼品卡与储值卡_4        100.0%  100.0%   100.0%  礼品卡有效期多久", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_礼品卡与储值卡_5        100.0%   50.0%    63.1%  余额在哪查", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_礼品卡与储值卡_6        100.0%  100.0%   100.0%  礼品卡能送人吗", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_礼品卡与储值卡_7        100.0%   50.0%    63.1%  卡密丢了怎么办", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_礼品卡与储值卡_8        100.0%  100.0%   100.0%  礼品卡能退款吗", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_礼品卡与储值卡_9        100.0%   50.0%    63.1%  企业团购卡有折扣吗", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_礼品卡与储值卡_10       100.0%  100.0%   100.0%  储值余额能转赠他人吗", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_服装鞋帽类目规则_1       100.0%   50.0%    63.1%  衣服尺码不合适能换吗", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_服装鞋帽类目规则_2       100.0%  100.0%   100.0%  鞋子开胶了怎么售后", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_服装鞋帽类目规则_3       100.0%  100.0%   100.0%  羊毛衫能机洗吗", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_服装鞋帽类目规则_4         0.0%    0.0%     0.0%  内衣拆封了还能退吗", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_服装鞋帽类目规则_5       100.0%  100.0%   100.0%  羽绒服跑绒怎么办", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_服装鞋帽类目规则_6       100.0%   33.3%    50.0%  童装安全标准是什么", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_服装鞋帽类目规则_7       100.0%  100.0%   100.0%  鞋类三包期限是多久", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_服装鞋帽类目规则_8         0.0%    0.0%     0.0%  衣服严重串色能退吗", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_服装鞋帽类目规则_9       100.0%   25.0%    43.1%  服装质量问题怎么举证", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_服装鞋帽类目规则_10        0.0%    0.0%     0.0%  定制鞋服能退吗", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_3C数码类目规则_1       100.0%   33.3%    50.0%  手机激活了还能退吗", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_3C数码类目规则_2       100.0%   50.0%    63.1%  电脑激活后支持无理由退吗", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_3C数码类目规则_3       100.0%   33.3%    50.0%  手机性能故障怎么换机", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_3C数码类目规则_4       100.0%  100.0%   100.0%  手机主要部件保修几年", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_3C数码类目规则_5       100.0%  100.0%   100.0%  充电器保修多久", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_3C数码类目规则_6       100.0%  100.0%   100.0%  官翻机和国行有什么区别", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_3C数码类目规则_7       100.0%   50.0%    63.1%  手表联网配对算激活吗", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_3C数码类目规则_8       100.0%  100.0%   100.0%  退换机数据会丢吗", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_3C数码类目规则_9       100.0%   25.0%    43.1%  二手手机电池健康度不符怎么办", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_3C数码类目规则_10      100.0%   50.0%    63.1%  手机进水摔裂能保修吗", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_美妆个护类目规则_1       100.0%  100.0%   100.0%  化妆品拆封了还能退吗", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_美妆个护类目规则_2       100.0%  100.0%   100.0%  用护肤品过敏怎么办", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_美妆个护类目规则_3       100.0%  100.0%   100.0%  化妆品变质了能售后吗", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_美妆个护类目规则_4       100.0%  100.0%   100.0%  临期化妆品能退吗", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_美妆个护类目规则_5       100.0%  100.0%   100.0%  怎么查化妆品真伪", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_美妆个护类目规则_6       100.0%  100.0%   100.0%  口红小样能退吗", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_美妆个护类目规则_7       100.0%  100.0%   100.0%  化妆品批次差异正常吗", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_美妆个护类目规则_8       100.0%   50.0%    63.1%  隐形眼镜拆封能退吗", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_美妆个护类目规则_9       100.0%  100.0%   100.0%  美容仪保修多久", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_美妆个护类目规则_10      100.0%   50.0%    63.1%  跨境美妆怎么查溯源", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_食品饮料类目规则_1       100.0%  100.0%   100.0%  卖临期食品合规吗", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_食品饮料类目规则_2       100.0%  100.0%   100.0%  购买的零食胀包了怎么办", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_食品饮料类目规则_3       100.0%   33.3%    50.0%  食品缺斤少两怎么赔", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_食品饮料类目规则_4       100.0%  100.0%   100.0%  食品过敏原必须标注吗", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_食品饮料类目规则_5       100.0%   50.0%    63.1%  酒类可以卖给未成年人吗", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_食品饮料类目规则_6       100.0%   25.0%    43.1%  茶叶受潮属于质量问题吗", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_食品饮料类目规则_7       100.0%   25.0%    43.1%  冷冻食品化了能退吗", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_食品饮料类目规则_8       100.0%  100.0%   100.0%  变质胀包发霉怎么售后", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_食品饮料类目规则_9       100.0%   20.0%    38.7%  买到异物可以退一赔十吗", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_母婴用品类目规则_1       100.0%  100.0%   100.0%  童装有安全标准吗", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_母婴用品类目规则_2       100.0%   50.0%    63.1%  玩具需要3C认证吗", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_母婴用品类目规则_3       100.0%  100.0%   100.0%  纸尿裤拆封了能退吗", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_母婴用品类目规则_4       100.0%  100.0%   100.0%  婴儿床甲醛超标怎么办", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_母婴用品类目规则_5       100.0%   50.0%    63.1%  玩具小零件脱落能投诉吗", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_母婴用品类目规则_6       100.0%  100.0%   100.0%  奶瓶材质有什么安全要求", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_母婴用品类目规则_7       100.0%   50.0%    63.1%  安全座椅怎么查认证", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_母婴用品类目规则_8       100.0%  100.0%   100.0%  二手母婴用品平台能交易吗", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_母婴用品类目规则_9       100.0%  100.0%   100.0%  婴儿辅食在哪买正品", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_母婴用品类目规则_10      100.0%  100.0%   100.0%  母婴用品质量问题优先换新吗", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_母婴用品类目规则_11      100.0%  100.0%   100.0%  奶粉开封了能退吗", "level": "info", "timestamp": "2026-09-17T22:35:39.497947Z"}
+{"event": "  retrieval_家居家纺类目规则_1       100.0%  100.0%   100.0%  床品尺寸怎么选", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_家居家纺类目规则_2       100.0%  100.0%   100.0%  蚕丝被填充物含量怎么验证", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_家居家纺类目规则_3       100.0%   50.0%    63.1%  家具到货破损怎么办", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_家居家纺类目规则_4       100.0%   50.0%    63.1%  家具主结构保修几年", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_家居家纺类目规则_5       100.0%  100.0%   100.0%  床垫拆塑封后能退吗", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_家居家纺类目规则_6       100.0%   33.3%    50.0%  定制窗帘能退吗", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_家居家纺类目规则_7       100.0%  100.0%   100.0%  家具甲醛超标怎么赔", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_家居家纺类目规则_8       100.0%   20.0%    38.7%  地毯掉色严重能售后吗", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_家居家纺类目规则_9       100.0%   33.3%    50.0%  智能家居售后按什么类目执行", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_家居家纺类目规则_10      100.0%  100.0%   100.0%  乳胶枕支持七天无理由吗", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_运动户外类目规则_1       100.0%  100.0%   100.0%  户外鞋试穿后能退吗", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_运动户外类目规则_2       100.0%  100.0%   100.0%  护具安全性能有问题怎么赔", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_运动户外类目规则_3       100.0%   50.0%    63.1%  帐篷防水指数怎么看", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_运动户外类目规则_4       100.0%   33.3%    50.0%  骑行装备断裂能换吗", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_运动户外类目规则_5       100.0%  100.0%   100.0%  滑雪装备可以租吗", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_运动户外类目规则_6       100.0%   33.3%    50.0%  泳装拆封后能退吗", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_运动户外类目规则_7         0.0%    0.0%     0.0%  赛事报名能退款吗", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_运动户外类目规则_8       100.0%   50.0%    63.1%  健身器材保修多久", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_运动户外类目规则_9       100.0%  100.0%   100.0%  定制球衣能退吗", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_运动户外类目规则_10      100.0%  100.0%   100.0%  户外电源按什么类目保修", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_宠物用品类目规则_1       100.0%   50.0%    63.1%  平台支持买活体宠物吗", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_宠物用品类目规则_2       100.0%  100.0%   100.0%  猫粮拆封了能退吗", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_宠物用品类目规则_3       100.0%  100.0%   100.0%  宠物粮变质怎么办", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_宠物用品类目规则_4       100.0%  100.0%   100.0%  宠物吃了出问题怎么赔偿", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_宠物用品类目规则_5       100.0%   50.0%    63.1%  牵引绳断裂能换吗", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_宠物用品类目规则_6       100.0%   50.0%    63.1%  宠物喂食器保修多久", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_宠物用品类目规则_7       100.0%  100.0%   100.0%  宠物玩具零件脱落能投诉吗", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_宠物用品类目规则_8       100.0%  100.0%   100.0%  宠物疫苗在哪买", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_宠物用品类目规则_9       100.0%  100.0%   100.0%  宠物食品临期能买吗", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_宠物用品类目规则_10      100.0%  100.0%   100.0%  宠物用品质量问题怎么售后", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_图书文教类目规则_1       100.0%   50.0%    63.1%  书缺页了怎么办", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_图书文教类目规则_2       100.0%  100.0%   100.0%  电子书能退吗", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_图书文教类目规则_3       100.0%   50.0%    63.1%  二手书成色不符能退吗", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_图书文教类目规则_4       100.0%  100.0%   100.0%  线上课开课了能退吗", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_图书文教类目规则_5       100.0%   33.3%    50.0%  图书与描述严重不符怎么赔", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_图书文教类目规则_6       100.0%   50.0%    63.1%  教辅附赠账号激活能退吗", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_图书文教类目规则_7       100.0%  100.0%   100.0%  有声书能退吗", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_图书文教类目规则_8       100.0%  100.0%   100.0%  定制印字书能退吗", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_图书文教类目规则_9       100.0%  100.0%   100.0%  电子书排版乱码怎么办", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_图书文教类目规则_10      100.0%   33.3%    50.0%  线上课退款比例怎么算", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_珠宝钟表类目规则_1       100.0%  100.0%   100.0%  买珠宝要什么鉴定证书", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_珠宝钟表类目规则_2       100.0%  100.0%   100.0%  黄金纯度不符怎么赔", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_珠宝钟表类目规则_3       100.0%  100.0%   100.0%  定制刻字珠宝能退吗", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_珠宝钟表类目规则_4       100.0%  100.0%   100.0%  钟表机芯保修多久", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_珠宝钟表类目规则_5       100.0%  100.0%   100.0%  钻石镶嵌脱落怎么办", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_珠宝钟表类目规则_6       100.0%  100.0%   100.0%  黄金能七天无理由退吗", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_珠宝钟表类目规则_7       100.0%   50.0%    63.1%  翡翠纹理差异属正常吗", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_珠宝钟表类目规则_8       100.0%  100.0%   100.0%  旧黄金怎么回收估价", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_珠宝钟表类目规则_9       100.0%  100.0%   100.0%  二手名表寄售要什么", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_珠宝钟表类目规则_10      100.0%   33.3%    50.0%  机械表误差多少属正常", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_五金建材类目规则_1       100.0%  100.0%   100.0%  五金规格怎么确认", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_五金建材类目规则_2       100.0%   50.0%    63.1%  定制板材能退吗", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_五金建材类目规则_3       100.0%  100.0%   100.0%  建材色差严重怎么办", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_五金建材类目规则_4       100.0%  100.0%   100.0%  电钻保修多久", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_五金建材类目规则_5       100.0%  100.0%   100.0%  膨胀螺栓断裂能换吗", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_五金建材类目规则_6       100.0%  100.0%   100.0%  涂料开封能退吗", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_五金建材类目规则_7         0.0%    0.0%     0.0%  瓷砖到货破损怎么办", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_五金建材类目规则_8       100.0%  100.0%   100.0%  卫浴安装服务怎么买", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_五金建材类目规则_9         0.0%    0.0%     0.0%  安装后质量问题谁负责", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_五金建材类目规则_10      100.0%   33.3%    50.0%  涂料甲醛超标怎么赔", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_车品配件类目规则_1       100.0%  100.0%   100.0%  车品怎么确认适配车型", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_车品配件类目规则_2       100.0%  100.0%   100.0%  行车记录仪保修多久", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_车品配件类目规则_3       100.0%  100.0%   100.0%  轮胎生产日期怎么看", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_车品配件类目规则_4         0.0%    0.0%     0.0%  机油开封能退吗", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_车品配件类目规则_5       100.0%  100.0%   100.0%  脚垫安装后能退吗", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_车品配件类目规则_6       100.0%  100.0%   100.0%  车膜裁切后能退吗", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_车品配件类目规则_7       100.0%   25.0%    43.1%  蓄电池保修多久", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_车品配件类目规则_8       100.0%  100.0%   100.0%  三无车品能举报吗", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_车品配件类目规则_9       100.0%  100.0%   100.0%  改装件合法吗", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_车品配件类目规则_10      100.0%   50.0%    63.1%  定制脚垫能退吗", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_买家评价与晒单规则_1      100.0%  100.0%   100.0%  评价后还能追评吗", "level": "info", "timestamp": "2026-09-17T22:35:39.498947Z"}
+{"event": "  retrieval_买家评价与晒单规则_2      100.0%   50.0%    63.1%  评价有积分奖励吗", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_买家评价与晒单规则_3      100.0%   50.0%    63.1%  删差评怎么操作", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_买家评价与晒单规则_4      100.0%  100.0%   100.0%  商家能解释差评吗", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_买家评价与晒单规则_5      100.0%  100.0%   100.0%  好评返现合规吗", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_买家评价与晒单规则_6      100.0%  100.0%   100.0%  晒单怎么拿奖励", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_买家评价与晒单规则_7      100.0%   50.0%    63.1%  恶意差评怎么申诉", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_买家评价与晒单规则_8      100.0%  100.0%   100.0%  评价多久生效", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_买家评价与晒单规则_9      100.0%  100.0%   100.0%  差评影响退货吗", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_买家评价与晒单规则_10       0.0%    0.0%     0.0%  评价违规内容怎么举报", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_纠纷仲裁与举报规则_1      100.0%  100.0%   100.0%  商家不处理纠纷怎么办", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_纠纷仲裁与举报规则_2      100.0%   25.0%    43.1%  怎么申请平台介入", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_纠纷仲裁与举报规则_3      100.0%   33.3%    50.0%  仲裁要多久出结果", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_纠纷仲裁与举报规则_4      100.0%   33.3%    50.0%  对仲裁结果不满意怎么办", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_纠纷仲裁与举报规则_5      100.0%  100.0%   100.0%  举报售假商家", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_纠纷仲裁与举报规则_6        0.0%    0.0%     0.0%  好评返现属于违规吗", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_纠纷仲裁与举报规则_7      100.0%  100.0%   100.0%  商家申诉期限是多久", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_纠纷仲裁与举报规则_8        0.0%    0.0%     0.0%  平台介入要什么证据", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_纠纷仲裁与举报规则_9        0.0%    0.0%     0.0%  先行退款是什么意思", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_纠纷仲裁与举报规则_10     100.0%   50.0%    63.1%  举报入口在哪里", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_先用后付与分期付款_1      100.0%  100.0%   100.0%  先用后付怎么开通", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_先用后付与分期付款_2      100.0%   50.0%    63.1%  先用后付额度多少", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_先用后付与分期付款_3      100.0%  100.0%   100.0%  先用后付什么时候扣款", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_先用后付与分期付款_4      100.0%   50.0%    63.1%  逾期了会怎么样", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_先用后付与分期付款_5      100.0%   25.0%    43.1%  分期付款有手续费吗", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_先用后付与分期付款_6      100.0%  100.0%   100.0%  分期能提前还款吗", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_先用后付与分期付款_7        0.0%    0.0%     0.0%  分期退款怎么退", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_先用后付与分期付款_8      100.0%  100.0%   100.0%  未成年人能用先用后付吗", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_先用后付与分期付款_9      100.0%   50.0%    63.1%  额度怎么提升", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_先用后付与分期付款_10     100.0%   33.3%    50.0%  信用卡分期支持哪些银行", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_先用后付与分期付款_11     100.0%   25.0%    43.1%  钻石会员花呗分期能免利息吗", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_百亿补贴规则_1         100.0%  100.0%   100.0%  百亿补贴商品能买几件", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_百亿补贴规则_2         100.0%  100.0%   100.0%  百亿补贴买贵了能补差吗", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_百亿补贴规则_3         100.0%   33.3%    50.0%  补贴商品参与优惠券叠加吗", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_百亿补贴规则_4         100.0%  100.0%   100.0%  补贴商品能退货吗", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_百亿补贴规则_5         100.0%  100.0%   100.0%  百亿补贴是正品吗", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_百亿补贴规则_6         100.0%  100.0%   100.0%  补贴额度退货后能恢复吗", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_百亿补贴规则_7         100.0%   50.0%    63.1%  怎么识别百亿补贴商品", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_百亿补贴规则_8         100.0%  100.0%   100.0%  黄牛限购规则是什么", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_百亿补贴规则_9         100.0%   50.0%    63.1%  补贴价多久调整一次", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_百亿补贴规则_10          0.0%    0.0%     0.0%  恶意退货会被限制吗", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_砍价与游戏玩法规则_1      100.0%  100.0%   100.0%  砍价免费拿怎么玩", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_砍价与游戏玩法规则_2      100.0%  100.0%   100.0%  砍价活动有效期多久", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_砍价与游戏玩法规则_3      100.0%  100.0%   100.0%  每天能帮朋友砍几次", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_砍价与游戏玩法规则_4      100.0%  100.0%   100.0%  果园水果怎么兑换", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_砍价与游戏玩法规则_5      100.0%  100.0%   100.0%  金币能提现吗", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_砍价与游戏玩法规则_6        0.0%    0.0%     0.0%  游戏奖励会过期吗", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_砍价与游戏玩法规则_7      100.0%  100.0%   100.0%  果园兑换的水果能售后吗", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_砍价与游戏玩法规则_8      100.0%  100.0%   100.0%  刷脚本作弊有什么后果", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_砍价与游戏玩法规则_9      100.0%  100.0%   100.0%  好友互浇每天限几次", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_砍价与游戏玩法规则_10     100.0%  100.0%   100.0%  砍价进度会保留吗", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_运费险细则_1          100.0%   50.0%    63.1%  运费险怎么理赔", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_运费险细则_2          100.0%   33.3%    50.0%  运费险赔付多少", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_运费险细则_3          100.0%  100.0%   100.0%  运费险哪些情况不赔", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_运费险细则_4          100.0%   50.0%    63.1%  运费险和上门取件冲突吗", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_运费险细则_5          100.0%  100.0%   100.0%  退货运费险在哪买", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_运费险细则_6          100.0%   33.3%    50.0%  换了货还能赔运费吗", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_运费险细则_7          100.0%   33.3%    50.0%  运费险多久到账", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_运费险细则_8          100.0%  100.0%   100.0%  拒收能触发运费险吗", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_运费险细则_9          100.0%  100.0%   100.0%  仅退款会触发运费险吗", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_运费险细则_10         100.0%  100.0%   100.0%  买过的订单能补一份运费险吗", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_运费险细则_11         100.0%   25.0%    43.1%  运费险理赔失败怎么申诉", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_大促活动总规则_1        100.0%   33.3%    50.0%  双十一什么时候开始", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_大促活动总规则_2        100.0%  100.0%   100.0%  大促优惠叠加顺序是什么", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_大促活动总规则_3        100.0%   33.3%    50.0%  跨店满减怎么用", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_大促活动总规则_4        100.0%  100.0%   100.0%  大促发货要多久", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_大促活动总规则_5        100.0%   50.0%    63.1%  大促商品能退换吗", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_大促活动总规则_6        100.0%   50.0%    63.1%  大促赠品退货要退回吗", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_大促活动总规则_7          0.0%    0.0%     0.0%  大促价参与日常价保吗", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_大促活动总规则_8        100.0%   50.0%    63.1%  大促预售什么时候发货", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_大促活动总规则_9        100.0%   33.3%    50.0%  年货节有什么活动", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_大促活动总规则_10       100.0%   33.3%    50.0%  大促后降价能补差吗", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_商品质检与溯源_1        100.0%  100.0%   100.0%  平台怎么保证商品质量", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_商品质检与溯源_2        100.0%  100.0%   100.0%  跨境商品怎么查溯源", "level": "info", "timestamp": "2026-09-17T22:35:39.499947Z"}
+{"event": "  retrieval_商品质检与溯源_3        100.0%  100.0%   100.0%  质检报告在哪里看", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_商品质检与溯源_4        100.0%  100.0%   100.0%  对质检报告有异议怎么办", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_商品质检与溯源_5        100.0%  100.0%   100.0%  高风险类目抽检比例多少", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_商品质检与溯源_6        100.0%  100.0%   100.0%  生鲜能查产地吗", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_商品质检与溯源_7        100.0%   50.0%    63.1%  品牌授权怎么看", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_商品质检与溯源_8          0.0%    0.0%     0.0%  抽检不合格怎么处理", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_商品质检与溯源_9        100.0%  100.0%   100.0%  商家屡次质检不过会怎样", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_商品质检与溯源_10       100.0%  100.0%   100.0%  平台自营先行赔付吗", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_极速退款规则_1           0.0%    0.0%     0.0%  未发货退款多久到账", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_极速退款规则_2         100.0%  100.0%   100.0%  极速退款需要什么条件", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_极速退款规则_3         100.0%  100.0%   100.0%  极速退款上限多少", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_极速退款规则_4         100.0%  100.0%   100.0%  什么订单不享受极速退款", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_极速退款规则_5         100.0%   50.0%    63.1%  商家不处理退款会自动退吗", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_极速退款规则_6         100.0%   50.0%    63.1%  极速退款资金从哪来", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_极速退款规则_7         100.0%  100.0%   100.0%  频繁退款会被限制吗", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_极速退款规则_8         100.0%   25.0%    43.1%  退款到账要几天", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_极速退款规则_9         100.0%   50.0%    63.1%  商家对垫付有异议怎么办", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_极速退款规则_10        100.0%  100.0%   100.0%  极速退款资格怎么没了", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_包装与发货规范_1        100.0%  100.0%   100.0%  易碎品怎么包装", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_包装与发货规范_2        100.0%  100.0%   100.0%  液体商品发货有什么要求", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_包装与发货规范_3        100.0%   25.0%    43.1%  发货时限是多久", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_包装与发货规范_4          0.0%    0.0%     0.0%  多件商品会分几个包裹", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_包装与发货规范_5        100.0%  100.0%   100.0%  环保包装怎么选", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_包装与发货规范_6        100.0%  100.0%   100.0%  极简包装是什么", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_包装与发货规范_7        100.0%  100.0%   100.0%  包装破损导致损坏谁负责", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_包装与发货规范_8          0.0%    0.0%     0.0%  快递面单会泄露手机号吗", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_包装与发货规范_9        100.0%  100.0%   100.0%  过度包装会被处罚吗", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_包装与发货规范_10       100.0%  100.0%   100.0%  包装箱能回收吗", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_店铺粉丝与会员_1        100.0%  100.0%   100.0%  关注店铺有什么好处", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_店铺粉丝与会员_2        100.0%   50.0%    63.1%  粉丝价是什么", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_店铺粉丝与会员_3        100.0%  100.0%   100.0%  店铺会员怎么升级", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_店铺粉丝与会员_4        100.0%  100.0%   100.0%  店铺会员和平台会员冲突吗", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_店铺粉丝与会员_5        100.0%  100.0%   100.0%  店铺红包怎么领", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_店铺粉丝与会员_6        100.0%  100.0%   100.0%  取消关注会失效吗", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_店铺粉丝与会员_7        100.0%  100.0%   100.0%  店铺签到有什么奖励", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_店铺粉丝与会员_8        100.0%   25.0%    43.1%  粉丝价能叠加优惠券吗", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_店铺粉丝与会员_9        100.0%  100.0%   100.0%  店铺会员终身有效吗", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_店铺粉丝与会员_10       100.0%  100.0%   100.0%  店铺红包含金吗", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_购物车与收藏夹规则_1      100.0%  100.0%   100.0%  购物车商品会过期吗", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_购物车与收藏夹规则_2      100.0%  100.0%   100.0%  收藏夹上限多少个", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_购物车与收藏夹规则_3      100.0%  100.0%   100.0%  降价提醒怎么设置", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_购物车与收藏夹规则_4      100.0%   50.0%    63.1%  到货提醒怎么开", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_购物车与收藏夹规则_5      100.0%  100.0%   100.0%  收藏夹能分组吗", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_购物车与收藏夹规则_6      100.0%  100.0%   100.0%  商品下架收藏会消失吗", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_购物车与收藏夹规则_7      100.0%  100.0%   100.0%  购物车合并结算运费怎么算", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_购物车与收藏夹规则_8      100.0%  100.0%   100.0%  提醒每天会发几次", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_购物车与收藏夹规则_9      100.0%  100.0%   100.0%  收藏数据注销后还在吗", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_购物车与收藏夹规则_10     100.0%  100.0%   100.0%  购物车价格以什么为准", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_mixed_1            0.0%    0.0%     0.0%  钻石会员退换货要运费吗", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_mixed_2          100.0%   33.3%    57.1%  黄金会员寄偏远包邮吗", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_mixed_3          100.0%   50.0%    63.1%  会员退款多久到账", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_mixed_4          100.0%   50.0%    63.1%  白银会员上门取件费免吗", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_mixed_5          100.0%   20.0%    38.7%  积分能抵扣退款的金额吗", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_mixed_6            0.0%    0.0%     0.0%  发货后多久能送到，慢了能退差价吗", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_mixed_7           50.0%   33.3%    30.7%  偏远地区配送和价保规则", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_mixed_8           50.0%   33.3%    30.7%  保修期内坏了寄回运费谁出", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_mixed_9          100.0%   50.0%    63.1%  退货用什么快递寄回，运费谁出", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_mixed_10         100.0%  100.0%   100.0%  会员等级和新人优惠券", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_mixed_11           0.0%    0.0%     0.0%  物流异常怎么催件，多久发货", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_mixed_12         100.0%  100.0%   100.0%  生日礼盒和生日券怎么用", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_mixed_13           0.0%    0.0%     0.0%  会员全场包邮和退款规则", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_mixed_14         100.0%  100.0%   100.0%  退货寄回丢了怎么办", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_mixed_15          50.0%   20.0%    23.7%  偏远地区运费和会员特权", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_evolved_slo_01   100.0%  100.0%   100.0%  钻石会员专属客服的响应时效SLO是多少", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_evolved_measure_install_01   100.0%  100.0%   100.0%  全屋定制什么时候上门量尺？多久能安装？", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_hard_noisy_01    100.0%   33.3%    50.0%  衣服就套着试了下，牌子盒子都在，七天内能不…", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_hard_noisy_02    100.0%   20.0%    38.7%  新江那边寄过来还得补邮费不", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_hard_noisy_03    100.0%   25.0%    43.1%  会员积份攒着会不会做废", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_hard_noisy_04      0.0%    0.0%     0.0%  钱原路退了，微x里通常啥时候能看见", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_hard_noisy_05    100.0%   50.0%    63.1%  快递杵三天没动窝了咋整", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_hard_indirect_05   100.0%   33.3%    50.0%  支付凭证截图要提供什么信息", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_hard_noisy_06    100.0%  100.0%   100.0%  账号登不进，原来的手机号也不用了，咋找回来", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_hard_confusion_01   100.0%   50.0%    63.1%  退回仓库已经验完货了，钱还要等多久", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_hard_confusion_02   100.0%   50.0%    63.1%  微信那边的退款通常几天显示到账", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_hard_confusion_03   100.0%  100.0%   100.0%  钻石会员寄到新疆还会另外收费吗", "level": "info", "timestamp": "2026-09-17T22:35:39.500971Z"}
+{"event": "  retrieval_hard_confusion_04   100.0%  100.0%   100.0%  黄金会员的包裹发西藏还能免邮吗", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_hard_confusion_05     0.0%    0.0%     0.0%  刚签收就发现外壳裂了，要多久内反馈，退回邮…", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_hard_confusion_06   100.0%   50.0%    63.1%  还没签收我就拒收了，退款什么时候自动回来", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_hard_multi_01    100.0%   33.3%    57.1%  我是钻石会员，寄到偏远地区是否免邮，大概多…", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_hard_multi_02    100.0%   50.0%    62.4%  下单八十小时还没发货，我现在取消的话退款怎…", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_hard_multi_03    100.0%  100.0%   100.0%  保修期里电器自己坏了，是寄平台仓库还是找品…", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_hard_multi_04    100.0%   25.0%    43.1%  积分结账能抵多少，退款以后会员升级金额会不…", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_hard_indirect_01     0.0%    0.0%     0.0%  口红的塑封拆掉才发现不喜欢，还能不要吗", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_hard_indirect_02   100.0%  100.0%   100.0%  东西刚买没几天同款就便宜了", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_hard_indirect_03     0.0%    0.0%     0.0%  包裹在柜子里放满两天还没取会怎样", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_hard_indirect_04   100.0%  100.0%   100.0%  黄金会员生日那阵子都能领到什么", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_no_hit_03        ACCEPT           0.6525  优惠券能不能转到朋友账户", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_no_hit_04        ACCEPT           0.5357  你们线下体验店几点关门", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_no_hit_05        100.0%  100.0%   100.0%  商家入驻要交多少保证金", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_no_hit_10        ACCEPT           0.6627  订单发出后还能追加赠品吗", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_no_hit_11        ACCEPT           0.4571  明天上海会不会下雨", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_no_hit_12        ACCEPT           0.4788  帮我写一个快速排序程序", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_no_hit_13        ACCEPT           0.4780  附近有什么好吃的火锅店", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_no_hit_16        ACCEPT           0.5238  能帮你们代运营店铺吗", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_no_hit_18        ACCEPT           0.6056  会员身份可以借给别人用吗", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_no_hit_19        ACCEPT           0.6611  家里旧家具能上门回收吗", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_no_hit_20        ACCEPT           0.6166  能贷款开店吗利息多少", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_no_hit_21        ACCEPT           0.5038  你们平台股票代码是多少", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_no_hit_22        ACCEPT           0.5872  代购化妆品要准备什么材料", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_no_hit_23        ACCEPT           0.5519  直播间可以连麦互动吗", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_no_hit_24        ACCEPT           0.5672  能把购物车清单导出成文件吗", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_v3_hard_a_001    100.0%   25.0%    43.1%  衣服就套着试了下能不要嘛", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_v3_hard_a_002    100.0%  100.0%   100.0%  退货的包裹有人上门来收不", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_v3_hard_a_003    100.0%   33.3%    50.0%  快递到了外箱都瘪了里面东西悬了怎么办", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_v3_hard_a_004    100.0%   33.3%    50.0%  申请退款了钱啥时候能回到微信里", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_v3_hard_a_005    100.0%  100.0%   100.0%  刚下单还没发货申请退款是不是秒退", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_v3_hard_a_006    100.0%   20.0%    38.7%  五千多的冰箱退货要等多久钱才能回来", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_v3_hard_a_007    100.0%  100.0%   100.0%  大促买的空调还没装就降价了能补差价不", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_v3_hard_a_008    100.0%   25.0%    43.1%  感觉买到假货了平台管不管", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_v3_hard_a_009    100.0%  100.0%   100.0%  黄金首饰买贵了也能申请价保吗", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_v3_hard_a_010    100.0%   33.3%    50.0%  退货的运费保险能报销退货运费吗", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_v3_hard_a_011    100.0%  100.0%   100.0%  商家送的运费险和自己在买的那个打架不", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_v3_hard_a_012    100.0%  100.0%   100.0%  先用后付是不是收了货才扣钱", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_v3_hard_a_013    100.0%  100.0%   100.0%  平台分期购和先用后付有啥区别", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_v3_hard_a_014    100.0%  100.0%   100.0%  分期买手机手续费怎么算的", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_v3_hard_a_015    100.0%  100.0%   100.0%  攒的积分能抵现金用吗", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_v3_hard_a_016    100.0%  100.0%   100.0%  平台上都有哪些券能领", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_v3_hard_a_017    100.0%  100.0%   100.0%  退款之后用掉的券还能回来吗", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_v3_hard_a_018    100.0%  100.0%   100.0%  店铺券和平台券能叠在一起用不", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_v3_hard_a_019      0.0%    0.0%     0.0%  买的水果到了烂了一半咋整", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_v3_hard_a_020    100.0%  100.0%   100.0%  冷冻牛肉到手发现缺了斤两", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_v3_hard_a_021    100.0%  100.0%   100.0%  冷链送的冰激凌化了能不能赔", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_v3_hard_a_022    100.0%  100.0%   100.0%  刻了字的杯子大概多久能发货", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_v3_hard_a_023      0.0%    0.0%     0.0%  快递丢件了咋整谁赔", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_v3_hard_a_024    100.0%   33.3%    50.0%  快递三天没动静想催一下", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_v3_hard_a_025    100.0%  100.0%   100.0%  想开张发票走报销用", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_v3_hard_a_026    100.0%   50.0%    63.1%  海淘的裤子不想要了退回去亏不亏", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_v3_hard_a_027    100.0%  100.0%   100.0%  跨境买东西超过年度限额会怎样", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_v3_hard_a_028    100.0%  100.0%   100.0%  海外直邮的包裹会不会被补税", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_v3_hard_a_029    100.0%  100.0%   100.0%  想给香港的亲戚寄台手机行不", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_v3_hard_a_030    100.0%  100.0%   100.0%  找人助力砍价砍到零块真的免费拿吗", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_v3_hard_a_031    100.0%  100.0%   100.0%  送的礼品卡能折成现金不", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_v3_hard_a_032    100.0%   33.3%    50.0%  护肤品拆了试了一点点还能退不", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_v3_hard_a_033    100.0%  100.0%   100.0%  预售付了定金后悔了能退吗", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_v3_hard_a_034    100.0%  100.0%   100.0%  退货的运费到底该谁出", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_v3_hard_a_035    100.0%  100.0%   100.0%  公司行政批量采购走啥流程", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_v3_hard_a_036    100.0%   25.0%    43.1%  刚买完就降价了想申家保", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_v3_hard_a_037    100.0%   20.0%    38.7%  运废险最高能赔多少", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_v3_hard_a_038    100.0%   33.3%    50.0%  退款到帐一般要多久", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_v3_hard_a_039    100.0%   50.0%    63.1%  先用后富的钱什么时候扣", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_v3_hard_a_040    100.0%   50.0%    63.1%  分期手续废要几个点", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_v3_hard_a_041    100.0%   50.0%    63.1%  积份放多久过期清零", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_v3_hard_a_042    100.0%  100.0%   100.0%  店铺的积份能换券吗", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_v3_hard_a_043    100.0%  100.0%   100.0%  退款了优惠倦啥时候还回来", "level": "info", "timestamp": "2026-09-17T22:35:39.502036Z"}
+{"event": "  retrieval_v3_hard_a_044    100.0%  100.0%   100.0%  品类倦能用在手机上吗", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_a_045    100.0%  100.0%   100.0%  上门取键怎么预约时间", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_a_046    100.0%   33.3%    50.0%  冷练的雪糕化了能赔不", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_a_047      0.0%    0.0%     0.0%  退宽怎么这么久没到账", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_a_048    100.0%   25.0%    43.1%  快递丢件了赔常标准咋算", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_a_049    100.0%   50.0%    63.1%  外包装破了培付标准是啥", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_a_050    100.0%  100.0%   100.0%  发飘啥时候能开出来", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_a_051    100.0%   25.0%    43.1%  跨静退货的运费谁承担", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_a_052    100.0%  100.0%   100.0%  砍架砍到零块要砍多久", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_a_053    100.0%  100.0%   100.0%  储纸卡能不能提现", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_a_054    100.0%   33.3%    50.0%  七天无礼由退货要满足啥条件", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_a_055    100.0%   25.0%    43.1%  退货的运废怎么个算法", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_a_056    100.0%  100.0%   100.0%  百亿补帖的东西退货还有补贴吗", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_a_057    100.0%   33.3%    50.0%  大促满剪三百减五十怎么算", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_a_058    100.0%  100.0%   100.0%  港澳台定单多久能送到", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_a_059    100.0%   33.3%    50.0%  跨境的东西睡费还要补缴吗", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_a_060    100.0%  100.0%   100.0%  支负密码输错五次会锁吗", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_a_061    100.0%  100.0%   100.0%  个人信系想一键清掉怎么办", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_a_062    100.0%  100.0%   100.0%  店铺卷和平台卷迭加最多用几张", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_a_063      0.0%    0.0%     0.0%  生线牛肉坏了要多久内报备", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_a_064    100.0%   50.0%    63.1%  大促家保能保三十天吗", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_a_065    100.0%  100.0%   100.0%  家保除外的类目都有哪些", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_a_066    100.0%   33.3%    50.0%  微x里什么时候能看到退款到账", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_a_067    100.0%  100.0%   100.0%  a皮皮上怎么约上门取件", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_a_068      0.0%    0.0%     0.0%  下单时没买YFX现在能补吗", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_a_069      0.0%    0.0%     0.0%  价b申请入口在哪里", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_a_070    100.0%  100.0%   100.0%  大促价b能保几天", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_a_071    100.0%  100.0%   100.0%  先用后f额度怎么才能提上去", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_a_072    100.0%  100.0%   100.0%  分q买手机手续费几个点", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_a_073    100.0%  100.0%   100.0%  砍j能砍到0元免费拿不", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_a_074    100.0%   20.0%    38.7%  跨j退货多久能到账", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_a_075    100.0%  100.0%   100.0%  退货运f到底谁出", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_a_076      0.0%    0.0%     0.0%  发p多久能开出来", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_a_077    100.0%  100.0%   100.0%  LP卡能提现不", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_a_078    100.0%  100.0%   100.0%  PRO会员每月几张免运f券", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_a_079    100.0%  100.0%   100.0%  店铺q和平台q能一起用吗", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_a_080      0.0%    0.0%     0.0%  生x水果坏了怎么售后", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_a_081    100.0%  100.0%   100.0%  会员价b能保多少天", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_a_082    100.0%  100.0%   100.0%  商家送YFX能赔多少", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_a_083    100.0%   50.0%    63.1%  积f能抵多少钱", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_a_084    100.0%  100.0%   100.0%  校y版先用后付额度多少", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_a_085    100.0%   25.0%    43.1%  开箱视p拍了怎么申请赔付", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_b_001    100.0%  100.0%   100.0%  上次那个先享后付的单子，能拖到什么时候才扣款", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_b_002    100.0%  100.0%   100.0%  之前说过的那种先拿货后付款的额度，要多高的…", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_b_003    100.0%   33.3%    50.0%  那个按月分期扣款的服务，提前还清要手续费吗", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_b_004    100.0%  100.0%   100.0%  上次说的那个买贵了退差价的，大促期间买是按…", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_b_005      0.0%    0.0%     0.0%  那个每天两场放价的东西，买完降价了能给补差吗", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_b_006    100.0%   50.0%    63.1%  那个商家送给我的退货险，赔得比我买的那份多吗", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_b_007    100.0%   50.0%    63.1%  关注店铺攒的那种分，能换券用吗，多久过期", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_b_008    100.0%  100.0%   100.0%  平台这个花一块钱算一分的，退款之后会不会扣…", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_b_009    100.0%   33.3%    50.0%  上次大促那个满三百减五十的，退掉一件怎么算", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_b_010    100.0%  100.0%   100.0%  那个要先交一笔锁价钱的东西，尾款期过了这笔…", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_b_011    100.0%  100.0%   100.0%  那个要现做的货，想加急得加多少钱", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_b_012    100.0%  100.0%   100.0%  上次说过的那个上门来揽收退货件的，普通用户…", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_b_013    100.0%  100.0%   100.0%  那个偏远地方额外加的钱，黄金会员也免不掉吗", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_b_014    100.0%  100.0%   100.0%  边境那边有些地方根本送不进的那个，下单会被…", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_b_015    100.0%  100.0%   100.0%  那个香港澳门入口下的单，运费是怎么算的", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_b_016    100.0%   50.0%    63.1%  上次那个从保税仓发出来的，要多久才能送到", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_b_017    100.0%   50.0%    63.1%  那个从海外直接寄过来的件，税交多了会退回差…", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_b_018    100.0%  100.0%   100.0%  上次社区里团的那个货，超了时间没去取还会留…", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_b_019    100.0%  100.0%   100.0%  那个寄到门店自己取的件，放久了会怎么处理", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_b_020    100.0%   50.0%    63.1%  那个当天几小时就能送到的，运费多少钱起步", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_b_021    100.0%  100.0%   100.0%  那个冷鲜的箱子到手后，多久以内坏了能赔", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_b_022    100.0%  100.0%   100.0%  上次那个大冰箱送上门的，安装时打孔还要另外…", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_b_023      0.0%    0.0%     0.0%  那个标了预售要等的单，为啥不按四十八小时发…", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_b_024    100.0%  100.0%   100.0%  那个一年一百九十九块买的会员，用过了还能退…", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_b_025    100.0%  100.0%   100.0%  那个学生认证过的号，毕业了还能接着便宜买吗", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_b_026    100.0%  100.0%   100.0%  那跨境退货呢，国际运费谁出", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_b_027    100.0%  100.0%   100.0%  那港澳台的退货呢，运费也是我出吗", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_b_028    100.0%  100.0%   100.0%  那偏远地区的运费呢，也满99包邮吗", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_b_029    100.0%   20.0%    38.7%  那边境那边呢，生鲜冷链能送吗", "level": "info", "timestamp": "2026-09-17T22:35:39.503035Z"}
+{"event": "  retrieval_v3_hard_b_030    100.0%  100.0%   100.0%  那冷链件的时效呢，超了赔不赔", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_b_031    100.0%  100.0%   100.0%  那自提的运费呢，还会另外收吗", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_b_032    100.0%  100.0%   100.0%  那团购的呢，没成团怎么退", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_b_033    100.0%  100.0%   100.0%  那闪送的运费呢，是怎么算的", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_b_034    100.0%  100.0%   100.0%  那大件的安装费呢，装之前会明说吗", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_b_035    100.0%  100.0%   100.0%  那定制的工期呢，加急要多久", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_b_036      0.0%    0.0%     0.0%  那预售的发货呢，也是48小时吗", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_b_037    100.0%  100.0%   100.0%  那定金呢，忘付尾款这笔钱还能要回来吗", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_b_038    100.0%   50.0%    63.1%  那分期的手续费呢，提前结清还给吗", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_b_039    100.0%  100.0%   100.0%  那先用后付的额度呢，多久会重新评估", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_b_040    100.0%   50.0%    63.1%  那到账呢，银行卡退款是不是得等最久", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_b_041    100.0%  100.0%   100.0%  那运费险呢，商家送的那种能赔多少", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_b_042    100.0%  100.0%   100.0%  那大额的退款呢，五万块要等几天", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_b_043    100.0%  100.0%   100.0%  那延保呢，屏幕碎了算不算", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_b_044    100.0%  100.0%   100.0%  那用掉的券呢，退款之后还回来吗", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_b_045    100.0%  100.0%   100.0%  那价保呢，钻石会员能保几天", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_b_046    100.0%  100.0%   100.0%  在西藏那曲收货，订单满了99元还要收偏远附…", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_b_047    100.0%  100.0%   100.0%  人在新疆喀什，想买冷链冰淇淋能送到吗", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_b_048    100.0%  100.0%   100.0%  伊犁边境的收货地址，下单无人机能发货吗", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_b_049    100.0%  100.0%   100.0%  黑河口岸的自提点，包裹能免费放几天", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_b_050      0.0%    0.0%     0.0%  收货地址在香港，钻石会员下单能免运费吗", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_b_051    100.0%  100.0%   100.0%  今年跨境额度已经花到26000了，还能再下…", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_b_052    100.0%  100.0%   100.0%  保税仓买的奶粉要退货，运费险能抵国际运费吗", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_b_053    100.0%  100.0%   100.0%  海外直邮的包被算了50元整的税，这钱要交吗", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_b_054    100.0%  100.0%   100.0%  企业批量买了60件工装，有质量问题的能优先…", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_b_055    100.0%  100.0%   100.0%  公司采购的投影仪出故障，质保期怎么算", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_b_056    100.0%  100.0%   100.0%  在校研究生做学信网认证后，买手机会有校园价吗", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_b_057    100.0%  100.0%   100.0%  校园账号想分期买台6000的电脑，可以吗", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_b_058    100.0%  100.0%   100.0%  学生账号的先用后付额度，最高能到5000吗", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_b_059    100.0%  100.0%   100.0%  小区团长下午5点才下单，明天还能送到吗", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_b_060    100.0%  100.0%   100.0%  社区团购的草莓烂了一半多，能全额退款吗", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_b_061    100.0%  100.0%   100.0%  县城只有邮政便民自提点，到件了能放几天", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_b_062    100.0%  100.0%   100.0%  到店自提一台洗衣机，安装费能省多少", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_b_063    100.0%  100.0%   100.0%  同城闪送12公里的生鲜，运费要多少钱", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_b_064    100.0%  100.0%   100.0%  没电梯的六楼老小区，冰箱能送上楼安装吗", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_b_065    100.0%  100.0%   100.0%  定制柜子想加急做，加急费怎么收", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_b_066    100.0%  100.0%   100.0%  定制橱柜拖了20天还没交付，有赔偿吗", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_b_067    100.0%  100.0%   100.0%  预售付完定金，还能改商品规格吗", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_b_068    100.0%  100.0%   100.0%  预售尾款凑了满300减50，定金算进门槛吗", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_b_069    100.0%  100.0%   100.0%  双11下的定金预售单，价保按几天算", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_b_070    100.0%   33.3%    50.0%  年货节买的金镯子降价了，能申请价保吗", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_b_071      0.0%    0.0%     0.0%  618买的手机已经联网激活，还能七天无理由…", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_b_072    100.0%   33.3%    50.0%  大促期间的订单过了48小时没发货，能赔5%吗", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_b_073    100.0%   33.3%    50.0%  签收都80天了，还能申请平台介入仲裁吗", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_b_074    100.0%  100.0%   100.0%  大促期间买的商品出了问题，纠纷受理期会延长吗", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_b_075    100.0%  100.0%   100.0%  新手商家入驻卖手机，保证金要交多少", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_b_076    100.0%  100.0%   100.0%  第一次报名大促主会场，店铺要满足什么条件", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_b_077    100.0%  100.0%   100.0%  退货包裹超了一公斤，续重怎么收费", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_b_078    100.0%  100.0%   100.0%  领了家电券，能拿去买手机吗", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_b_079    100.0%  100.0%   100.0%  同一家店的两张满减券，能一起用吗", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_b_080    100.0%   25.0%    43.1%  刻了名字的马克杯不想要了，能七天无理由退吗", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_c_001    100.0%  100.0%   100.0%  跨境买的奶粉想退货，国际运费谁出？运费险能…", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_c_002     50.0%  100.0%    61.3%  大促期间买的手机屏幕摔碎了，平台价保和官方…", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_c_003    100.0%  100.0%   100.0%  大促跨店满减订单退了一部分商品，满减优惠和…", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_c_004    100.0%  100.0%   100.0%  预售定金商品付完尾款后降价了，价保按什么基…", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_c_005     50.0%  100.0%    61.3%  冷链生鲜收货发现化冻了，温度指示卡变红，怎…", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_c_006     50.0%  100.0%    61.3%  想买冷冻海鲜寄到新疆喀什，冷链能送吗？变质…", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_c_007    100.0%  100.0%   100.0%  跨境订单退货时商品已经清关了，要扣税吗？扣…", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_c_008    100.0%  100.0%    92.0%  海外直邮化妆品税费预缴后实际税额不一样，多…", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_c_009    100.0%  100.0%   100.0%  香港地址下的订单想退货，流程和退款到账时间…", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_c_010    100.0%   50.0%    65.1%  百亿补贴买的手机大促期间又降价了，能申请价…", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_c_011    100.0%  100.0%    85.0%  冰箱送货安装后发现异响，保修几年？找平台还…", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_c_012     50.0%   50.0%    38.7%  无理由退货想用上门取件，费用怎么算？运费险…", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_c_013    100.0%  100.0%   100.0%  签收时发现外包装破损但内物没事，能申请破损…", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_c_014    100.0%  100.0%    92.0%  快递丢件了，平台按什么标准赔？快递公司自己…", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_c_015    100.0%  100.0%   100.0%  包裹三天没物流轨迹了怎么催？催了没用找谁投…", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_c_016    100.0%  100.0%   100.0%  店铺积分快过期了，平台积分什么时候过期？两…", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_c_017    100.0%  100.0%   100.0%  PRO会员积分怎么算？下单抵扣比例是多少？", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_c_018    100.0%  100.0%   100.0%  白银会员日常价保几天？大促期间价保几天？", "level": "info", "timestamp": "2026-09-17T22:35:39.504035Z"}
+{"event": "  retrieval_v3_hard_c_019    100.0%  100.0%   100.0%  企业采购要开增值税专用发票，怎么申请？", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_020     50.0%  100.0%    61.3%  企业批量采购50件以上出质量问题，售后响应…", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_021    100.0%  100.0%   100.0%  同城闪送超时了赔多少？出库超时怎么赔？", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_022    100.0%  100.0%    87.7%  社区团购买的生鲜取货时发现变质，现场怎么赔？", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_023    100.0%  100.0%    92.0%  定制家具工期最长多久？做出来有质量问题能退…", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_024    100.0%   50.0%    62.4%  先用后付逾期一次会怎样？分期手续费怎么收？", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_025    100.0%  100.0%   100.0%  礼品卡没绑定能退吗？虚拟卡密激活了还能退吗？", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_026    100.0%  100.0%   100.0%  直播间抽奖中的奖品多久发？直播间领的券能留…", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_027    100.0%  100.0%   100.0%  用家电品类券买的订单退款了，品类券怎么退？", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_028    100.0%  100.0%    92.0%  百亿补贴商品能用店铺券吗？一单最多叠几张券？", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_029    100.0%  100.0%   100.0%  收货地址在云南瑞丽边境，能配送吗？要加偏远…", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_030    100.0%  100.0%   100.0%  乌鲁木齐能门店自提吗？自提商品能保留几天？", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_031    100.0%   33.3%    50.0%  现在价保是几天？之前好像听过3天的说法，是…", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_032      0.0%    0.0%     0.0%  现在秒杀限时抢购的商品还参与价保吗？", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_033      0.0%    0.0%     0.0%  现在申请价保补差退到哪里？还是发券吗？", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_037    100.0%  100.0%   100.0%  现在是按会员等级分价保天数吗？普通会员价保…", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_038    100.0%  100.0%   100.0%  现在会员等级变了价保天数怎么算？按申请当天…", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_039    100.0%   50.0%    63.1%  现在店铺积分多久过期？我印象里是6个月。", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_040    100.0%  100.0%   100.0%  现在店铺积分兑换比例是多少？1000积分能…", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_041    100.0%  100.0%   100.0%  现在平台积分有效期多久？什么时候清零？", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_042    100.0%   50.0%    63.1%  现在积分抵扣比例是多少？一单最多抵多少？", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_043    100.0%   25.0%    43.1%  现在签到每天加几分？评价晒单加多少？", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_044    100.0%  100.0%   100.0%  现在偏远地区配送要加运费吗？加多少？", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_045    100.0%  100.0%   100.0%  现在偏远地区满99包邮适用吗？", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_046    100.0%  100.0%   100.0%  现在钻石会员买偏远地区商品要加运费吗？", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_047    100.0%   25.0%    43.1%  现在普通地区配送承诺几天？还是全国48小时…", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_048    100.0%   25.0%    43.1%  现在延迟发货怎么赔？赔多少？", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_049    100.0%   25.0%    43.1%  现在丢件了平台赔多少？", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_050    100.0%  100.0%   100.0%  现在大促跨店满减档位是多少？满200减30…", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_051    100.0%   33.3%    50.0%  现在大促满减和店铺券能叠加吗？", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_052      0.0%    0.0%     0.0%  现在大促发货时效是几天？", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_053    100.0%  100.0%   100.0%  现在退货运费按什么算？还是统一收5元吗？", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_054    100.0%  100.0%   100.0%  现在上门取件退货多少钱起？", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_055    100.0%  100.0%   100.0%  现在退货运费超重怎么收？", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_056    100.0%  100.0%   100.0%  现在上门取件服务多少钱？之前好像8块。", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_057    100.0%  100.0%   100.0%  现在黄金会员上门取件免费吗？", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_058    100.0%  100.0%   100.0%  现在上门取件预约后多久上门？", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_059    100.0%   33.3%    50.0%  现在无理由退货是几天？还是10天吗？", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_060    100.0%  100.0%   100.0%  现在哪些商品不支持七天无理由？", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_061      0.0%    0.0%     0.0%  现在无理由退货运费谁出？平台还承担吗？", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_062    100.0%   50.0%    63.1%  现在无理由退货运费谁承担？", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_063    100.0%   50.0%    63.1%  现在质量问题退货运费谁出？", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_064    100.0%   50.0%    63.1%  现在退货运费还要自己垫付再报销吗？", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_065    100.0%   50.0%    63.1%  现在跨境退货国际运费谁承担？", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_066    100.0%  100.0%   100.0%  现在人工客服排队要等多久？还承诺2分钟接入…", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_067    100.0%  100.0%   100.0%  现在机器人首响是几秒？", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_068    100.0%  100.0%   100.0%  现在排队超过30分钟有补偿吗？", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_069    100.0%  100.0%   100.0%  现在物流停滞多久可以催单？", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_070    100.0%  100.0%   100.0%  现在在线客服排队多久？投诉电话是多少？", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_071    100.0%  100.0%   100.0%  现在砍价活动有效期多久？还是72小时吗？", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_072    100.0%  100.0%   100.0%  现在每天能帮好友砍几次？", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_073    100.0%  100.0%   100.0%  现在砍价进度保留几天？", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_074    100.0%  100.0%   100.0%  现在下单默认开什么发票？还是纸质邮寄吗？", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_075    100.0%  100.0%   100.0%  现在纸质发票邮寄收费吗？", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_076     50.0%   20.0%    23.7%  退款多久到账？运费险能赔多少？", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_077     50.0%   20.0%    23.7%  衣服试穿了一下吊牌还在，能七天无理由退吗？…", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_078     50.0%   50.0%    38.7%  手机买了3天就降价了，能价保吗？退款一般多…", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_081    100.0%  100.0%   100.0%  砍价免费拿有效期多久？每天能帮朋友砍几次？", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_082    100.0%  100.0%   100.0%  上门取件多少钱？预约后多久能上门？", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_083    100.0%   50.0%    63.1%  跨境买东西个人年度限额多少？行邮税税率怎么…", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_084    100.0%  100.0%   100.0%  现在开发票默认是电子的吗？多久能开出来？", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_085    100.0%  100.0%   100.0%  极速退款上限多少？钱多久到账？", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_086     50.0%  100.0%    61.3%  大额订单怎么定义？退款要等多久？", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_087     50.0%  100.0%    61.3%  定制鞋多久做好？做好后能七天无理由退吗？", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_088    100.0%   50.0%    63.1%  生鲜签收后多久内报损？损失超过一半怎么赔？", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_089     50.0%  100.0%    61.3%  买家自己买的运费险和商家送的运费险赔付上限…", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_090    100.0%   50.0%    63.1%  快递延误怎么赔？丢件了又怎么赔？", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_091     50.0%   50.0%    38.7%  平台对丢件怎么处理？快递公司自己的赔偿标准…", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_092    100.0%  100.0%   100.0%  门店自提能保留几天？自提有什么优惠？", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_093    100.0%  100.0%   100.0%  社区团购几点前下单次日能到？取货时间多久？", "level": "info", "timestamp": "2026-09-17T22:35:39.505035Z"}
+{"event": "  retrieval_v3_hard_c_094    100.0%  100.0%   100.0%  同城闪送运费怎么收？超时赔付多少？", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_hard_c_095    100.0%  100.0%   100.0%  边境地区有哪些东西不能寄？配送时效多久？", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_hard_c_096    100.0%  100.0%   100.0%  企业采购要什么资质？能开专票吗？", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_hard_c_097     50.0%  100.0%    61.3%  企业批量订单换货怎么处理？运费险按什么标准？", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_hard_c_098    100.0%  100.0%   100.0%  PRO会员一年多少钱？积分是双倍吗？", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_hard_c_099    100.0%  100.0%   100.0%  先用后付额度是多少？逾期会怎么样？", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_hard_c_100    100.0%   50.0%    63.1%  平台分期购3期手续费多少？提前还款免手续费…", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_hard_c_101    100.0%  100.0%   100.0%  礼品卡面额有哪些？绑定后有效期多久？", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_hard_c_102    100.0%  100.0%   100.0%  话费充值多久到账？充错了能退吗？", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_hard_c_103    100.0%  100.0%   100.0%  直播间抽奖奖品多久发？直播间领的券当天有效…", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_hard_c_104    100.0%  100.0%    92.0%  一单能叠几张券？退货退款后券怎么退？", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_hard_c_105    100.0%  100.0%   100.0%  家电品类券能买手机用吗？用券订单退款券怎么…", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_hard_c_106    100.0%   50.0%    69.3%  每单平台券和店铺券最多叠几张？百亿补贴商品…", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_hard_c_107    100.0%  100.0%   100.0%  售后纠纷受理期多久？仲裁一般多久出结果？", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_hard_c_109    100.0%  100.0%   100.0%  钻石会员无忧退一年几次？PRO会员呢？", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_hard_c_110    100.0%  100.0%    87.7%  跨境退货要填退货单号吗？退款多久能到账？", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_hard_d_001    100.0%  100.0%   100.0%  上周买的滚筒洗衣机，通电试机发现脱水声音大…", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_hard_d_002    100.0%   50.0%    63.1%  空调已经安装固定好了，现在发现制冷不给力，…", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_hard_d_003    100.0%  100.0%   100.0%  智能手环连上手机配好对之后，突然不想要了，…", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_hard_d_004    100.0%  100.0%   100.0%  手表页面标称续航十天，实际两天半就没电了，…", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_hard_d_005    100.0%  100.0%   100.0%  新买的电驴骑了几天电池充不进电，检测报告也…", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_hard_d_006    100.0%  100.0%   100.0%  想买台电动车代步，看到有家店在卖解除限速的…", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_hard_d_007    100.0%  100.0%   100.0%  古筝放暖气房里两天，琴面漆裂了，商家说是我…", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_hard_d_008    100.0%  100.0%   100.0%  孩子的新吉他音准听着不对，客服说是出厂调校…", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_hard_d_009    100.0%  100.0%   100.0%  口琴拆了包装试吹了两下，突然不想要了，还能…", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_hard_d_010    100.0%  100.0%   100.0%  娃的电动玩具车电池漏液还发烫，我现在该怎么…", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_hard_d_011    100.0%  100.0%   100.0%  毛绒熊拆了包装孩子抱了两天，没有质量问题就…", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_hard_d_012    100.0%   33.3%    50.0%  平台自营买的血压计，包装拆开试了一下量，还…", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_hard_d_013    100.0%  100.0%   100.0%  吃了平台买的保健品后不舒服去了医院，有诊断…", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_hard_d_014    100.0%  100.0%   100.0%  二手区的手机是不是全都不支持七天无理由？要…", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_hard_d_015    100.0%  100.0%   100.0%  小区健身房买了台跑步机放店里商用，电机坏了…", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_hard_d_016    100.0%  100.0%   100.0%  安全座椅出过一次小碰撞，看着没坏，网上说碰…", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_hard_d_017    100.0%  100.0%   100.0%  打印机配的硒鼓拆开装进机器用过了，还能退吗？", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_hard_d_018    100.0%  100.0%   100.0%  淘了台二手微单，页面快门数写三万，到手查实…", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_hard_d_019    100.0%  100.0%   100.0%  教辅书拍错了版本，人教版的买成别的版了，还…", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_hard_d_020    100.0%  100.0%   100.0%  宝宝用了两天沐浴露身上起红疹，医院诊断是过…", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_hard_d_021    100.0%  100.0%   100.0%  帐篷搭了一次就收起来了，回来发现内帐有点脏…", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_hard_d_022    100.0%  100.0%   100.0%  买的气罐不想要了，能寄回去退货吗？", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_hard_d_023    100.0%  100.0%   100.0%  头盔摔车时磕了一下，表面看着没裂，还能接着…", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_hard_d_024    100.0%  100.0%   100.0%  篮球到手气压就明显不足，充了气打几次又瘪了…", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_hard_d_025    100.0%  100.0%   100.0%  新泳镜用了不到一个月，防雾涂层就失效了，下…", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_hard_d_026    100.0%  100.0%   100.0%  雪镜拆开试戴了下想退，商家说贴身装备拆封不…", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_hard_d_027    100.0%  100.0%   100.0%  新鱼竿第一次下水就断了一节，绝对不是暴力扬…", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_hard_d_028    100.0%  100.0%   100.0%  盲盒拆了发现抽到重复款，不是想要的隐藏款，…", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_hard_d_029    100.0%  100.0%   100.0%  买的联名文具，图案和详情页对不上，授权标志…", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_hard_d_030    100.0%  100.0%   100.0%  自动喂食器连了 App 之后不想要了能退吗…", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_hard_d_031    100.0%  100.0%   100.0%  破壁机打豆浆打出来还是很多渣，跟页面宣传的…", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_hard_d_032    100.0%  100.0%   100.0%  到的消毒液瓶子上一句成分浓度都没写，这种能…", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_hard_d_033    100.0%  100.0%   100.0%  买的“无烟”蜡烛一点就冒黑烟，拍了燃烧视频…", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_hard_d_034    100.0%  100.0%   100.0%  月季苗签收当天就发现整株发蔫，损失了大半，…", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_hard_d_035    100.0%  100.0%   100.0%  客厅吸顶灯用了一个多月，感觉比刚买的时候暗…", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_hard_d_036    100.0%  100.0%   100.0%  定制的窗帘量了下比约定短了五厘米，商家说是…", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_hard_d_037    100.0%  100.0%   100.0%  号称头层牛皮的包，拉链用半个月就脱齿了，能…", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_hard_d_038    100.0%  100.0%   100.0%  定制的西装到了，胸围大了三厘米，商家说两厘…", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_hard_d_039      0.0%    0.0%     0.0%  团购的美容券预约好了，到店被告知这个项目做…", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_hard_d_040    100.0%  100.0%   100.0%  去年买的餐饮券一直没去用，过期了会自动退钱…", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_hard_d_041    100.0%  100.0%   100.0%  五斤装的大米到货称了只有四斤半，有称重视频…", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_hard_d_042    100.0%  100.0%   100.0%  食用油开封后闻着有股哈喇味，拆过的还能找商…", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_hard_d_043    100.0%   50.0%    63.1%  大促下的单，商家说有货就是不发，强制给我取…", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_hard_d_044    100.0%   50.0%    63.1%  店铺保证金被扣了，商家要多快补上？拖着不补…", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_nohit_001     ACCEPT           0.6506  银行卡挂失要打哪个电话", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_nohit_002     ACCEPT           0.5807  信用卡年费怎么免掉", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_nohit_003     ACCEPT           0.6974  华信银行信用卡连续逾期三期会有什么后果", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_nohit_004     ACCEPT           0.7774  储蓄卡被伪卡盗刷银行会赔吗", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_nohit_005     ACCEPT           0.7857  银行卡盗刷后多久内报案才有效", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_nohit_006     ACCEPT           0.6956  盗刷理赔金一般多久能到账", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_nohit_007     ACCEPT           0.6348  借呗额度怎么提升", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_nohit_008     ACCEPT           0.6691  微粒贷开通需要什么条件", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_nohit_009     ACCEPT           0.5394  京东白条在你们平台能用吗", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_nohit_010     ACCEPT           0.6779  帮同事代付的信用卡分期他不还了怎么办", "level": "info", "timestamp": "2026-09-17T22:35:39.506059Z"}
+{"event": "  retrieval_v3_nohit_011     ACCEPT           0.5809  车险快到期了在哪续保", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_012     ACCEPT           0.5626  人身意外险能在你们平台买吗", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_013     ACCEPT           0.6174  重疾险理赔要准备哪些材料", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_014     ACCEPT           0.6095  顺丰快递员的手机号能给我吗", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_015     ACCEPT           0.5348  圆通网点的电话怎么查", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_016     ACCEPT           0.6936  我自己寄的私人件丢了没保价按什么标准赔", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_018     ACCEPT           0.7058  快递索赔要在几天内提交", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_019     ACCEPT           0.6736  顺丰同城急送超时了会退运费吗", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_020     ACCEPT           0.7104  手机号不用了销户余额能退吗", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_021     ACCEPT           0.6131  运营商偷偷扣了我流量费能要回来吗", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_022     ACCEPT           0.4761  宽带装哪家运营商好", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_023     ACCEPT           0.6792  托运行李被摔坏了按什么标准赔", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_024     ACCEPT           0.7360  行李延误的生活用品补偿标准是多少", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_025     ACCEPT           0.5573  值机时怎么给托运行李买声明价值", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_026     ACCEPT           0.6040  航班取消改签要手续费吗", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_027     ACCEPT           0.7905  星海空调的压缩机保修几年", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_028     ACCEPT           0.6734  空调移机怎么收费", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_029     ACCEPT           0.7599  星海冰箱的主要部件保修多久", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_030     100.0%  100.0%   100.0%  洗衣机电机一般保修几年", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_031     ACCEPT           0.6673  找非授权网点修过的家电还能保修吗", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_032     ACCEPT           0.6230  送中鉴检测鉴定一个包多少钱", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_033     ACCEPT           0.6516  中鉴的鉴定报告几天能出", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_034     ACCEPT           0.7546  鉴定费交了能退吗", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_035     ACCEPT           0.7104  对鉴定结果有异议能申请复检吗", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_036     ACCEPT           0.7863  汇付宝账户被盗要多久内报案", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_037     ACCEPT           0.8028  汇付宝的账户安全险升级版一年多少钱", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_038     ACCEPT           0.8200  光驰手机官方延保多少钱", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_039     ACCEPT           0.7046  光驰延保里电池能免费换几次", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_040     ACCEPT           0.8110  光驰官方延保买了之后能退吗", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_041     ACCEPT           0.8043  储蓄卡盗刷赔付的上限是多少", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_042     ACCEPT           0.7097  我在淘宝买的商品运费险理赔没到账找谁", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_043     ACCEPT           0.6427  拼多多的订单出了问题你们管吗", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_044     ACCEPT           0.6554  抖音直播间买的东西商家不退款怎么办", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_045     ACCEPT           0.6518  闲鱼上买到假货平台管吗", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_046     ACCEPT           0.6452  微信上买的二手手机是翻新机找谁退", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_047     ACCEPT           0.5914  微商那买的减肥药有问题找谁", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_048     ACCEPT           0.6236  天猫买的冰箱坏了能找你们上门修吗", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_049     ACCEPT           0.6646  华为官网买的手机降价了能找你们退差价吗", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_050     ACCEPT           0.5854  山姆的会员卡在你们平台能用吗", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_051     ACCEPT           0.5997  星巴克的优惠券在哪里领", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_052     ACCEPT           0.6761  麦当劳的优惠券过期了能补吗", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_053     ACCEPT           0.6234  超市买的东西退货一定要小票吗", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_054     ACCEPT           0.6620  二手房的中介费能退吗", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_055     ACCEPT           0.5806  水电燃气费能在你们平台交吗", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_056     ACCEPT           0.5865  社保卡丢了能在你们这补办吗", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_057     ACCEPT           0.5647  买保险送的体检卡能在这用吗", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_058     ACCEPT           0.5674  直播间中奖要交个人所得税吗", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_059     ACCEPT           0.6326  免税店买的东西能在你们平台售后吗", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_060     ACCEPT           0.6415  海淘订单能用美元结算吗", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_061     ACCEPT           0.5692  护照能用来实名认证吗", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_062     ACCEPT           0.5998  你们平台能代缴交通违章罚款吗", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_063     ACCEPT           0.5809  你们开的发票在税务网站上查不到真伪怎么办", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_064     ACCEPT           0.4966  你们有没有老年人专用的大字版模式", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_065     ACCEPT           0.6292  实体店买的电视坏了平台管售后吗", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_066     ACCEPT           0.5095  火车票能在你们平台买吗", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_067     ACCEPT           0.5109  演唱会门票能在平台转卖吗", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_068     ACCEPT           0.6232  你们平台支持以物换物吗", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_069     ACCEPT           0.5442  手机能在你们平台租吗", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_070     ACCEPT           0.6300  中通快递的客服电话是多少", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_071     ACCEPT           0.5518  银行定期存款利率现在是多少", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_072     ACCEPT           0.5986  大额存单怎么买", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_073     ACCEPT           0.4440  国债在哪里买", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_074     ACCEPT           0.6598  公积金贷款额度怎么算", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_075     ACCEPT           0.4834  社保断缴有什么影响", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_076     ACCEPT           0.5376  个税专项附加扣除怎么申报", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_077     ACCEPT           0.5395  哪家航空公司的会员里程累积最划算", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_078     ACCEPT           0.5351  特价机票什么时候买最便宜", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_079     ACCEPT           0.5551  手机套餐怎么选划算", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_080     ACCEPT           0.5491  宽带提速怎么办理", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_081     ACCEPT           0.5659  携号转网怎么操作", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_082     ACCEPT           0.5668  寄快递哪家便宜", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_083     ACCEPT           0.6513  顺丰寄大件怎么收费", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_084     ACCEPT           0.6539  快递到付怎么收费", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_085     ACCEPT           0.5899  车辆违章罚款怎么交", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_086     ACCEPT           0.5238  驾驶证到期怎么换证", "level": "info", "timestamp": "2026-09-17T22:35:39.507079Z"}
+{"event": "  retrieval_v3_nohit_087     ACCEPT           0.5692  身份证丢了怎么异地补办", "level": "info", "timestamp": "2026-09-17T22:35:39.508080Z"}
+{"event": "  retrieval_v3_nohit_088     ACCEPT           0.5035  三甲医院怎么挂号", "level": "info", "timestamp": "2026-09-17T22:35:39.508080Z"}
+{"event": "  retrieval_v3_nohit_089     ACCEPT           0.5258  加油卡在哪里办", "level": "info", "timestamp": "2026-09-17T22:35:39.508080Z"}
+{"event": "  retrieval_v3_nohit_090     ACCEPT           0.5460  天然气开户要什么手续", "level": "info", "timestamp": "2026-09-17T22:35:39.508080Z"}
+{"event": "  retrieval_v3_nohit_091     ACCEPT           0.5769  阶梯电价怎么算", "level": "info", "timestamp": "2026-09-17T22:35:39.508080Z"}
+{"event": "  retrieval_v3_nohit_092     ACCEPT           0.5106  彩票中奖了去哪兑奖", "level": "info", "timestamp": "2026-09-17T22:35:39.508080Z"}
+{"event": "  retrieval_v3_nohit_093     ACCEPT           0.4959  出国旅游要办什么签证", "level": "info", "timestamp": "2026-09-17T22:35:39.508080Z"}
+{"event": "  retrieval_v3_nohit_094     ACCEPT           0.6524  股票开户要什么条件", "level": "info", "timestamp": "2026-09-17T22:35:39.508080Z"}
+{"event": "  retrieval_v3_nohit_095     ACCEPT           0.6706  外汇兑换有没有限额", "level": "info", "timestamp": "2026-09-17T22:35:39.508080Z"}
+{"event": "  retrieval_v3_nohit_096     ACCEPT           0.5486  航空里程能换什么", "level": "info", "timestamp": "2026-09-17T22:35:39.508080Z"}
+{"event": "  retrieval_v3_nohit_097     ACCEPT           0.7191  银行信用卡积分怎么兑换", "level": "info", "timestamp": "2026-09-17T22:35:39.508080Z"}
+{"event": "  retrieval_v3_nohit_098     ACCEPT           0.6094  中国移动的积分能换话费吗", "level": "info", "timestamp": "2026-09-17T22:35:39.508080Z"}
+{"event": "  retrieval_v3_nohit_099     ACCEPT           0.6385  携程会员积分能抵机票钱吗", "level": "info", "timestamp": "2026-09-17T22:35:39.508080Z"}
+{"event": "  retrieval_v3_nohit_100     ACCEPT           0.6373  微信红包提现要手续费吗", "level": "info", "timestamp": "2026-09-17T22:35:39.508080Z"}
+{"event": "  retrieval_v3_nohit_101     ACCEPT           0.6716  寄快递要保价吗，保价费怎么收", "level": "info", "timestamp": "2026-09-17T22:35:39.508080Z"}
+{"event": "  retrieval_v3_nohit_102     ACCEPT           0.6890  4S店交的定金能退吗", "level": "info", "timestamp": "2026-09-17T22:35:39.508080Z"}
+{"event": "  retrieval_v3_nohit_103     ACCEPT           0.6358  理发店充值的储值卡老板跑路了能退吗", "level": "info", "timestamp": "2026-09-17T22:35:39.508080Z"}
+{"event": "  retrieval_v3_nohit_104     ACCEPT           0.5810  火车票改签要手续费吗", "level": "info", "timestamp": "2026-09-17T22:35:39.508080Z"}
+{"event": "  retrieval_v3_nohit_105     ACCEPT           0.6824  退货包运费是真的吗", "level": "info", "timestamp": "2026-09-17T22:35:39.508080Z"}
+{"event": "  retrieval_v3_nohit_106     ACCEPT           0.5946  航班延误险在哪里买", "level": "info", "timestamp": "2026-09-17T22:35:39.508080Z"}
+{"event": "  retrieval_v3_nohit_107     ACCEPT           0.6285  买手机送的碎屏险靠谱吗", "level": "info", "timestamp": "2026-09-17T22:35:39.508080Z"}
+{"event": "  retrieval_v3_nohit_108     ACCEPT           0.7456  七天无理由退货的法律依据是什么", "level": "info", "timestamp": "2026-09-17T22:35:39.508080Z"}
+{"event": "  retrieval_v3_nohit_109     100.0%   25.0%    43.1%  天猫的运费险能和平台的运费险叠加赔吗", "level": "info", "timestamp": "2026-09-17T22:35:39.508080Z"}
+{"event": "  retrieval_v3_nohit_110     ACCEPT           0.6591  政府发的消费券能在平台用吗", "level": "info", "timestamp": "2026-09-17T22:35:39.508080Z"}
+{"event": "\n==============================================================================", "level": "info", "timestamp": "2026-09-17T22:35:39.508080Z"}
+{"event": "  汇总", "level": "info", "timestamp": "2026-09-17T22:35:39.508080Z"}
+{"event": "==============================================================================", "level": "info", "timestamp": "2026-09-17T22:35:39.508080Z"}
+{"event": "  用例数             : 959", "level": "info", "timestamp": "2026-09-17T22:35:39.508080Z"}
+{"event": "  正例 recall@k      :  90.9%", "level": "info", "timestamp": "2026-09-17T22:35:39.508080Z"}
+{"event": "  正例 MRR           :  72.4%", "level": "info", "timestamp": "2026-09-17T22:35:39.508080Z"}
+{"event": "  正例 nDCG@k        :  76.7%", "level": "info", "timestamp": "2026-09-17T22:35:39.508080Z"}
+{"event": "  困难正例 recall@k :  91.5%", "level": "info", "timestamp": "2026-09-17T22:35:39.508080Z"}
+{"event": "  负例拒绝率         :   0.0%", "level": "info", "timestamp": "2026-09-17T22:35:39.508080Z"}
+{"event": "报告已留档: E:\\ea\\artifacts\\eval\\p02\\report-current.json", "level": "info", "timestamp": "2026-09-17T22:35:39.556884Z"}
+{"event": "检索 manifest 已留档: E:\\ea\\artifacts\\eval\\p02\\manifest.json", "level": "info", "timestamp": "2026-09-17T22:35:39.556884Z"}
+{"event": "\n❌ 检索质量门禁未通过：", "level": "info", "timestamp": "2026-09-17T22:35:39.556884Z"}
+{"event": "  - 正例 recall@k  90.9% <  95.0%", "level": "info", "timestamp": "2026-09-17T22:35:39.556884Z"}
+{"event": "  - 基础正例 recall@k  90.5% <  98.0%", "level": "info", "timestamp": "2026-09-17T22:35:39.556884Z"}
+{"event": "  - 正例 MRR  72.4% <  90.0%", "level": "info", "timestamp": "2026-09-17T22:35:39.556884Z"}
+{"event": "  - 正例 nDCG@k  76.7% <  90.0%", "level": "info", "timestamp": "2026-09-17T22:35:39.556884Z"}
+{"event": "  - 数据集包含负例，但未配置 --min-score / RAG_MIN_RELEVANCE_SCORE", "level": "info", "timestamp": "2026-09-17T22:35:39.556884Z"}
+{"event": "  - 负例拒绝率   0.0% <  90.0%", "level": "info", "timestamp": "2026-09-17T22:35:39.556884Z"}
+{"event": "  · retrieval_退换货政策_9: expected=['退换货政策.md', '常见问题FAQ.md'] hits=['售后纠纷处理SOP.md', '常见问题FAQ.md', '退款到账时效分档表.md', '极速退款规则.md', '大额订单退款时效.md'] top_score=0.8243946522775633", "level": "info", "timestamp": "2026-09-17T22:35:39.556884Z"}
+{"event": "  · retrieval_退换货政策_15: expected=['退换货政策.md'] hits=['美妆个护类目规则.md', '拆封商品退换判定标准.md', '母婴洗护类目规则.md', '家庭清洁用品类目规则.md', '医药保健类目规则.md'] top_score=0.7914326557400283", "level": "info", "timestamp": "2026-09-17T22:35:39.556884Z"}
+{"event": "  · retrieval_退换货政策_18: expected=['退换货政策.md'] hits=['虚拟商品与充值类目规则.md', '优惠券退回与补发规则.md', '礼品卡与储值卡.md', '本地生活与到店服务规则.md', '售后纠纷处理SOP.md'] top_score=0.7751659488872344", "level": "info", "timestamp": "2026-09-17T22:35:39.556884Z"}
+{"event": "  · retrieval_退换货政策_26: expected=['退换货政策.md'] hits=['售后纠纷处理SOP.md', '客服SOP与应答手册.md', '家用电器类目规则.md', '乐器配件规则.md'] top_score=0.7053904463283198", "level": "info", "timestamp": "2026-09-17T22:35:39.556884Z"}
+{"event": "  · retrieval_退换货政策_27: expected=['退换货政策.md'] hits=['价保与赔付规则.md', '常见问题FAQ.md', '售后纠纷处理SOP.md', '母婴用品类目规则.md', '食品饮料类目规则.md'] top_score=0.6683041812638384", "level": "info", "timestamp": "2026-09-17T22:35:39.556884Z"}
+{"event": "  · retrieval_退换货政策_29: expected=['退换货政策.md'] hits=['售后纠纷处理SOP.md', '常见问题FAQ.md', '跨境清关与税费说明.md', '客服SOP与应答手册.md', '港澳台订单规则.md'] top_score=0.6958851824139903", "level": "info", "timestamp": "2026-09-17T22:35:39.557923Z"}
+{"event": "  · retrieval_配送说明_11: expected=['配送说明.md'] hits=['大件家电配送安装规则.md', '退货运费计算标准.md', '家用电器类目规则.md', '乐器配件规则.md', '健身器材类目规则.md'] top_score=0.6455371628502046", "level": "info", "timestamp": "2026-09-17T22:35:39.557923Z"}
+{"event": "  · retrieval_常见问题FAQ_11: expected=['常见问题FAQ.md'] hits=['价保除外类目清单.md', '优惠券与促销规则.md', '直播与限时活动规则.md', '会员价保升级规则.md', '大促作战手册.md'] top_score=0.7202916078531567", "level": "info", "timestamp": "2026-09-17T22:35:39.557923Z"}
+{"event": "  · retrieval_常见问题FAQ_27: expected=['常见问题FAQ.md'] hits=['商家入驻与保证金管理规范.docx', '售后纠纷处理SOP.md', '客服SOP与应答手册.md'] top_score=0.7134633902363239", "level": "info", "timestamp": "2026-09-17T22:35:39.557923Z"}
+{"event": "  · retrieval_优惠券与促销规则_5: expected=['优惠券与促销规则.md'] hits=['优惠券退回与补发规则.md', '售后纠纷处理SOP.md', '店铺会员积分兑换细则.md', '退换货政策.md', '预售定金与尾款规则.md'] top_score=0.7551573775095014", "level": "info", "timestamp": "2026-09-17T22:35:39.557923Z"}
+{"event": "  · retrieval_优惠券与促销规则_8: expected=['优惠券与促销规则.md'] hits=['预售定金与尾款规则.md', '预售商品规则.md', '图书周边与联名商品规则.md', '极速退款规则.md', '商家入驻与保证金管理规范.docx'] top_score=0.7887292691747071", "level": "info", "timestamp": "2026-09-17T22:35:39.557923Z"}
+{"event": "  · retrieval_生鲜与定制商品规则_7: expected=['生鲜与定制商品规则.md'] hits=['宠物智能设备类目规则.md', '退换货政策.md', '图书文教类目规则.md', '极速退款规则.md', '文具与教辅类目规则.md'] top_score=0.6794368688593522", "level": "info", "timestamp": "2026-09-17T22:35:39.557923Z"}
+{"event": "  · retrieval_直播与限时活动规则_2: expected=['直播与限时活动规则.md'] hits=['常见问题FAQ.md', '客服SOP与应答手册.md', '跨境与海外购.md', '配送说明.md', '大促作战手册.md'] top_score=0.6860197342068616", "level": "info", "timestamp": "2026-09-17T22:35:39.557923Z"}
+{"event": "  · retrieval_直播与限时活动规则_6: expected=['直播与限时活动规则.md'] hits=['礼品卡与储值卡.md', '大促满减与跨店规则.md', '大促作战手册.md', '客服SOP与应答手册.md'] top_score=0.6243812967083228", "level": "info", "timestamp": "2026-09-17T22:35:39.557923Z"}
+{"event": "  · retrieval_价保与赔付规则_8: expected=['价保与赔付规则.md'] hits=['支付平台账户安全险条款.md', '物流时效与赔付标准.md', '客服SOP与应答手册.md', '破损赔付标准细则.md', '售后纠纷处理SOP.md'] top_score=0.6516074623730502", "level": "info", "timestamp": "2026-09-17T22:35:39.557923Z"}
+{"event": "  · retrieval_售后维修与延保_2: expected=['售后维修与延保.md'] hits=['品牌官方延保服务条款.md', '家用电器类目规则.md', '泳具与水上运动规则.md', '摄影器材类目规则.md', '厂家全国联保三包政策.md'] top_score=0.6332251456833726", "level": "info", "timestamp": "2026-09-17T22:35:39.557923Z"}
+{"event": "  · retrieval_售后维修与延保_9: expected=['售后维修与延保.md'] hits=['售后纠纷处理SOP.md', '退货运费承担方判定规则.md', '客服SOP与应答手册.md', '退货运费计算标准.md', '运费险商家版规则.md'] top_score=0.6648524603119448", "level": "info", "timestamp": "2026-09-17T22:35:39.557923Z"}
+{"event": "  · retrieval_售后维修与延保_10: expected=['售后维修与延保.md'] hits=['发票与开票规则.md', '商家入驻与保证金管理规范.docx', '办公设备类目规则.md', '官方延保服务范围对照.md', '客服SOP与应答手册.md'] top_score=0.611206828169605", "level": "info", "timestamp": "2026-09-17T22:35:39.557923Z"}
+{"event": "  · retrieval_支付与账户安全_5: expected=['支付与账户安全.md'] hits=['酒类商品规则.md', '百亿补贴规则.md', '食品饮料类目规则.md', '校园专区规则.md', '虚拟商品与充值类目规则.md'] top_score=0.6509746569019227", "level": "info", "timestamp": "2026-09-17T22:35:39.557923Z"}
+{"event": "  · retrieval_支付与账户安全_10: expected=['支付与账户安全.md'] hits=['先用后付与分期付款.md', '平台分期购细则.md', '分期手续费费率表.md', '银行信用卡分期业务条款.md', '常见问题FAQ.md'] top_score=0.7545530259739045", "level": "info", "timestamp": "2026-09-17T22:35:39.557923Z"}

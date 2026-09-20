@@ -92,3 +92,63 @@ groups:
           severity: warning
         annotations:
           summary: "对象存储操作失败持续发生（上传/原件/turns 受影响）"
+
+      # ---------- 修复计划·二：Outbox 可靠性告警 ----------
+      - alert: OutboxDeadLetter
+        expr: increase(outbox_dead_letters_total[10m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Outbox 出现 dead-letter（坏数据/确定性 4xx/重试超限，需人工重放）"
+
+      - alert: OutboxRetryHigh
+        expr: rate(outbox_retries_total[10m]) > 1
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Outbox 重试持续发生（ES 同步不稳，检查依赖与限流）"
+
+      - alert: OutboxDeleteLagHigh
+        expr: outbox_delete_lag_seconds > 300
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Reset 删除事件滞后 > 5 分钟（ES 旧消息删除未完成；tombstone 过滤仍在兜底）"
+
+      - alert: OutboxDeleteBacklog
+        expr: outbox_delete_backlog > 0
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: "存在长时间未完成的 Reset 删除事件（消费端可能停滞）"
+
+      # ---------- RAG 修复计划·1：检索可用性告警 ----------
+      - alert: RagRerankerFallbackHigh
+        expr: rate(reranker_fallback_total[15m]) > 1
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "精排器持续失败/降级（检查 reranker 端点与超时；生产 fail-closed 会拒答）"
+
+      - alert: RagRetrieveFailedHigh
+        expr: rate(rag_retrieve_failed_total[10m]) > 0.5
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "检索 fail-closed 失败率升高（reranker/ES 不可用，Agent 无法引用证据）"
+
+      - alert: RagEmptyResultHigh
+        expr: |
+          sum(rate(rag_retrieve_empty_total[30m]))
+            / sum(rate(rag_retrieve_total[30m])) > 0.3
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: "检索空结果率 > 30%（知识覆盖/阈值/检索链路异常）"

@@ -307,3 +307,31 @@ def test_review_webapp_xss_escaped(monkeypatch):
     assert "<script>" not in html
     assert "&lt;script&gt;" in html
     assert "<script>alert(1)</script>" not in html
+
+
+def test_review_login_bruteforce_protection(monkeypatch):
+    """低危修复 C9：同 IP 窗口内失败 ≥5 次 → 429 冷却；成功登录清零计数。"""
+    from fastapi.testclient import TestClient
+
+    from app.config.settings import settings
+    from app.review import webapp as wmod
+
+    monkeypatch.setattr(
+        settings, "review_admin_token", "admin-token-0123456789abcdef",
+        raising=False,
+    )
+    ip = "10.1.2.3"
+    wmod._clear_login_failures(ip)
+    monkeypatch.setattr(wmod, "_client_ip", lambda request: ip)
+    with TestClient(wmod.create_review_app(), raise_server_exceptions=False) as client:
+        for _ in range(5):
+            resp = client.post("/login", data={"token": "wrong"})
+            assert resp.status_code == 401
+        assert client.post("/login", data={"token": "wrong"}).status_code == 429
+        # 窗口外（计数清零）后正确令牌正常登录
+        wmod._clear_login_failures(ip)
+        resp = client.post(
+            "/login", data={"token": "admin-token-0123456789abcdef"},
+            follow_redirects=False,
+        )
+        assert resp.status_code == 303

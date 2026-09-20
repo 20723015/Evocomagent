@@ -76,7 +76,8 @@ class BM25Index:
         df: dict[str, int] = {}
         total_len = 0
         for chunk in self._chunks:
-            terms = tokenize(chunk.text)
+            # 索引输入与展示文本分离（P1-1/P1-2）：词法统计同样吃 index_input()
+            terms = tokenize(chunk.index_input())
             tf: dict[str, int] = {}
             for term in terms:
                 tf[term] = tf.get(term, 0) + 1

@@ -14,15 +14,14 @@ Chat Completions。
 - 每轮历史只保存一个 assistant 消息：content = 用户可见回复，结构化字段在
   消息 metadata（新格式）；构建模型上下文时把旧版「JSON 副本」content 折叠
   为 reply 文本——只折叠模型窗口，不修改历史正本；
-- 历史窗口按 token 水位裁剪（不再按消息条数），孤儿 tool 消息不进窗口；
-- 上一轮的 pending 写操作（退款确认令牌）以受控系统说明注入，保证跨轮
-  两段式确认可用（工具完整结果不再进入后续上下文）。
+- 历史窗口按 token 水位裁剪（不再按消息条数），孤儿 tool 消息不进窗口。
 """
 
 from __future__ import annotations
 
 import json
 
+from app.agent.input_policy import emotion_tone_hint
 from app.agent.token_budget import (
     budget_shares,
     estimate_messages_tokens,
@@ -33,11 +32,6 @@ from app.prompts.customer_service import SYSTEM_PROMPT
 
 # metadata 承载键（新格式 assistant 消息）
 METADATA_KEY = "metadata"
-_PENDING_WRITE_FIELDS = ("tool", "order_id", "reason")  # 不含凭证/幂等键（Review 修复）
-
-
-def assistant_metadata(msg: dict) -> dict:
-    return msg.get(METADATA_KEY) or {}
 
 
 def _fold_assistant_content(content: str) -> tuple[str, dict | None]:
@@ -64,12 +58,6 @@ def _fold_assistant_content(content: str) -> tuple[str, dict | None]:
     return reply, (metadata or None)
 
 
-# 模型窗口必须剔除的 metadata.pending_writes 保留字段（Review 修复：
-# token/幂等键只存确认存储，仅供服务端迁移，绝不回注模型上下文）
-_PENDING_RESERVED_KEYS = ("confirmation_token", "idempotency_key", "refund_id",
-                          "token", "access_token")
-
-
 def _strip_persistence_metadata(msg: dict) -> dict:
     """返回可发送给模型的消息副本。
 
@@ -84,75 +72,30 @@ def _strip_persistence_metadata(msg: dict) -> dict:
 def fold_history(messages: list[dict]) -> list[dict]:
     """构建模型窗口用的折叠视图（不修改传入列表与正本）。
 
-    - 旧版 JSON 助手消息 → 纯文本 reply；
+    - 旧版 JSON 助手消息 → 纯文本 reply（仅字符串 content；结构化块列表原样透传）；
     - 所有消息的持久化 ``metadata`` 整体剥离；
     - metadata 中的工具摘要不展开为消息。
 
     该函数的返回值会直接进入 OpenAI 请求，因此不能携带持久化层字段。
-    ``raw_messages`` 仍保留完整 metadata，供保存、审计和服务端确认逻辑
-    使用。
+    ``raw_messages`` 仍保留完整 metadata，供保存与审计使用。
     """
     out: list[dict] = []
     for msg in messages:
         if msg.get("role") == "assistant" and "tool_calls" not in msg:
-            content, _ = _fold_assistant_content(str(msg.get("content") or ""))
-            folded = _strip_persistence_metadata(msg)
-            folded["content"] = content
-            out.append(folded)
+            raw = msg.get("content")
+            if isinstance(raw, str):
+                content, _ = _fold_assistant_content(raw)
+                folded = _strip_persistence_metadata(msg)
+                folded["content"] = content
+                out.append(folded)
+            else:
+                # 推理模型适配 T3：结构化 content（thinking 块列表）**原样**透传。
+                # 早期实现无条件 str() 会把块列表变成 Python repr——既丢 signature
+                # （厂商 400），也让 required_signed 画像的窗口回传断在这里。
+                out.append(_strip_persistence_metadata(msg))
             continue
         out.append(_strip_persistence_metadata(msg))
     return out
-
-
-def pending_write_note(messages: list[dict], decision=None) -> str | None:
-    """扫描最近一条助手消息的 metadata.pending_writes → 跨轮确认系统说明。
-
-    Review 修复：说明**不含任何确认凭证/幂等键**（token 只存确认存储，
-    由服务端判定 confirm 后经执行器内部通道注入，模型永不接触）；
-    说明内容随本轮服务端确认判定变化（confirm/cancel/等待确认）。
-    decision: refund_gate.ConfirmationDecision（pipeline 注入；可 None）。
-    """
-    for msg in reversed(messages):
-        if msg.get("role") != "assistant" or "tool_calls" in msg:
-            continue
-        pending = assistant_metadata(msg).get("pending_writes") or []
-        # 兼容旧 metadata：剔除 token/幂等键等保留字段（仅供服务端迁移）
-        pending = [
-            {k: v for k, v in entry.items()
-             if k not in _PENDING_RESERVED_KEYS}
-            for entry in pending if isinstance(entry, dict)
-        ]
-        pending = [entry for entry in pending if entry]
-        if not pending:
-            return None
-        action = getattr(decision, "action", "none")
-        matched = getattr(decision, "matched_order_id", "")
-        if action == "cancel":
-            return None  # 已取消：不再注入待确认说明
-        lines = []
-        for w in pending:
-            tool = str(w.get("tool", ""))
-            fields = [f"{k}={w[k]}" for k in _PENDING_WRITE_FIELDS
-                      if w.get(k) not in (None, "")]
-            lines.append(f"- {tool}: {'；'.join(fields)}")
-        if action == "confirm" and matched:
-            target = next((w for w in pending
-                           if w.get("order_id") == matched), pending[0])
-            return (
-                "用户已明确确认退款（服务端已判定，凭证由系统自动注入）：\n"
-                f"- 请立即调用 {target.get('tool', 'apply_refund')}"
-                f"（order_id={target.get('order_id', '')}，"
-                f"reason={target.get('reason', '')}）完成提交。\n"
-                "- 不要向用户索要、复述或编造任何凭证/令牌字段。"
-            )
-        return (
-            "上一轮你已发起需要用户确认的写操作（尚未完成）：\n"
-            + "\n".join(lines)
-            + "\n等待用户明确确认；用户确认后再次调用对应工具（相同订单号与原因），"
-              "系统会自动附加确认凭证完成提交。"
-              "不要向用户索要、复述或编造任何凭证/令牌字段。"
-        )
-    return None
 
 
 class ContextBuilder:
@@ -174,16 +117,39 @@ class ContextBuilder:
         system_content += _final_response_protocol()
         messages: list[dict] = [{"role": "system", "content": system_content}]
 
-        # Memory（≤10% 预算；MemoryManager 已做相关性筛选）
+        # Memory（≤10% 预算；MemoryManager 已做相关性筛选；STM 段在前）
         if self._memory is not None:
-            sections = self._memory.build_memory_prompt_sections(query)
+            # 记忆系统重构·阶段2.5：query 嵌入每轮至多一次（预算内、失败
+            # 降级纯词面）；语义开关关闭时 get_memory_embedder 返回 None，
+            # 零额外调用
+            query_embedding = None
+            if query and query.strip():
+                from app.llm.embeddings import get_memory_embedder
+
+                embedder = get_memory_embedder()
+                if embedder is not None:
+                    query_embedding = embedder.encode(query, stage="query")
+            sections = self._memory.build_memory_prompt_sections(
+                query, query_embedding=query_embedding,
+            )
             used = 0
             for section in sections:
                 cost = estimate_tokens(str(section.get("content", "")))
                 if used + cost > shares["memory"]:
-                    break
+                    # 批次7（Review #8）：超预算 continue 而非 break——
+                    # 大的 LTM 段不得吞掉后面更小、更新的 STM 段
+                    continue
                 messages.append(section)
                 used += cost
+
+        # 情绪语气提示（P1-1）：不满级才注入，独立 system 消息放在记忆之后、
+        # 摘要之前——语气属"本轮交互策略"，紧跟记忆（个性化依据）之后、早于
+        # 历史摘要更符合「先看本轮语气再看历史」的阅读顺序，且不会被摘要/历史
+        # 裁剪逻辑改动。提示很短（约 100 字），直接 append：system 段（角色提示 +
+        # 技能目录 + 终答协议）本来就不走 token 水位裁剪，单条短提示不改变预算口径。
+        tone_hint = emotion_tone_hint(query)
+        if tone_hint:
+            messages.append({"role": "system", "content": tone_hint})
 
         # 交互摘要
         if agent.summary:
@@ -191,13 +157,6 @@ class ContextBuilder:
                 "role": "system",
                 "content": f"以下是此前对话的摘要，用于延续上下文记忆：\n{agent.summary}",
             })
-
-        # 跨轮 pending 写操作说明（受控字段）
-        note = pending_write_note(
-            agent.raw_messages, getattr(agent, "current_confirmation", None),
-        )
-        if note:
-            messages.append({"role": "system", "content": note})
 
         # 对话历史（折叠视图 + 50% 水位裁剪）
         folded = fold_history(agent.raw_messages)

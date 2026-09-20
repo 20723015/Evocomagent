@@ -162,7 +162,9 @@ class HumanConversationExtractor:
     def is_substantive_update(
         self, question: str, existing: str, candidate: str
     ) -> bool:
-        """重复命中后的更新判定（LLM；失败按无实质变化处理 → duplicate）。"""
+        """重复命中后的更新判定（LLM）。判定失败（网络/解析/超时）向上抛
+        异常，由评审任务的重试机制兜底——失败不写「已完成评审」，任务进
+        retry_wait 自动重试，不静默按 duplicate 处理。"""
         from app.prompts.human_knowledge import (
             UPDATE_JUDGE_SYSTEM_PROMPT,
             UPDATE_JUDGE_TEXT_PROMPT,

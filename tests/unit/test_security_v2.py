@@ -2,7 +2,7 @@
 
 覆盖：
 - 四个订单/物流/退款工具在强制开启时的机器可判定错误码（IDENTITY_REQUIRED /
-  ORDER_ACCESS_DENIED / ORDER_NOT_FOUND / CONFIRMATION_REQUIRED / CONFIRMATION_INVALID）；
+  ORDER_ACCESS_DENIED / ORDER_NOT_FOUND）；
 - ctx 级 enforce 覆盖全局配置（评测沙箱不依赖 .env）；
 - EvalCase 安全字段 → authorization_match / sensitive_leakage_match / 硬门禁；
 - MCP 敏感工具路径与本地工具同等归属（无授权旁路）；
@@ -18,7 +18,7 @@ import pytest
 from app.agent.context import ToolContext
 from app.agent.tools.logistics import query_logistics
 from app.agent.tools.order import query_order
-from app.agent.tools.refund import apply_refund
+from app.agent.tools.refund import submit_refund_application
 from app.agent.tools.user_orders import list_user_orders
 from app.config.settings import settings
 
@@ -29,9 +29,12 @@ def _enforce_on(reset_settings, monkeypatch):
     monkeypatch.setattr(settings, "enforce_order_ownership", True)
 
 
-def _ctx(user_id: str, enforce: bool | None = True) -> ToolContext:
-    return ToolContext(user_id=user_id,
-                       enforce_order_ownership=enforce if enforce is not None else None)
+def _ctx(user_id: str, enforce: bool | None = True,
+         session_id: str = "s") -> ToolContext:
+    return ToolContext(
+        user_id=user_id, session_id=session_id,
+        enforce_order_ownership=enforce if enforce is not None else None,
+    )
 
 
 # ============================================================
@@ -93,29 +96,34 @@ def test_list_user_orders_scoped_to_actor():
     assert ids == {"ORD-20240115-001"}  # 只有 u1 自己的订单
 
 
-def test_apply_refund_other_user_denied():
-    out = apply_refund("ORD-20240122-005", "不想要了", _ctx("u1"))
+def test_submit_refund_other_user_denied():
+    """归属校验在确认轮由网关 fail-closed 拒绝；草稿轮零落库（无越权写入）。"""
+    ctx = _ctx("u1")
+    draft = submit_refund_application("ORD-20240122-005", "不想要了", ctx)
+    assert draft["status"] == "awaiting_confirmation"  # 草稿不是落库
+    ctx.write_confirm = "confirm"
+    out = submit_refund_application("ORD-20240122-005", "不想要了", ctx)
     assert out["success"] is False and out["code"] == "ORDER_ACCESS_DENIED"
 
 
-def test_apply_refund_missing_identity_fail_closed():
-    out = apply_refund("ORD-20240122-005", "不想要了", None)
+def test_submit_refund_missing_identity_fail_closed():
+    out = submit_refund_application("ORD-20240122-005", "不想要了", None)
     assert out["success"] is False and out["code"] == "IDENTITY_REQUIRED"
 
 
-def test_apply_refund_requires_confirmation_code(tmp_path, monkeypatch):
-    """两段式开启时第一段返回 CONFIRMATION_REQUIRED（机器可判定）。"""
-    monkeypatch.setattr(settings, "refund_confirmation_required", True)
-    out = apply_refund("ORD-20240122-005", "不想要了", _ctx("u5"))
+def test_submit_refund_pending_creates_application_directly():
+    """未发货同样创建 merchant_reviewing 申请；确认轮后才落库（P1-2）。"""
+    ctx = _ctx("u5")
+    draft = submit_refund_application("ORD-20240122-005", "不想要了", ctx)
+    assert draft["status"] == "awaiting_confirmation"
+    ctx.write_confirm = "confirm"
+    out = submit_refund_application("ORD-20240122-005", "不想要了", ctx)
     assert out["success"] is True
-    assert out["code"] == "CONFIRMATION_REQUIRED"
-    assert out["status"] == "pending_confirmation"
-    # 用错误 token 确认 → CONFIRMATION_INVALID
-    out2 = apply_refund(
-        "ORD-20240122-005", "不想要了", _ctx("u5"),
-        confirmation_token="bogus", refund_id=out["refund_id"],
-    )
-    assert out2["success"] is False and out2["code"] == "CONFIRMATION_INVALID"
+    assert out["status"] == "merchant_reviewing"
+    assert out["can_withdraw"] is True
+    # 执行轮结果不含任何授权凭证字段
+    blob = json.dumps(out, ensure_ascii=False).lower()
+    assert "authorization" not in blob and "token" not in blob
 
 
 def test_ctx_override_beats_global_settings(monkeypatch):
@@ -268,7 +276,7 @@ def test_mcp_sensitive_tools_require_identity_same_as_local(reset_settings,
             return [
                 {"function": {"name": "query_order", "parameters": {}}},
                 {"function": {"name": "query_logistics", "parameters": {}}},
-                {"function": {"name": "apply_refund", "parameters": {}}},
+                {"function": {"name": "submit_refund_application", "parameters": {}}},
             ]
 
         def call_tool(self, name, args, timeout=None, actor_token="", write=False):
@@ -283,7 +291,8 @@ def test_mcp_sensitive_tools_require_identity_same_as_local(reset_settings,
                                mcp_client=_FakeMcpClient())
         # 强制走 MCP 分支
         manager2._tool_source = {n: "mcp" for n in
-                                 ("query_order", "query_logistics", "apply_refund")}
+                                 ("query_order", "query_logistics",
+                                  "submit_refund_application")}
         manager2.execute_tool(
             "query_order", {"order_id": "ORD-20240120-002"},
             ctx=_ctx("u1"),

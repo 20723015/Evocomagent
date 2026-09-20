@@ -75,7 +75,7 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     log.info(f"影子回放：{len(cases)} 条生产轮次")
 
-    sandbox = Sandbox(mode="single")
+    sandbox = Sandbox()
     divergences: list[dict] = []
     run = 0
     for case in cases:

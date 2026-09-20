@@ -23,6 +23,16 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install -r requirements-dev.txt
+          pip install ruff bandit
+
+      - name: 编译检查（语法/导入期错误）
+        run: python -m compileall -q app
+
+      - name: 静态正确性（未定义名/语法错误；E9,F63,F7,F82）
+        run: ruff check app tests --select E9,F63,F7,F82
+
+      - name: 知识文档治理检查（新增可索引文档必须带元数据/sidecar）
+        run: python -m app.scripts.check_kb_governance
 
       - name: Run unit tests (tests/unit, 无网络)
         run: pytest
@@ -53,11 +63,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: 静态安全扫描（bandit 高危）
+      - name: 静态安全扫描（bandit 高危，阻断）
         run: |
           pip install bandit
-          bandit -q -lll -r app/ --exclude app/agent/rag/backends || true
-        continue-on-error: true   # 5.1：安全扫描失败不阻塞合并，但告警可见
+          bandit -q -lll -iii -r app
 
   image-build:
     runs-on: ubuntu-latest
@@ -78,7 +87,14 @@ jobs:
       - name: helm lint + template（production/kind 双渲染；无 REPLACE_ME 残留）
         run: |
           helm lint deploy/helm/ecom-agent
-          helm template ci deploy/helm/ecom-agent -f deploy/helm/ecom-agent/values-production.yaml > /tmp/prod.yaml
+          if helm template ci deploy/helm/ecom-agent \
+            -f deploy/helm/ecom-agent/values-production.yaml > /tmp/prod-without-threshold.yaml 2>/tmp/prod-threshold-error.log; then
+            echo "production 未配置 RAG_MIN_RELEVANCE_SCORE 时本应拒绝渲染"; exit 1
+          fi
+          grep -q 'RAG_MIN_RELEVANCE_SCORE' /tmp/prod-threshold-error.log
+          helm template ci deploy/helm/ecom-agent \
+            -f deploy/helm/ecom-agent/values-production.yaml \
+            --set-string env.RAG_MIN_RELEVANCE_SCORE=0.5 > /tmp/prod.yaml
           helm template ci deploy/helm/ecom-agent -f deploy/helm/ecom-agent/values-kind.yaml > /tmp/kind.yaml
           if grep -q 'REPLACE_ME' /tmp/prod.yaml; then echo "prod 渲染含 REPLACE_ME"; exit 1; fi
           # Production runs as non-root; every mutable/cross-pod path must be
@@ -124,12 +140,118 @@ jobs:
           TEST_S3_BUCKET: "ecom"
           TEST_MINIO_ACCESS_KEY: "minioadmin"
           TEST_MINIO_SECRET_KEY: "minioadmin"
+      - name: 真实 MySQL 迁移 011 升级测试（存量回填 / 唯一键替换 / 新删除表）
+        run: pytest tests/integration/test_migration_011_mysql.py -q
+        env:
+          TEST_MYSQL_URL: "mysql+pymysql://ecom:ecom@localhost:13306/ecom?charset=utf8mb4"
+      - name: 真实 ES + 假 embedding/reranker RAG 协议测试（hybrid/RRF/降级）
+        run: pytest tests/integration/test_rag_es_protocol.py -q
+        env:
+          TEST_ES_URL: "http://localhost:19200"
 
-  # ---------- nightly 层：真实 embedding/reranker 检索门禁 ----------
-  retrieval-nightly:
+  # ---------- RAG E2E：构建索引 + 真实 embedding/LLM，显式 RAG_E2E_REQUIRED ----------
+  rag-e2e:
     runs-on: ubuntu-latest
     needs: [test]
-    if: ${{ github.event_name == 'schedule' && secrets.LABEL_EMBEDDING_API_KEY != '' }}
+    steps:
+      - name: 检查 RAG E2E 凭据
+        id: rag-e2e-credentials
+        env:
+          LABEL_EMBEDDING_API_KEY: ${{ secrets.LABEL_EMBEDDING_API_KEY }}
+        run: |
+          if [ -n "$LABEL_EMBEDDING_API_KEY" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "未配置 LABEL_EMBEDDING_API_KEY，跳过真实 RAG E2E"
+          fi
+      - uses: actions/checkout@v4
+        if: ${{ steps.rag-e2e-credentials.outputs.available == 'true' }}
+      - uses: actions/setup-python@v5
+        if: ${{ steps.rag-e2e-credentials.outputs.available == 'true' }}
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        if: ${{ steps.rag-e2e-credentials.outputs.available == 'true' }}
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements-dev.txt
+      - name: 构建 KB 索引（numpy，真实 embedding）
+        if: ${{ steps.rag-e2e-credentials.outputs.available == 'true' }}
+        run: python -m app.scripts.build_kb_index --backend numpy
+        env:
+          OPENAI_API_KEY: ${{ secrets.LABEL_EMBEDDING_API_KEY }}
+          EMBEDDING_PROVIDER: openai
+          KB_WRITE_LOCK_BACKEND: file
+      - name: RAG 端到端（search_knowledge 成功 + 命中预期文档 + Agent 实际调用）
+        if: ${{ steps.rag-e2e-credentials.outputs.available == 'true' }}
+        run: pytest tests/integration/test_rag_e2e.py -q
+        env:
+          RAG_E2E_REQUIRED: "true"
+          TEST_RAG_BACKEND: numpy
+          OPENAI_API_KEY: ${{ secrets.LABEL_EMBEDDING_API_KEY }}
+          EMBEDDING_PROVIDER: openai
+          KB_WRITE_LOCK_BACKEND: file
+
+  # ---------- nightly 层：ES hybrid 召回回归（不做阈值校准） ----------
+  retrieval-recall-regression:
+    runs-on: ubuntu-latest
+    needs: [test]
+    if: ${{ github.event_name == 'schedule' }}
+    steps:
+      - name: 检查 nightly RAG 凭据
+        id: nightly-credentials
+        env:
+          LABEL_EMBEDDING_API_KEY: ${{ secrets.LABEL_EMBEDDING_API_KEY }}
+        run: |
+          if [ -n "$LABEL_EMBEDDING_API_KEY" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "未配置 LABEL_EMBEDDING_API_KEY，跳过 nightly RAG 回归"
+          fi
+      - uses: actions/checkout@v4
+        if: ${{ steps.nightly-credentials.outputs.available == 'true' }}
+      - uses: actions/setup-python@v5
+        if: ${{ steps.nightly-credentials.outputs.available == 'true' }}
+        with:
+          python-version: "3.11"
+      - name: 启动真实 ES（compose）
+        if: ${{ steps.nightly-credentials.outputs.available == 'true' }}
+        run: |
+          docker compose -f deploy/compose/docker-compose.yml up -d elasticsearch
+          sleep 40
+      - name: Install dependencies
+        if: ${{ steps.nightly-credentials.outputs.available == 'true' }}
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements-dev.txt
+      - name: ES hybrid 召回回归（v3 959 条冻结集；仅检查召回/排序退化）
+        if: ${{ steps.nightly-credentials.outputs.available == 'true' }}
+        # 说明：本任务不宣称生产同构、不做阈值校准（RRF 分无语义，脚本亦禁止
+        # --calibrate）；生产同构的阈值/精排验收见 rag-release（受保护环境）。
+        run: |
+          python -m app.scripts.build_kb_index --backend es
+          python -m app.scripts.run_retrieval_eval \
+            --dataset app/evaluation/retrieval_cases_v3.json \
+            --json-out /tmp/recall_regression_v3.json
+        env:
+          OPENAI_API_KEY: ${{ secrets.LABEL_EMBEDDING_API_KEY }}
+          EMBEDDING_PROVIDER: openai
+          RAG_BACKEND: es
+          RAG_HYBRID: "true"
+          RAG_HYBRID_RECALL_K: "60"
+          RAG_RERANK: none
+          ES_URL: "http://localhost:19200"
+          KB_WRITE_LOCK_BACKEND: file
+
+  # ---------- 生产 RAG 发布候选验收（受保护环境，手工触发） ----------
+  # 顺序：重建 generation → dev 校准取阈值 → 该阈值重跑完整 dev → holdout 一次
+  # → 生成生产 values 覆盖；部署侧应用阈值后再激活同一候选并灰度。
+  rag-release:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' }}
+    environment: production-rag
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -139,13 +261,104 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install -r requirements-dev.txt
-      - name: 构建检索索引 + 535 回归集检索门禁（需 embedding key；无 key 自动跳过）
-        run: |
-          python -m app.scripts.build_kb_index --backend numpy
-          python -m app.scripts.run_retrieval_eval --dataset app/evaluation/retrieval_cases.json --calibrate --calibration-dataset app/evaluation/retrieval_cases.json --json-out /tmp/retrieval.json
+      - name: 校验受保护发布环境
         env:
-          OPENAI_API_KEY: ${{ secrets.LABEL_EMBEDDING_API_KEY }}
-          KB_WRITE_LOCK_BACKEND: file
+          RAG_RELEASE_ES_URL: ${{ secrets.RAG_RELEASE_ES_URL }}
+          RAG_RELEASE_REDIS_URL: ${{ secrets.RAG_RELEASE_REDIS_URL }}
+          SOPHNET_API_KEY: ${{ secrets.SOPHNET_API_KEY }}
+          SOPHNET_EMBEDDING_URL: ${{ secrets.SOPHNET_EMBEDDING_URL }}
+          SOPHNET_EASYLLM_ID: ${{ secrets.SOPHNET_EASYLLM_ID }}
+          RERANK_ENDPOINT_URL: ${{ secrets.RERANK_ENDPOINT_URL }}
+        run: |
+          missing=0
+          for key in RAG_RELEASE_ES_URL RAG_RELEASE_REDIS_URL SOPHNET_API_KEY SOPHNET_EMBEDDING_URL SOPHNET_EASYLLM_ID RERANK_ENDPOINT_URL; do
+            if [ -z "${!key}" ]; then
+              echo "production-rag 缺少必填 secret: $key"
+              missing=1
+            fi
+          done
+          test "$missing" -eq 0
+      - name: 文档治理检查（生产值要求 RAG_DOC_METADATA_REQUIRED=true）
+        run: RAG_DOC_METADATA_REQUIRED=true python -m app.scripts.check_kb_governance
+        env:
+          RAG_DOC_METADATA_REQUIRED: "true"
+      - name: 重建新 generation（构建 + 验证；不激活）
+        run: |
+          python -m app.scripts.build_kb_index --backend es \
+            --no-activate --json-out /tmp/rag_release_candidate.json
+        env: &rag_prod_env
+          OPENAI_API_KEY: ${{ secrets.SOPHNET_API_KEY }}
+          EMBEDDING_PROVIDER: sophnet
+          EMBEDDING_MODEL: bge-m3
+          SOPHNET_EMBEDDING_DIMENSIONS: "1024"
+          SOPHNET_EMBEDDING_URL: ${{ secrets.SOPHNET_EMBEDDING_URL }}
+          SOPHNET_EASYLLM_ID: ${{ secrets.SOPHNET_EASYLLM_ID }}
+          SOPHNET_API_KEY: ${{ secrets.SOPHNET_API_KEY }}
+          RAG_BACKEND: es
+          RAG_HYBRID: "true"
+          RAG_HYBRID_RECALL_K: "60"
+          RAG_RERANK: bge-reranker-v2-m3
+          RERANK_ENDPOINT_URL: ${{ secrets.RERANK_ENDPOINT_URL }}
+          RERANK_API_KEY: ${{ secrets.RERANK_API_KEY }}
+          ES_URL: ${{ secrets.RAG_RELEASE_ES_URL }}
+          ES_USER: ${{ secrets.RAG_RELEASE_ES_USER }}
+          ES_PASSWORD: ${{ secrets.RAG_RELEASE_ES_PASSWORD }}
+          REDIS_URL: ${{ secrets.RAG_RELEASE_REDIS_URL }}
+          REDIS_REQUIRED: "true"
+          KB_WRITE_LOCK_BACKEND: redis
+          KB_GENERATION_PATH: app/sessions/kb_generations.json
+          RAG_DOC_METADATA_REQUIRED: "true"
+          APP_ENV: prod
+      - name: dev 校准取阈值（RRF 模式禁止校准，此处必须挂精排）
+        run: |
+          python -m app.scripts.run_retrieval_eval \
+            --dataset app/evaluation/retrieval_cases_v3.json \
+            --calibrate --calibration-dataset app/evaluation/retrieval_cases_v3.json \
+            --candidate /tmp/rag_release_candidate.json \
+            --release-profile --json-out /tmp/rag_release_dev_cal.json
+        env: *rag_prod_env
+      - name: 固化本次发布阈值
+        run: |
+          python - <<'PY'
+          import json
+          import math
+          import os
+
+          report = json.load(open("/tmp/rag_release_dev_cal.json", encoding="utf-8"))
+          threshold = report.get("thresholds", {}).get("min_score")
+          if not isinstance(threshold, (int, float)) or not math.isfinite(threshold):
+              raise SystemExit("校准报告未生成有限 min_score")
+          with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as stream:
+              stream.write(f"RAG_MIN_RELEVANCE_SCORE={threshold:.12g}\n")
+          PY
+      - name: 完整 dev 门禁（固定最低门槛，degraded 直接失败）
+        run: |
+          python -m app.scripts.run_retrieval_eval \
+            --dataset app/evaluation/retrieval_cases_v3.json \
+            --candidate /tmp/rag_release_candidate.json \
+            --min-score "$RAG_MIN_RELEVANCE_SCORE" \
+            --release-profile --json-out /tmp/rag_release_dev.json
+        env: *rag_prod_env
+      - name: holdout 一次性验收（禁止反向调参）
+        run: |
+          python -m app.scripts.run_retrieval_eval \
+            --dataset app/evaluation/holdout_cases_v3.json \
+            --candidate /tmp/rag_release_candidate.json \
+            --min-score "$RAG_MIN_RELEVANCE_SCORE" \
+            --release-profile --json-out /tmp/rag_release_holdout.json
+        env: *rag_prod_env
+      - name: 生成待部署的生产阈值覆盖
+        run: |
+          printf 'env:\n  RAG_MIN_RELEVANCE_SCORE: "%s"\n' \
+            "$RAG_MIN_RELEVANCE_SCORE" > /tmp/rag_release_values.yaml
+      - name: 归档发布包（部署阈值后再激活同一候选）
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: rag-release-reports
+          path: |
+            /tmp/rag_release_*.json
+            /tmp/rag_release_values.yaml
 
   # ---------- 手工 release 层：317 条独立 Judge 评测 ----------
   release-eval:

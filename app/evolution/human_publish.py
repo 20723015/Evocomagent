@@ -360,6 +360,15 @@ class HumanBatchPublisher:
                     vectors, metas, threshold=self._dedup.q_threshold
                 )
             )
+            # 答案侧再跑一轮 pairwise：问题措辞不同、答案近同的候选同样
+            # 构成批内重复，只查问题侧会漏。两侧淘汰下标取并集，答案侧
+            # 用答案阈值（通常比问题侧宽松）。
+            a_vectors = self._dedup.embed([cand["answer"] for _i, cand in valid])
+            dropped |= set(
+                drop_in_run_duplicates(
+                    a_vectors, metas, threshold=self._dedup.a_threshold
+                )
+            )
             for idx in sorted(dropped):
                 item, cand = valid[idx]
                 results.append(

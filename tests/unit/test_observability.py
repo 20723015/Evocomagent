@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ast
 import json
 import re
 from pathlib import Path
@@ -28,13 +29,24 @@ def _iter_py_files(root: Path):
 # 4.1 print 清零（结构化日志替换）
 # ============================================================
 def test_no_print_in_core_modules():
+    """AST 检查在线服务核心包不得有裸 print 调用。
+
+    修复计划·五：改用 AST（不再误伤注释/字符串字面量），且只查在线服务核心包
+    ——CLI 脚本（app/scripts/）允许终端输出，显式排除。
+    """
     offenders = []
     for p in _iter_py_files(APP_ROOT):
-        text = p.read_text(encoding="utf-8")
-        # 排除注释/字符串里的字面量太低效——直接数裸 print( 调用
-        for m in re.finditer(r"(?<![\w.])print\s*\(", text):
-            line = text[:m.start()].count("\n") + 1
-            offenders.append(f"{p.relative_to(APP_ROOT)}:{line}")
+        rel = p.relative_to(APP_ROOT)
+        if "scripts" in rel.parts:  # CLI 脚本允许 print（终端输出）
+            continue
+        tree = ast.parse(p.read_text(encoding="utf-8"), filename=str(p))
+        for node in ast.walk(tree):
+            if (
+                isinstance(node, ast.Call)
+                and isinstance(node.func, ast.Name)
+                and node.func.id == "print"
+            ):
+                offenders.append(f"{rel}:{node.lineno}")
     assert offenders == [], f"以下位置仍使用 print（应改为 structlog）: {offenders}"
 
 

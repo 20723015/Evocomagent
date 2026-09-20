@@ -1,3 +1,8 @@
+---
+status: active
+authority: platform
+effective_date: 2026-09-12
+---
 # 并夕夕 常见问题 FAQ
 
 ## 一、订单与支付

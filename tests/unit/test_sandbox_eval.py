@@ -40,7 +40,7 @@ def test_sandbox_uses_explicit_overrides_and_leaves_settings_untouched(
             captured["agent"] = agent
             return agent
 
-    sandbox = Probe(mode="single", tmp_root=str(tmp_path / "sbx"))
+    sandbox = Probe(tmp_root=str(tmp_path / "sbx"))
     trace = sandbox.run(EvalCase(id="c1", description="离线用例", turns=["你好"]))
 
     assert trace.case_id == "c1"
@@ -72,10 +72,137 @@ def test_sandbox_freezes_temperature_during_run(tmp_path, reset_settings,
             captured["temperature"] = agent.temperature  # 构造完成后的 Agent 温度
             return agent
 
-    sandbox = Probe(mode="single", tmp_root=str(tmp_path / "sbx"))
+    sandbox = Probe(tmp_root=str(tmp_path / "sbx"))
     sandbox.run(EvalCase(id="c2", description="d", turns=["你好"]))
     assert captured["temperature"] == 0.0  # 评测期间归零（行为变更）
     assert settings.temperature == 0.7  # 全局不受影响
+
+
+def test_sandbox_collects_react_protocol_fields(tmp_path, reset_settings,
+                                                monkeypatch):
+    """步数余量感知（修改5）：每轮后从 _last_turn_ctx 采集协议级观测。
+
+    步数/纠错按轮累计（求和）；预告与强制终答取「任一轮触发」。
+    """
+    from types import SimpleNamespace
+
+    from app.schemas.response import IntentType
+
+    settings.evolve_capture_enabled = False
+
+    def fake_chat(self, user_input):
+        self._last_turn_ctx = SimpleNamespace(
+            react_steps=3, steps_margin_hint=True,
+            forced_finalize=False, protocol_corrections=1,
+        )
+        return SimpleNamespace(
+            reply="ok", intent=IntentType.GREETING, requires_human=False,
+        )
+
+    monkeypatch.setattr("app.agent.chat.EcomAgent.chat", fake_chat)
+    sandbox = Sandbox(tmp_root=str(tmp_path / "sbx"))
+    trace = sandbox.run(EvalCase(id="rp1", description="d", turns=["第一轮", "第二轮"]))
+
+    assert trace.error is None
+    assert trace.react_steps == 6  # 2 轮 × 3 步
+    assert trace.steps_margin_hint is True
+    assert trace.forced_finalize is False
+    assert trace.protocol_corrections == 2
+    snapshot = trace.to_dict()
+    assert snapshot["react_steps"] == 6
+    assert snapshot["steps_margin_hint"] is True
+
+
+def test_sandbox_collects_citation_verdict_from_turn_ctx(
+    tmp_path, reset_settings, monkeypatch,
+):
+    """回归（P0）：引用 verdict 从 _last_turn_ctx.citation_verdict 采集。
+
+    单 Agent 重构后 verdict 落在 AgentTurnContext 而非实例属性——
+    沙箱读 _last_citation_verdict 恒 None，引用用例被全数判 0（假阴性）。
+    同时验证 sources 并集与全轮回复留痕（泄露检查覆盖每一轮）。
+    """
+    from types import SimpleNamespace
+
+    from app.schemas.response import IntentType
+
+    settings.evolve_capture_enabled = False
+
+    def fake_chat(self, user_input):
+        # 与真实 AgentTurnContext 同形（含 citation_verdict/sources）
+        self._last_turn_ctx = SimpleNamespace(
+            react_steps=1, steps_margin_hint=False,
+            forced_finalize=False, protocol_corrections=0,
+            citation_verdict={"cited": ["退货政策.md"], "matched": ["退货政策.md"], "missing": []},
+            sources={"退货政策"},
+        )
+        return SimpleNamespace(
+            reply=f"回复[{user_input}]", intent=IntentType.GREETING,
+            requires_human=False,
+        )
+
+    monkeypatch.setattr("app.agent.chat.EcomAgent.chat", fake_chat)
+    sandbox = Sandbox(tmp_root=str(tmp_path / "sbx"))
+    trace = sandbox.run(EvalCase(id="cit1", description="d", turns=["第一轮", "第二轮"]))
+
+    assert trace.error is None
+    assert trace.citation_verdict == {
+        "cited": ["退货政策.md"], "matched": ["退货政策.md"], "missing": [],
+    }
+    assert trace.retrieved_sources == ["退货政策"]
+    assert trace.turn_replies == ["回复[第一轮]", "回复[第二轮]"]
+
+
+def test_sandbox_report_drops_raw_tool_outputs(tmp_path):
+    """P1：报告快照默认不携带原始工具结果（2.2 隐私口径）；
+    include_tool_outputs=True 时（离线诊断脚本）才落原文。"""
+    from app.evaluation.trace import ToolObservation, RunTrace
+
+    trace = RunTrace(case_id="c", turns=["t"])
+    trace.tool_observations.append(ToolObservation(
+        name="query_order", arguments={"order_id": "ORD-1"},
+        result='{"success": true, "order": {"amount": 4697.00}}',
+        outcome={"success": True},
+    ))
+
+    default_snapshot = trace.to_dict()
+    assert "tool_outputs" not in default_snapshot
+    # 结构化摘要在（可判定字段），金额等敏感明细不在
+    assert default_snapshot["tool_outcomes"][0]["outcome"] == {"success": True}
+
+    full = trace.to_dict(include_tool_outputs=True)
+    assert "4697" in full["tool_outputs"][0]["result"]
+
+
+def test_sandbox_resets_stale_session_file(tmp_path, reset_settings, monkeypatch):
+    """同一 Sandbox 实例重跑同 case：上一次会话/播种目录被清理，不串轮。"""
+    from types import SimpleNamespace
+
+    from app.schemas.response import IntentType
+
+    settings.evolve_capture_enabled = False
+
+    def fake_chat(self, user_input):
+        # 侧写真实会话文件的写入（LocalFileSessionStore 落盘）
+        from pathlib import Path
+
+        session_file = Path(self.session_path)
+        session_file.write_text("{}", encoding="utf-8")
+        return SimpleNamespace(
+            reply="ok", intent=IntentType.GREETING, requires_human=False,
+        )
+
+    monkeypatch.setattr("app.agent.chat.EcomAgent.chat", fake_chat)
+    sandbox = Sandbox(tmp_root=str(tmp_path / "sbx"))
+    case = EvalCase(id="dup", description="d", turns=["第一轮"])
+
+    sandbox.run(case)
+    assert sandbox.session_path_for("dup").endswith("dup.json")
+    assert (tmp_path / "sbx" / "dup.json").exists()
+
+    # 第二次运行：残留会话文件先被删除（重跑可复现，不带上轮历史）
+    trace = sandbox.run(case)
+    assert trace.error is None
 
 
 # ============================================================

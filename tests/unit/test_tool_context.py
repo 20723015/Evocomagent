@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import json
 
+import pytest
+
 from app.agent.context import ToolContext
 from app.agent.tools import registry
 from app.agent.tools.manager import ToolManager
@@ -44,9 +46,13 @@ def test_list_user_orders_filters_by_user_id():
 
 
 def test_list_user_orders_legacy_without_ctx_returns_all():
-    # 无 ctx（旧脚本直调）保持返回全部，教学场景不回退
+    # 无 ctx（旧脚本直调）保持不做归属过滤，教学场景不回退；
+    # P2-1 扩容后返回有界（最近 N 条），总量见 total。
     all_orders = list_user_orders()
-    assert all_orders["count"] == 5
+    assert all_orders["total"] > 1
+    assert all_orders["count"] <= 20
+    if all_orders["total"] > all_orders["count"]:
+        assert all_orders["truncated"] is True
 
 
 # ------------------------------------------------------------
@@ -57,13 +63,8 @@ class _StubLTM:
     interaction_summaries = [{"summary": "老客，偏好顺丰"}]
 
 
-class _StubSTM:
-    facts = ["用户住在深圳"]
-
-
 class _StubMemory:
     memory_enabled = True
-    stm = _StubSTM()
     ltm = _StubLTM()
 
 
@@ -76,7 +77,7 @@ def test_recall_user_memory_uses_ctx_memory():
     ctx = ToolContext(user_id="u1", memory=_StubMemory())
     result = recall_user_memory(ctx=ctx)
     assert result["success"] is True
-    assert result["short_term_facts"] == ["用户住在深圳"]
+    assert result["long_term_facts"] == []
     assert result["recent_interactions"] == ["老客，偏好顺丰"]
 
 
@@ -117,7 +118,8 @@ def test_registry_execute_tool_passes_ctx():
 
 def test_registry_execute_tool_legacy_without_ctx():
     out = json.loads(registry.execute_tool("list_user_orders", {}))
-    assert out["count"] == 5
+    assert out["total"] > 1  # 无身份 → 不做归属过滤（legacy 契约）
+    assert out["count"] <= 20
 
 
 def test_registry_unknown_tool_returns_error():
@@ -135,9 +137,101 @@ def test_tool_manager_passes_ctx_to_local_tools():
 def test_data_tools_accept_ctx_kwarg_and_legacy_positional():
     # 阶段一后所有工具签名带 ctx（末位），旧式调用仍可用
     from app.agent.tools.order import query_order
-    from app.agent.tools.refund import apply_refund
+    from app.agent.tools.refund import submit_refund_application
+    from app.integrations.commerce.mock import MockCommerceGateway
+    from app.integrations.commerce import set_gateway
 
     assert query_order("ORD-20240115-001")["success"] is True
     assert query_order("ORD-20240115-001", ctx=ToolContext(user_id="u1"))["success"] is True
-    assert apply_refund("ORD-20240115-001", "尺码不合适",
-                        ctx=ToolContext(user_id="u1"))["success"] is True
+
+    set_gateway(MockCommerceGateway())
+    try:
+        ctx = ToolContext(user_id="u1", session_id="s")
+        assert submit_refund_application(
+            "ORD-20240115-001", "尺码不合适", ctx=ctx)["success"] is True
+    finally:
+        set_gateway(None)
+
+
+# ------------------------------------------------------------
+# MCP connect 握手超时（中危修复 A3）
+# ------------------------------------------------------------
+def test_mcp_connect_handshake_timeout_raises(monkeypatch):
+    """传输层接受连接但 initialize 永不完成 → connect 显式抛 ConnectionError，
+    不再静默返回空工具列表（上层误判「MCP 可用但无工具」）。"""
+    import asyncio
+    from contextlib import asynccontextmanager
+
+    import app.mcp_client.client as mcp_mod
+
+    class _HangSession:
+        def __init__(self, read, write):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *exc):
+            return False
+
+        async def initialize(self):
+            await asyncio.Event().wait()  # 永不完成
+
+    @asynccontextmanager
+    async def _fake_transport(url, http_client=None):
+        yield (object(), object(), None)
+
+    monkeypatch.setattr(mcp_mod, "streamable_http_client", _fake_transport)
+    monkeypatch.setattr(mcp_mod, "ClientSession", _HangSession)
+    monkeypatch.setattr(mcp_mod, "_CONNECT_TIMEOUT_SECONDS", 0.2)
+
+    client = mcp_mod.MCPClient("http://mcp.example/sse")
+    with pytest.raises(ConnectionError, match="握手超时"):
+        client.connect()
+    # 后台协程仍挂在 initialize（daemon 线程），进程退出时自然回收
+
+
+def test_tool_manager_mcp_connect_failure_falls_back_to_local(monkeypatch):
+    """connect 抛错（含握手超时）→ ToolManager 降级本地工具并清掉 MCP 客户端。"""
+    import app.mcp_client
+
+    class _TimeoutClient:
+        def __init__(self, server_url, auth_token=""):
+            pass
+
+        def connect(self):
+            raise ConnectionError("MCP 握手超时（30s）")
+
+        def close(self):
+            pass
+
+    monkeypatch.setattr(app.mcp_client, "MCPClient", _TimeoutClient)
+    manager = ToolManager(use_mcp=True, mcp_server_url="http://mcp.example/sse")
+    names = {td["function"]["name"] for td in manager.tool_definitions}
+    assert "list_user_orders" in names
+    assert manager._mcp_client is None
+
+
+# ------------------------------------------------------------
+# search_knowledge queries 类型守卫（低危修复 A8）
+# ------------------------------------------------------------
+def test_validate_arguments_drops_non_list_queries():
+    """schema 声明 array 但值不是 list → 键被丢弃（可选参数回退单 query
+    路径）；修复前字符串原样放行，被逐字符当作子查询。"""
+    from app.agent.tools.registry import _validate_arguments
+
+    cleaned, err = _validate_arguments(
+        "search_knowledge",
+        {"query": "七天无理由退货", "queries": "七天无理由退货"},
+    )
+    assert err is None
+    assert "queries" not in cleaned
+    assert cleaned["query"] == "七天无理由退货"
+
+    # 合法数组不受影响
+    cleaned2, err2 = _validate_arguments(
+        "search_knowledge",
+        {"query": "q", "queries": ["退货", "运费"]},
+    )
+    assert err2 is None
+    assert cleaned2["queries"] == ["退货", "运费"]

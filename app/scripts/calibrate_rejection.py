@@ -30,9 +30,18 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(ROOT))
 
-from app.agent.retriever_factory import final_search
+from app.agent.rag.rejection import (  # noqa: F401 —— 同源实现，历史导入面保留
+    bigram_set,
+    compute_signals,
+    lexical_coverage,
+    should_reject,
+)
+from app.agent.rag.retriever_factory import final_search
 from app.config.settings import settings
 from app.evaluation.retrieval_metrics import load_cases
+from app.observability.logging import get_logger
+
+log = get_logger("app.scripts.calibrate_rejection")
 
 DEFAULT_PARAMS_PATH = ROOT / "artifacts" / "eval" / "v2" / "retrieval-rejection" / "params.json"
 DEV_FRACTION = 0.8  # dev/holdout 切分（按 case id 哈希，确定性）
@@ -40,87 +49,40 @@ MIN_NEGATIVE_REJECT = 0.90   # 负例拒绝率门禁（计划）
 MAX_POSITIVE_REJECT = 0.05   # 正例误拒容忍
 
 
+class ScoreScaleError(RuntimeError):
+    """检索分数处于 RRF/降级尺度（量纲不可比），校准必须中止。"""
+
+
 # ============================================================
-# 信号
+# 信号（实现收敛到 app/agent/rag/rejection.py，生产/校准同源）
 # ============================================================
-def bigram_set(text: str) -> set[str]:
-    """汉字 bigram + ASCII 整词（与记忆相关性同一口径）。"""
-    import re
-    import unicodedata
-
-    value = unicodedata.normalize("NFKC", text or "")
-    tokens: set[str] = set()
-    tokens.update(w.casefold() for w in re.findall(r"[A-Za-z0-9]+", value))
-    run: list[str] = []
-    for ch in value:
-        if "\u4e00" <= ch <= "\u9fff":
-            run.append(ch)
-        else:
-            if run:
-                tokens.update(f"{a}{b}" for a, b in zip(run, run[1:]))
-                run = []
-    if run:
-        tokens.update(f"{a}{b}" for a, b in zip(run, run[1:]))
-    return tokens
-
-
-def lexical_coverage(query: str, text: str) -> float:
-    """query 与文本的词面覆盖率（|∩| / |query tokens|）。"""
-    q_tokens = bigram_set(query)
-    if not q_tokens:
-        return 0.0
-    t_tokens = bigram_set(text)
-    return len(q_tokens & t_tokens) / len(q_tokens)
-
-
 def case_signals(retriever, case: dict, timeout=None) -> dict:
     """单用例的联合拒答信号（走统一 final_search 口径）。"""
     outcome = final_search(
         retriever, case["query"], int(case.get("k", 5)),
         min_score=None, timeout=timeout,
     )
+    # 逐例守卫（A5 补）：reranker 运行中故障回退 RRF/降级分时，配置级守卫
+    # （rrf_mode）看不见——在 RRF 尺度上校准会静默冻结量纲不可比的阈值。
+    if outcome.degraded or outcome.score_source == "rrf":
+        raise ScoreScaleError(
+            f"case {case.get('id', '')} 分数处于 RRF/降级尺度"
+            f"（score_source={outcome.score_source}, degraded={outcome.degraded},"
+            f" reason={outcome.degraded_reason or '-'}），禁止参与校准"
+        )
     hits = outcome.hits
-    top1 = hits[0].score if hits else None
-    gap = (hits[0].score - hits[1].score) if len(hits) > 1 else None
-    coverage = lexical_coverage(
-        case["query"], hits[0].chunk.text if hits else "",
-    )
-    rerank = getattr(hits[0], "rerank_score", None) if hits else None
-    if rerank is None and hits:
-        rerank = getattr(hits[0].chunk, "rerank_score", None)
     expected = set(case.get("expected", []) or [])
     hit_keys = {
         h.chunk.source_path or h.chunk.doc for h in hits
     }
     is_hit = bool(expected & hit_keys) if expected else False
-    return {
+    signals = compute_signals(hits, case["query"])
+    signals.update({
         "id": case.get("id", ""),
         "negative": not expected,
-        "top1": top1,
-        "gap": gap,
-        "coverage": coverage,
-        "rerank": rerank,
         "is_hit": is_hit,
-    }
-
-
-def should_reject(signal: dict, params: dict) -> bool:
-    """联合信号拒答判定（确定性）。"""
-    top1 = signal.get("top1")
-    if top1 is None:
-        return True
-    if top1 < params.get("min_top1", 0.0):
-        return True
-    gap = signal.get("gap")
-    if gap is not None and gap < params.get("min_gap", 0.0):
-        return True
-    if signal.get("coverage", 0.0) < params.get("min_coverage", 0.0):
-        return True
-    rerank = signal.get("rerank")
-    min_rerank = params.get("min_rerank")
-    if min_rerank is not None and rerank is not None and rerank < min_rerank:
-        return True
-    return False
+    })
+    return signals
 
 
 # ============================================================
@@ -167,31 +129,63 @@ def evaluate_params(signals: list[dict], params: dict) -> dict:
     }
 
 
+def _sample_grid(values: list[float], n: int) -> list[float]:
+    """等距抽样（保序去重）；0.0 恒在首位（= 该信号不设阈值的基准档）。"""
+    picked = values[:: max(1, len(values) // n)][:n]
+    return [0.0] + [v for v in picked if v > 0.0]
+
+
 def grid_search(signals: list[dict]) -> tuple[dict, dict]:
-    """dev 网格搜索：先满足双门禁，再最大化负例拒绝率。"""
+    """dev 网格搜索：先满足双门禁，再最大化负例拒绝率。
+
+    搜索 top1 × gap × coverage 三信号组合（rerank 未挂精排时恒 None，不进
+    网格；挂上后按需扩展）。双门禁（负例 ≥90%、正例 ≤5%）不可达时回落
+    「正例容忍内的最优尽力档」，并在 metrics 标 ``feasible=False`` +
+    ``fallback=best_effort``——冻结记录如实留痕，不假装达标。
+    """
     tops = sorted({round(s["top1"], 3) for s in signals if s["top1"] is not None})
-    coverages = sorted({round(s["coverage"], 2) for s in signals})
-    grid_top1 = [0.0] + tops[:: max(1, len(tops) // 12)][:12]
-    grid_cov = [0.0] + coverages[:: max(1, len(coverages) // 6)][:6]
-    best: tuple[dict, dict] | None = None
+    coverages = sorted({round(s["coverage"], 3) for s in signals})
+    gaps = sorted({
+        round(s["gap"], 4) for s in signals if s.get("gap") is not None
+    })
+    grid_top1 = _sample_grid(tops, 12)
+    grid_gap = _sample_grid(gaps, 6)
+    grid_cov = _sample_grid(coverages, 6)
+
+    best_gate: tuple[dict, dict] | None = None
+    best_effort: tuple[dict, dict] | None = None
     for min_top1 in grid_top1:
-        for min_coverage in grid_cov:
-            params = {"min_top1": min_top1, "min_gap": 0.0,
-                      "min_coverage": min_coverage}
-            metrics = evaluate_params(signals, params)
-            neg = metrics["negative_reject_rate"]
-            pos = metrics["positive_reject_rate"]
-            if neg is None or pos is None:
-                continue
-            if neg < MIN_NEGATIVE_REJECT or pos > MAX_POSITIVE_REJECT:
-                continue
-            if best is None or neg > best[1]["negative_reject_rate"]:
-                best = (params, metrics)
-    return best if best else ({"min_top1": 0.0, "min_gap": 0.0,
-                               "min_coverage": 0.0},
-                              evaluate_params(signals, {
-                                  "min_top1": 0.0, "min_gap": 0.0,
-                                  "min_coverage": 0.0}))
+        for min_gap in grid_gap:
+            for min_coverage in grid_cov:
+                if min_top1 == 0.0 and min_gap == 0.0 and min_coverage == 0.0:
+                    continue
+                params = {"min_top1": min_top1, "min_gap": min_gap,
+                          "min_coverage": min_coverage}
+                metrics = evaluate_params(signals, params)
+                neg = metrics["negative_reject_rate"]
+                pos = metrics["positive_reject_rate"]
+                if neg is None or pos is None:
+                    continue
+                if pos > MAX_POSITIVE_REJECT:
+                    continue
+                if best_effort is None or neg > best_effort[1]["negative_reject_rate"]:
+                    best_effort = (params, metrics)
+                if neg >= MIN_NEGATIVE_REJECT and (
+                    best_gate is None
+                    or neg > best_gate[1]["negative_reject_rate"]
+                ):
+                    best_gate = (params, metrics)
+    chosen = best_gate or best_effort
+    if chosen is None:  # 全部组合都超正例容忍（极端数据集）：退基准档
+        params = {"min_top1": 0.0, "min_gap": 0.0, "min_coverage": 0.0}
+        metrics = evaluate_params(signals, params)
+        metrics.update(feasible=False, fallback="baseline_zero")
+        return params, metrics
+    params, metrics = chosen
+    metrics = dict(metrics)
+    metrics["feasible"] = best_gate is not None
+    metrics["fallback"] = "" if best_gate is not None else "best_effort"
+    return params, metrics
 
 
 def _collect_signals(case_split: list[dict]) -> list[dict]:
@@ -211,13 +205,29 @@ def main(argv: list[str] | None = None) -> int:
                         help="允许重跑 holdout（记档，正式发布结论无效）")
     args = parser.parse_args(argv)
 
+    # 守卫（A5）：RRF/降级分无语义，禁止在其上校准阈值——否则会静默冻结
+    # 一批量纲不可比的「垃圾阈值」并写进 settings 默认值。
+    # 与 run_retrieval_eval 的 --calibrate 守卫同源（rejection.rrf_mode）。
+    from app.agent.rag.rejection import rrf_mode
+
+    if rrf_mode():
+        log.error(
+            "RRF 模式（hybrid 且未挂精排）分数无语义，禁止校准联合拒绝阈值："
+            "请启用 reranker（RAG_RERANK + RERANK_ENDPOINT_URL）或改用纯向量配置"
+        )
+        return 2
+
     cases = load_cases(Path(args.dataset))
     dev_cases, holdout_cases = split_cases(cases)
     out_path = Path(args.out)
     out_path.parent.mkdir(parents=True, exist_ok=True)
 
     if args.dev:
-        signals = _collect_signals(dev_cases)
+        try:
+            signals = _collect_signals(dev_cases)
+        except ScoreScaleError as exc:
+            log.error("校准中止（逐例分数尺度守卫）：%s", exc)
+            return 2
         params, metrics = grid_search(signals)
         record = {
             "version": 1,
@@ -253,7 +263,11 @@ def main(argv: list[str] | None = None) -> int:
         if record.get("dataset_hash") != dataset_hash(cases):
             log.error("数据集哈希与冻结时不一致，先重新 dev 校准")
             return 4
-        signals = _collect_signals(holdout_cases)
+        try:
+            signals = _collect_signals(holdout_cases)
+        except ScoreScaleError as exc:
+            log.error("holdout 验证中止（逐例分数尺度守卫，一次性资格未消耗）：%s", exc)
+            return 2
         metrics = evaluate_params(signals, record["params"])
         record["holdout_used"] = True
         record["holdout_metrics"] = metrics

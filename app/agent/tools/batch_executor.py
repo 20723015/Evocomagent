@@ -1,6 +1,6 @@
 """工具批次执行器（Agent能力强化计划·改造二 + 修复计划）：原序分段并行 + 双层限流。
 
-收敛主 Agent（chat.py）与 SubAgent（agents.py）的循环内机制，不再各复制一套：
+收敛 ReAct 循环内机制（原 chat.py 与 multi-agent 侧各一套，后者已剥离）：
 
 ToolBatchExecutor（pod 级，无状态；app.state 持有；CLI/评估自建并负责 close）
 - 参数解析（json.loads 失败 → 错误 JSON，错误回模型自愈）
@@ -40,13 +40,14 @@ from concurrent.futures import Future, ThreadPoolExecutor
 from concurrent.futures import TimeoutError as FutureTimeout
 from dataclasses import dataclass, field
 
+from app.agent.write_registry import state_machines, write_tools
 from app.config.settings import settings
 from app.observability.logging import get_logger
 
 log = get_logger("app.agent.tools.executor")
 
 # 并行白名单（首批）：纯只读。load_skill 暂不入（loader 延迟缓存写入无锁），
-# apply_refund 是写工具（串行屏障）。
+# 退款写工具（submit/cancel_refund_application）是串行屏障。
 PARALLEL_SAFE: frozenset[str] = frozenset({
     "query_order",
     "query_product",
@@ -54,14 +55,14 @@ PARALLEL_SAFE: frozenset[str] = frozenset({
     "list_user_orders",
     "search_knowledge",
     "recall_user_memory",
+    "query_refund_application",
 })
 
-WRITE_TOOLS: frozenset[str] = frozenset({"apply_refund"})
+# 写工具清单派生自 write_registry 单一来源（不再手写）
+WRITE_TOOLS: frozenset[str] = write_tools()
 
 # 阶段C：注册了状态机的写工具集合（新写工具必须注册，否则执行前被拦截）
-_WRITE_STATE_MACHINE_TOOLS: frozenset[str] = frozenset({
-    "apply_refund",
-})
+_WRITE_STATE_MACHINE_TOOLS: frozenset[str] = frozenset(state_machines())
 
 DUP_CALL_ERROR = "重复调用被拦截：请换参数或基于已有结果回答（同一调用本轮已执行过）"
 BUDGET_SKIP_ERROR = "本轮预算已耗尽，工具调用被跳过"
@@ -89,7 +90,6 @@ class ToolOutcome:
     result: str  # JSON 字符串（含错误 JSON）
     sequence: int
     skipped: bool = False  # True = 未真正执行（解析失败/重复拦截/预算跳过/超时弃等/indeterminate）
-    internal_args: dict | None = None  # Review 修复：仅执行器可写的内部参数通道（确认凭证注入）
 
 
 @dataclass
@@ -103,7 +103,6 @@ class ToolTurnState:
     seen_signatures: set[str] = field(default_factory=set)  # 本轮内出现过的签名（去重用）
     per_name_counts: dict[str, int] = field(default_factory=dict)  # 本轮内同工具调用次数
     write_ops: object | None = None  # 阶段C：写操作状态机（WriteOpTracker；惰性建）
-    refund_confirm: dict | None = None  # Review 修复：服务端确认判定（confirm 时含注入载荷）
     _sequence: int = 0
 
     def next_sequence(self) -> int:
@@ -305,58 +304,6 @@ class ToolBatchExecutor:
             # 阶段C：写操作状态机拦截（缺参/越权重试/未注册状态机的一律不执行
             # ——不依赖模型自觉遵守流程；预算检查在前，耗尽后根本到不了这里）
             if name in WRITE_TOOLS or name in _WRITE_STATE_MACHINE_TOOLS:
-                # Review 修复：本轮确认判定为 ambiguous/cancel → 禁止一切写
-                # 工具。cancel 若不在这里 fail-closed，模型可在取消后重新
-                # 调用第一段 apply_refund，重新签发待确认请求。
-                decision = state.refund_confirm or {}
-                if decision.get("action") in ("ambiguous", "cancel"):
-                    from app.observability.metrics import (
-                        record_refund_confirmation_blocked as _rcb,
-                    )
-
-                    _rcb(str(decision.get("action")))
-                    outcomes[i] = self._make_outcome(
-                        state, call_id, name, arguments,
-                        json.dumps({
-                            "error": "REFUND_CONFIRMATION_REQUIRED",
-                            "message": (
-                                "用户已取消待确认的退款操作，本轮已禁止重新发起；"
-                                "如需退款请等待下一轮重新明确提出申请。"
-                                if decision.get("action") == "cancel" else
-                                "存在待用户确认的退款操作，本轮已禁止执行写操作；"
-                                "请先回应用户的确认或取消"
-                            ),
-                        }, ensure_ascii=False),
-                        skipped=True, emit_call=True,
-                    )
-                    continue
-                if decision.get("action") == "confirm":
-                    # 服务端判定的确认只适用于精确的待确认订单+原因。若模型
-                    # 改写了任一字段，禁止把它当成第一段新退款请求，避免借
-                    # 着用户对 O1 的确认发起 O2/另一原因退款。
-                    target_order = str(decision.get("order_id", "") or "").strip()
-                    target_reason = str(decision.get("reason", "") or "").strip()
-                    call_order = str(arguments.get("order_id", "") or "").strip()
-                    call_reason = str(arguments.get("reason", "") or "").strip()
-                    if (call_order != target_order
-                            or call_reason != target_reason):
-                        from app.observability.metrics import (
-                            record_refund_confirmation_blocked as _rcb,
-                        )
-
-                        _rcb("target_mismatch")
-                        outcomes[i] = self._make_outcome(
-                            state, call_id, name, arguments,
-                            json.dumps({
-                                "error": "REFUND_CONFIRMATION_TARGET_MISMATCH",
-                                "message": (
-                                    "本轮确认仅适用于用户明确确认的同一订单和退款原因；"
-                                    "参数不匹配，已禁止执行。"
-                                ),
-                            }, ensure_ascii=False),
-                            skipped=True, emit_call=True,
-                        )
-                        continue
                 verdict = state.write_tracker().check(name, arguments)
                 if verdict is not None:
                     log.info("tool.write_blocked name=%s", name)
@@ -369,24 +316,10 @@ class ToolBatchExecutor:
                         skipped=True, emit_call=True,
                     )
                     continue
-            internal_args = None
-            if name == "apply_refund":
-                decision = state.refund_confirm or {}
-                if decision.get("action") == "confirm" and str(
-                    arguments.get("order_id", "")
-                ) == str(decision.get("order_id", "")):
-                    # Review 修复：仅服务端判定 confirm 时经内部通道注入
-                    # token/幂等键——模型参数面永远不含保留字段
-                    internal_args = {
-                        "confirmation_token": decision.get("token", ""),
-                        "idempotency_key": decision.get("refund_id", ""),
-                        "refund_id": decision.get("refund_id", ""),
-                    }
             plan.append((i, name, arguments))
             outcomes[i] = ToolOutcome(
                 call_id=call_id, name=name, arguments=arguments,
                 result="", sequence=state.next_sequence(),
-                internal_args=internal_args,
             )
             state.emit("tool_call", {
                 "name": name, "arguments": arguments,
@@ -490,28 +423,19 @@ class ToolBatchExecutor:
             return None
         future = self._pool.submit(
             self._run_one, name, arguments, ctx, tool_manager, remaining,
-            outcome.internal_args,
         )
         future.add_done_callback(lambda f: self._permit.release())
         return future
 
     def _run_one(self, name: str, arguments: dict, ctx, tool_manager,
-                 remaining: float | None,
-                 internal_args: dict | None = None) -> str:
-        """单工具执行（固定池 worker 内）；MCP/HTTP 传递 remaining 超时。
-
-        internal_args：仅执行器可写的内部参数通道（Review 修复）——
-        确认凭证/幂等键在本通道注入，模型参数面不含保留字段。
-        """
+                 remaining: float | None) -> str:
+        """单工具执行（固定池 worker 内）；MCP/HTTP 传递 remaining 超时。"""
         with self._active_lock:
             self._active += 1
             self._active_peak = max(self._active_peak, self._active)
         try:
-            # Review 修复：internal_args 走独立通道（校验后合并），
-            # 模型参数面与工具校验面均不含保留字段
             return tool_manager.execute_tool(
                 name, arguments, ctx, timeout=remaining,
-                internal_args=internal_args,
             )
         finally:
             with self._active_lock:
@@ -605,16 +529,16 @@ class ToolBatchExecutor:
                 record_tool_timeout("write")
                 record_mcp_write_indeterminate(outcome.name)
                 future.cancel()
-                # 幂等键在 internal_args（服务端注入通道，模型参数面
-                # 不含保留字段）；arguments 只兜底开发直退路径
-                internal = outcome.internal_args or {}
+                # 请求标识由工具层自生成并回写在结果载荷里；硬超时时无结果
+                # 载荷，只能从 arguments 兜底（开发直调路径），对账主键仍是
+                # order_id/application_id——重试会生成新标识，去重靠网关的
+                # 进行中申请短路，不依赖本标识。
                 state.indeterminate_writes.append({
                     "tool": outcome.name,
                     "order_id": str(outcome.arguments.get("order_id", "")),
-                    "idempotency_key": str(
-                        internal.get("idempotency_key")
-                        or internal.get("refund_id")
-                        or outcome.arguments.get("idempotency_key") or ""
+                    "application_id": str(outcome.arguments.get("application_id", "")),
+                    "client_request_id": str(
+                        outcome.arguments.get("client_request_id") or ""
                     ),
                 })
                 self._finish(outcome, json.dumps({

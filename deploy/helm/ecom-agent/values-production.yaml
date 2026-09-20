@@ -13,15 +13,34 @@ env:
   # ---- 被测模型（真实评测走外部配置）----
   MODEL_NAME: DeepSeek-V4-Flash-0731
   MEMORY_ENABLED: "true"
-  # ---- 检索：ES hybrid + bge-reranker ----
+  # 记忆 PII 口径（批次4·统一脱敏+业务例外）：手机号等直接 PII 入库前
+  # 脱敏为占位符；姓名/收货地址为客服业务必需 PII，保留入库，依赖
+  # 存储访问控制（MEMORY_DIR 卷挂载权限/DB 账号隔离）保护，不入 prompt 之外的导出通道
+  # ---- 检索：ES hybrid + bge-reranker（唯一生产基线）----
   RAG_BACKEND: es
   RAG_HYBRID: "true"
   RAG_HYBRID_RECALL_K: "60"
   RAG_RERANK: bge-reranker-v2-m3
-  # Calibrated for this ES hybrid + bge-reranker configuration. Re-run retrieval
-  # calibration whenever the embedding/reranker/model stack changes.
-  RAG_MIN_RELEVANCE_SCORE: "0.04185213"
-  RERANK_ENDPOINT_URL: "http://reranker:8080/rerank"
+  # ---- Embedding：SophNet EasyLLM bge-m3（1024 维，与索引 _meta 一致）----
+  EMBEDDING_PROVIDER: sophnet
+  EMBEDDING_MODEL: bge-m3
+  SOPHNET_EMBEDDING_DIMENSIONS: "1024"
+  # SOPHNET_EMBEDDING_URL / SOPHNET_EASYLLM_ID / SOPHNET_API_KEY 由部署环境
+  # 经 values 覆盖或 envFromSecret 提供；缺失时 /readyz 的 rag 能力为
+  # unavailable（chat 503 fail-closed），不会静默降级。
+  # RAG 修复计划·1：精排不可用时生产 fail-closed（禁止未验证证据回答）
+  RAG_RERANK_FAIL_CLOSED: "true"
+  # RAG 修复计划·4：生产强制文档治理（缺失/非法元数据构建即失败）
+  RAG_DOC_METADATA_REQUIRED: "true"
+  # RAG 修复计划·3：旧校准阈值已删除（文档治理+重建 generation 后重新校准，
+  # 再把生成值写入此处；未配置=不门控）。
+  # RAG 修复计划·5：发布激活开关——与重校准阈值同时写入（发布顺序第 4–5 步）；
+  # 未激活时 /readyz 的 rag 能力对 prod 缺阈值仍返回 503。
+  RAG_RELEASE_ACTIVATED: "false"
+  # RAG_MIN_RELEVANCE_SCORE: "<recalibrated>"
+  # TEI（text-embeddings-inference）容器内监听 80——compose 的 `8001:80`
+  # 是宿主机映射；集群内 Service 端口按 TEI 默认 80 对接（勿写 8080）
+  RERANK_ENDPOINT_URL: "http://reranker:80/rerank"
   ES_URL: "http://elasticsearch:9200"
   # ---- shared writable state (Deployment + evolution CronJob) ----
   # The image runs as appuser and its /app tree is root-owned/read-only at runtime.
@@ -50,6 +69,9 @@ env:
   MEMORY_CONSOLIDATE_EVERY: "10"
   MEMORY_CONSOLIDATE_IDLE_MINUTES: "30"
   MEMORY_CONSOLIDATE_SCAN_MINUTES: "5"
+  # ---- 上下文 256k：份额受 token_budget.CAP_* 收敛（dialog ≤65536）----
+  CONTEXT_WINDOW_TOKENS: "262144"
+  SUMMARY_MAX_CHARS: "600"
   # ---- 对象存储：分片/原件走 S3（MinIO/OSS 兼容）----
   KB_UPLOAD_STORAGE: s3
   TURNS_ARCHIVE_BACKEND: s3
@@ -58,7 +80,6 @@ env:
   # ---- 安全（生产全开）----
   AUTH_ENABLED: "true"
   ENFORCE_ORDER_OWNERSHIP: "true"
-  REFUND_CONFIRMATION_REQUIRED: "true"
   OPS_RBAC_REQUIRED: "true"
   GUARDRAILS_ENABLED: "true"
   # ---- 自进化：正式发布默认关闭（先人工审核）----

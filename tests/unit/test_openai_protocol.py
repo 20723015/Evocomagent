@@ -35,7 +35,7 @@ def test_fold_history_strips_persistence_metadata_for_every_message():
             "content": "历史答复",
             "metadata": {
                 "turn_id": "turn-1",
-                "pending_writes": [{"token": "refund-secret"}],
+                "internal_notes": [{"token": "refund-secret"}],
             },
         },
         {
@@ -50,7 +50,7 @@ def test_fold_history_strips_persistence_metadata_for_every_message():
 
     assert all("metadata" not in message for message in folded)
     assert folded[1]["content"] == "历史答复"
-    assert raw[1]["metadata"]["pending_writes"][0]["token"] == "refund-secret"
+    assert raw[1]["metadata"]["internal_notes"][0]["token"] == "refund-secret"
 
 
 def test_chat_request_has_no_persistence_metadata(tmp_path, reset_settings):

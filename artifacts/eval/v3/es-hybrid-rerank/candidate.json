@@ -1,0 +1,12 @@
+{
+  "protocol": "kb-generation-candidate-v1",
+  "backend": "es",
+  "generation": {
+    "generation_id": "20260918080753-74c8a721",
+    "target": "ecom-kb-20260918080753-74c8a721",
+    "embedding_model": "bge-m3",
+    "previous_generation_id": ""
+  },
+  "config_fingerprint": "64b1c95282fd1250",
+  "expected_active_generation_id": "20260908094339-b0c865f2"
+}

@@ -1,0 +1,72 @@
+{
+ "protocol": "p1-3-p1-4-eval-summary-v1",
+ "config": {
+  "backend": "numpy",
+  "hybrid": false,
+  "rerank": "none",
+  "query_normalize": true,
+  "top_k": 5,
+  "dataset": "app/evaluation/retrieval_cases_v3.json",
+  "num_cases": 959
+ },
+ "note": "RAG_BACKEND=numpy（ES/MySQL/Redis 未启动；.env 的 es 口径不可用）；纯向量以获得有绝对语义的余弦分（联合拒绝阈值与校准同尺度）。改写臂用预生成 overlay 走既有 --multi-query-overlay → final_multi_search 双路口径。",
+ "rewrite_arm": {
+  "overlay": {
+   "path": "artifacts/eval/v3/query-rewrite/overlay_arm.json",
+   "num_cases": 416,
+   "num_cases_total": 959,
+   "model": "DeepSeek-V4-Flash-0731（extraction_model 未配置 → 回落主模型）",
+   "generated_with": "12s 单次超时（构建时 SDK 默认重试仍生效，覆盖率为上界）",
+   "sha256": "987c6f59651ad04ea6c57f776a41212b3c6c02b9b351f3493a7c703929664464"
+  },
+  "baseline": {
+   "positive_recall": 0.6569212410501193,
+   "easy_recall": 0.9513888888888888,
+   "hard_recall": 0.2125748502994012,
+   "mrr": 0.5994828957836118,
+   "ndcg": 0.6090317755962543,
+   "negative_rejection": 0.0,
+   "p95_latency_ms": 268.5678999987431
+  },
+  "rewrite_on": {
+   "positive_recall": 0.6581145584725537,
+   "easy_recall": 0.9553571428571429,
+   "hard_recall": 0.20958083832335328,
+   "mrr": 0.6017700875099443,
+   "ndcg": 0.6110232040579852,
+   "negative_rejection": 0.0,
+   "p95_latency_ms": 246.43479997757822,
+   "multi_hop_strict": 0.2608695652173913,
+   "multi_hop_lenient": 0.5217391304347826
+  },
+  "per_case_on_rewritten_positives": {
+   "n": 386,
+   "better": 2,
+   "same": 383,
+   "worse": 1,
+   "mean_recall_baseline": 0.5907,
+   "mean_recall_rewrite": 0.5933
+  }
+ },
+ "rejection_arm": {
+  "params": {
+   "min_top1": 0.549,
+   "min_gap": 0.0,
+   "min_coverage": 0.0,
+   "min_rerank": null
+  },
+  "frozen_at": "artifacts/eval/v2/retrieval-rejection/params.json",
+  "off": {
+   "negative_rejection": 0.0,
+   "positive_rejection": 0.0,
+   "note": "RAG_MIN_RELEVANCE_SCORE=None（.env 现状）：无门控，121 条负例全部有命中"
+  },
+  "on": {
+   "negative_rejection": 0.35537190082644626,
+   "positive_rejection": 0.03579952267303103,
+   "negatives": 121,
+   "positives": 838,
+   "note": "dev 959 全量信号上重放冻结参数；校准 dev split 784 上为 33.3%/3.3%（params.json）"
+  }
+ }
+}

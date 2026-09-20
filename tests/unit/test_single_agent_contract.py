@@ -126,6 +126,98 @@ def test_max_steps_forces_final_response(tmp_path, reset_settings, monkeypatch):
     assert [t["function"]["name"] for t in final_tools] == ["final_response"]
 
 
+# ============================================================
+# 步数余量感知：剩余步数（含当前步）≤2 → 注入一次 system 预告
+# （零额外 LLM 调用；预告先行，最后通牒兜底语义不变）
+# ============================================================
+def _messages_json(kwargs) -> str:
+    return json.dumps(kwargs.get("messages", []), ensure_ascii=False)
+
+
+def test_steps_margin_hint_injected_once_before_last_two_steps(
+    tmp_path, reset_settings, monkeypatch,
+):
+    """步数余量提示：时机=倒数第二步起，只注一次，零额外 LLM 调用。
+
+    - 第 1/2 步的窗口无预告；第 3 步（remaining=2）起可见，内容含剩余步数；
+    - 后续步沿用同一条窗口消息（出现次数=1，不重复注入），计数器增量=1；
+    - LLM 调用数与无预告剧本完全一致（4 步决策 + 1 次强制终答）；
+    - 触发步 SSE 状态语改为收尾话术；ctx 标记可观测并进 usage dict。
+    """
+    from app.agent.tools import registry
+    from app.observability import metrics
+
+    monkeypatch.setattr(settings, "max_react_steps", 4)
+    monkeypatch.setitem(
+        registry._TOOL_MAP, "query_product",
+        lambda keyword, ctx=None: {"success": True, "products": []},
+    )
+    client = FakeChatClient()
+    for i in range(4):  # 4 步都开业务工具 → 步数耗尽走强制终答
+        client.enqueue_tool_call(f"call_{i}", "query_product", {"keyword": "耳机"})
+    client.enqueue_tool_call("call_f", "final_response", {
+        "intent": "product_consult", "reply": "为您找到耳机商品。",
+        "requires_human": False,
+    })
+    agent = _agent(tmp_path, client)
+    statuses: list[str] = []
+    agent.emit_status = lambda text, step=0: statuses.append(text)
+    counter_before = metrics.STEPS_MARGIN_HINTS._value.get()
+
+    result = agent.chat("有什么耳机")
+
+    assert result.reply == "为您找到耳机商品。"
+    # 零额外 LLM 调用：4 个决策步 + 1 次强制终答，不多不少
+    assert len(client.calls) == 5
+    windows = [_messages_json(kwargs) for _, kwargs in client.calls]
+    # 时机：第 1/2 步无预告；第 3 步（remaining=2）注入，文案含剩余步数
+    assert "即将用尽" not in windows[0]
+    assert "即将用尽" not in windows[1]
+    assert "即将用尽" in windows[2] and "还剩 2 步" in windows[2]
+    # 后续步沿用窗口中同一条预告：可见但不重复（每窗恰好 1 次）
+    assert windows[3].count("即将用尽") == 1
+    assert windows[4].count("即将用尽") == 1
+    # 整个运行恰好一条预告（计数器增量=1）；ctx 标记可观测
+    assert metrics.STEPS_MARGIN_HINTS._value.get() == counter_before + 1
+    assert agent._last_turn_ctx.steps_margin_hint is True
+    assert agent._last_turn_ctx.to_usage_dict()["steps_margin_hint"] is True
+    # 触发步（第 3 步）SSE 状态语改为收尾话术，其余步保持原话术
+    assert statuses[2] == "正在整理您的请求（第 3/4 步）"
+    assert statuses[0] == "正在处理您的请求（第 1/4 步）"
+    assert statuses[3] == "正在处理您的请求（第 4/4 步）"
+    # 预告只进模型窗口：轮末折叠后不进会话历史
+    roles = [m["role"] for m in agent.raw_messages]
+    assert roles == ["user", "assistant"]
+
+
+def test_short_turn_no_margin_hint(tmp_path, reset_settings, monkeypatch):
+    """1-2 步即完成的短轮次：无预告注入（计数器零增量，ctx 标记 False）。"""
+    from app.agent.tools import registry
+    from app.observability import metrics
+
+    def fake_query_order(order_id, ctx=None):
+        return {"success": True, "code": "ORDER_FOUND",
+                "order": {"order_id": order_id, "status": "已发货"}}
+
+    monkeypatch.setitem(registry._TOOL_MAP, "query_order", fake_query_order)
+    client = (
+        FakeChatClient()
+        .enqueue_tool_call("call_1", "query_order", {"order_id": "ORD-1"})
+        .enqueue_final_response("您的订单 ORD-1 已发货。", intent="order_query")
+    )
+    agent = _agent(tmp_path, client)
+    counter_before = metrics.STEPS_MARGIN_HINTS._value.get()
+
+    result = agent.chat("帮我查订单 ORD-1")
+
+    assert result.reply == "您的订单 ORD-1 已发货。"
+    assert len(client.calls) == 2
+    assert all("即将用尽" not in _messages_json(kwargs)
+               for _, kwargs in client.calls)
+    assert metrics.STEPS_MARGIN_HINTS._value.get() == counter_before
+    assert agent._last_turn_ctx.steps_margin_hint is False
+
+
 def test_final_response_validation_rejects_extra_fields():
     args, error = validate_final_response({
         "intent": "other", "reply": "r", "requires_human": False,
@@ -197,54 +289,35 @@ def test_old_json_history_folded_only_in_model_context(tmp_path, reset_settings)
     assert saved["messages"][-1]["content"].startswith("{")
 
 
-def test_pending_refund_write_survives_to_next_turn_context(tmp_path, reset_settings):
-    """跨轮退款确认：待确认说明进入上下文但**不含任何凭证字段**（Review 修复）。
+def test_history_metadata_never_reaches_model_context(tmp_path, reset_settings):
+    """持久化 metadata 整体剥离：不注入任何凭证/内部字段，也不再有确认说明。
 
-    confirm 判定由服务端闸门做出，token 经执行器内部通道注入——
-    模型上下文只有「订单号 + 原因 + 操作指引」。
+    纯提交语义下不再有跨轮待确认说明；本测试守住「metadata（含历史遗留
+    凭据字段）绝不进入模型上下文」这一不变量。
     """
-    from app.agent.refund_gate import ConfirmationDecision, PendingRefund
-
-    settings.refund_confirmation_required = True
-
     client = FakeChatClient()
     agent = _agent(tmp_path, client)
-    # 上一轮已发起退款确认（pending_writes 仅含 tool/order_id/reason）
     agent.raw_messages.extend([
         {"role": "user", "content": "退掉 ORD-9，质量问题"},
-        {"role": "assistant", "content": "已为您发起退款申请，请确认。", "metadata": {
+        {"role": "assistant", "content": "已为您登记退款申请，请确认。", "metadata": {
             "schema": 2, "intent": "return_request", "confidence": 0.9,
             "requires_human": False, "follow_up_question": None,
-            "pending_writes": [{
-                "tool": "apply_refund", "order_id": "ORD-9",
-                "reason": "质量问题",
+            "internal_notes": [{
+                "tool": "submit_refund_application", "order_id": "ORD-9",
+                "reason": "质量问题", "token": "legacy-token",
             }],
         }},
     ])
-    # 服务端判定 confirm（token 只在服务端侧，不进上下文）
-    agent.current_confirmation = ConfirmationDecision(
-        action="confirm",
-        payload=PendingRefund(
-            refund_id="rid-1", order_id="ORD-9", reason="质量问题",
-            token="tok-123",  # token 只在服务端内存
-        ),
-        matched_order_id="ORD-9",
-    )
     messages = agent.context_builder.build(agent, "确认退款")
-    notes = [m["content"] for m in messages
-             if m.get("role") == "system"
-             and "已明确确认退款" in m.get("content", "")]
-    assert notes and "ORD-9" in notes[0]
-    # token/幂等键绝不进入模型上下文
-    assert "tok-123" not in notes[0]
-    assert "rid-1" not in notes[0]
-    # 旧 metadata 兼容：含 token 的旧条目在构建上下文时被剔除
-    agent.raw_messages[-1]["metadata"]["pending_writes"][0][
-        "confirmation_token"
-    ] = "legacy-token"
-    messages2 = agent.context_builder.build(agent, "确认退款")
-    blob = json.dumps(messages2, ensure_ascii=False)
+    blob = json.dumps(messages, ensure_ascii=False)
+    # metadata（含历史遗留凭据字段）绝不进入模型上下文
     assert "legacy-token" not in blob
+    assert "internal_notes" not in blob
+    # 不再注入任何「已明确确认 / 等待确认」的跨轮说明
+    assert not [m for m in messages
+                if m.get("role") == "system"
+                and ("已明确确认" in m.get("content", "")
+                     or "等待用户明确确认" in m.get("content", ""))]
 
 
 # ============================================================
@@ -284,17 +357,15 @@ def test_invalid_tool_arguments_never_execute_tool(tmp_path, reset_settings):
 
 
 def test_refund_success_claim_blocked_without_commit(tmp_path, reset_settings):
-    """未取得 committed 证据 → 禁止宣称退款成功（程序改写 + 转人工）。"""
+    """无对应业务回执 → 禁止宣称退款完成（程序改写 + 转人工）。"""
     from app.agent.tools import registry
 
-    def fake_refund(order_id, reason, ctx=None, confirmation_token=None,
-                    idempotency_key=None, refund_id=None):
+    def fake_submit(order_id, reason, ctx=None):
         # 模型幻觉：没拿到结果就声称成功 → 本轮没有任何工具调用
         return {"success": True}
 
-    registry._TOOL_MAP["apply_refund"] = fake_refund
-    settings.refund_confirmation_required = True
-    # 本轮无工具调用，模型直接宣称退款成功
+    registry._TOOL_MAP["submit_refund_application"] = fake_submit
+    # 本轮无工具调用，模型直接宣称退款完成
     client = FakeChatClient().enqueue_final_response(
         "您的退款已成功办理，钱已退回。", intent="return_request",
     )
@@ -308,14 +379,16 @@ def test_refund_success_claim_blocked_without_commit(tmp_path, reset_settings):
 def test_denied_order_cannot_be_retried_in_turn(tmp_path, reset_settings, monkeypatch):
     """越权拒绝后：状态机拦截同订单继续操作（工具不执行）。"""
     tracker = WriteOpTracker()
-    assert tracker.check("apply_refund", {"order_id": "O1", "reason": "x"}) is None
-    tracker.observe("apply_refund", {"order_id": "O1", "reason": "x"},
+    assert tracker.check(
+        "submit_refund_application", {"order_id": "O1", "reason": "x"}) is None
+    tracker.observe("submit_refund_application", {"order_id": "O1", "reason": "x"},
                     {"success": False, "code": "ORDER_ACCESS_DENIED"})
-    verdict = tracker.check("apply_refund", {"order_id": "O1", "reason": "x"})
+    verdict = tracker.check(
+        "submit_refund_application", {"order_id": "O1", "reason": "x"})
     assert "WRITE_RETRY_FORBIDDEN" in verdict
 
     # 缺原因 → 只追问不执行
-    verdict2 = tracker.check("apply_refund", {"order_id": "O1"})
+    verdict2 = tracker.check("submit_refund_application", {"order_id": "O1"})
     assert "REFUND_PARAMS_REQUIRED" in verdict2
 
 
@@ -362,9 +435,20 @@ def test_compute_reliability_tiers():
     assert compute_reliability(signal) == 0.5
 
 
+def test_compute_reliability_overrides_take_strictest():
+    """中危修复 A1：overrides 是「上限，只能压低」——多上限同轮命中取最严
+    （升级上限 0.5 与输出安全硬上限 0.2 同时命中应取 0.2，而非取高 0.5）。"""
+    signal = ReliabilitySignal(
+        tool_committed_evidence=True,
+        overrides={"escalation": 0.5, "output_safety": 0.2},
+    )
+    assert compute_reliability(signal) == 0.2
+
+
 def test_token_budget_shares_and_trim():
     shares = budget_shares(2000)
-    assert shares == {"system": 400, "memory": 200, "dialog": 1000,
+    # 阶段4 消融口径：memory 份额 10% → 15%（settings.memory_budget_share）
+    assert shares == {"system": 400, "memory": 300, "dialog": 1000,
                       "output_reserve": 400}
     assert estimate_tokens("abc") >= 1
     messages = [
@@ -375,6 +459,25 @@ def test_token_budget_shares_and_trim():
     ]
     kept = trim_messages_to_budget(messages, 18)
     assert kept[0]["role"] != "tool"  # 孤儿 tool 不在窗口起头
+
+
+def test_trim_all_orphan_tool_window_falls_back_to_user_message():
+    """低危修复 A1：窗口全为孤儿 tool 消息时回退到最后一条非 tool 且非
+    tool_calls 的消息（调用链中即用户消息）兜底，不返回空窗口、也不把
+    孤儿 tool_calls assistant 当窗口（同样破坏对话约束）。"""
+    huge = "x" * 200
+    messages = [
+        {"role": "system", "content": "sys"},
+        {"role": "user", "content": "查订单"},
+        {"role": "assistant", "content": "", "tool_calls": [
+            {"id": "c1", "type": "function",
+             "function": {"name": "t", "arguments": "{}"}},
+        ]},
+        {"role": "tool", "tool_call_id": "c1", "content": huge},
+    ]
+    kept = trim_messages_to_budget(messages, 40)
+    assert kept, "全孤儿窗口不得返回空"
+    assert kept == [{"role": "user", "content": "查订单"}]
 
 
 def test_ground_reply_strips_unbacked_numbers():
@@ -404,6 +507,17 @@ def test_rrf_merge_dedups_by_parent():
     assert all(("d1", "p1", "b") != k for k in keys)
 
 
+def test_rrf_merge_preserves_retriever_raw_score():
+    """低危修复 B2：rrf_merge 覆盖 score 前先把检索原分存入
+    raw_scores['retriever']（docstring 承诺「保留各路原始分供诊断」；
+    修复后 retriever 与 rrf 两键并存，原分不再被融合分覆盖丢失）。"""
+    item = EvidenceItem(doc="d1", section="s", chunk_id="c1", score=0.87)
+    merged = rrf_merge([[item]])
+    assert merged[0].raw_scores["retriever"] == 0.87
+    assert "rrf" in merged[0].raw_scores
+    assert merged[0].score != 0.87  # 已被融合分覆盖
+
+
 def test_scope_block_is_rule_response_with_high_reliability(tmp_path, reset_settings):
     """范围闸门拦截：规则响应零主体 LLM，可靠度 1.0。"""
     settings.business_only_scope = True
@@ -413,3 +527,48 @@ def test_scope_block_is_rule_response_with_high_reliability(tmp_path, reset_sett
     assert result.confidence == 1.0
     # 只有一次 scope 判定调用，无主体 LLM/提取
     assert len(client.calls) == 1
+
+
+# ============================================================
+# CLI memory 分支：两层口径契约（P0-1）
+# ============================================================
+def test_cli_memory_branch_renders_two_layer_view(tmp_path, reset_settings):
+    """CLI `memory` 命令：记忆收敛为两层后不得再引用已删除的槽位层。
+
+    回归背景：`MemoryManager.stm` 随槽位层删除，main.py 的 memory 分支
+    仍读 `.stm` → AttributeError 直接退出（且在主循环 try 之外）。
+    """
+    from main import render_memory_lines
+
+    agent = _agent(tmp_path, FakeChatClient(), memory_enabled=True)
+    assert not hasattr(agent.memory_manager, "stm")
+
+    lines = render_memory_lines(agent)
+    text = "\n".join(lines)
+    assert "会话上下文" in text
+    assert "长期记忆" in text
+    assert "滚动摘要" in text
+    assert "原始消息: 0 条" in text
+
+
+def test_cli_memory_branch_renders_facts_and_summary(tmp_path, reset_settings):
+    """有摘要/有 LTM 事实时，各段内容按两层口径正确落位。"""
+    from app.agent.memory.models import MemoryFact
+    from main import render_memory_lines
+
+    agent = _agent(tmp_path, FakeChatClient(), memory_enabled=True)
+    agent.summary = "用户咨询过退款进度"
+    agent.raw_messages = [{"role": "user", "content": "hi"}]
+    agent.memory_manager.ltm.facts = [
+        MemoryFact(
+            category="identity", content="用户叫小明",
+            created_at="2026-09-18T00:00:00",
+        ),
+    ]
+    agent.memory_manager.ltm.interaction_summaries = [{"summary": "上次问退款"}]
+
+    text = "\n".join(render_memory_lines(agent))
+    assert "用户咨询过退款进度" in text
+    assert "原始消息: 1 条" in text
+    assert "[identity] 用户叫小明" in text
+    assert "上次问退款" in text

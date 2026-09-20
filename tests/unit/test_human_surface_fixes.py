@@ -181,3 +181,166 @@ def test_ops_reclaim_checkbox_is_named_explicitly():
     assert 'class="reclaim-toggle"' in source
     assert 'form.querySelector(".reclaim-toggle").checked' in source
     assert 'form.querySelector("input[type=checkbox]")' not in source
+
+
+# ============================================================
+# P3：ended_at 未来时间校验（评审按当日 00:00 过滤，未来时间会静默积压）
+# ============================================================
+def _conv_item(ended_at: str):
+    from app.server.schema import HumanConversationItem
+
+    return HumanConversationItem(
+        source="cs",
+        external_conversation_id="c9",
+        ended_at=ended_at,
+        messages=[
+            {"message_id": "c0", "actor_type": "customer", "content": "问题"},
+            {"message_id": "a0", "actor_type": "human_agent", "content": "回答"},
+        ],
+    )
+
+
+def test_ended_at_in_future_rejected_with_422():
+    from datetime import datetime, timedelta
+
+    from fastapi import HTTPException
+
+    from app.server.human_knowledge import _validate_conversation
+
+    future = (datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(days=3)).isoformat()
+    with pytest.raises(HTTPException) as ei:
+        _validate_conversation(_conv_item(future))
+    assert ei.value.status_code == 422
+
+
+def test_ended_at_within_tolerance_accepted():
+    from datetime import datetime, timedelta
+
+    from app.server.human_knowledge import _validate_conversation
+
+    near = (datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(minutes=2)).isoformat()
+    parsed = _validate_conversation(_conv_item(near))
+    assert parsed["ended_at"] is not None
+
+
+# ============================================================
+# P2-2：常驻评审 Worker 循环（异常不退出 / stats 上报 / cleanup 节流）
+# ============================================================
+class _FakeEvalWorkerStore:
+    def __init__(self, *, fail_stats=False):
+        self.cleanup_calls: list[int] = []
+        self._fail_stats = fail_stats
+
+    def stats(self):
+        if self._fail_stats:
+            raise RuntimeError("stats boom")
+        return {
+            "queue_depth": 1,
+            "oldest_age_seconds": 1.0,
+            "blocked": 0,
+            "stale_published": 0,
+        }
+
+    def cleanup_expired_conversations(self, days, limit=500):
+        self.cleanup_calls.append(days)
+        return 0
+
+    def next_evaluation_delay(self, poll_seconds=30):
+        return 0.0
+
+
+def _run_eval_worker(monkeypatch, *, process_once_script, store, cleanup_interval):
+    """驱动 _cmd_human_eval_worker 至可控退出；返回 (stats 调用, store)。"""
+    import time as _time
+
+    from app.config.settings import settings as settings_mod
+    from app.scripts import run_evolution
+
+    class _FakeEvaluator:
+        def __init__(self, *a, **k):
+            self._script = list(process_once_script)
+
+        def process_once(self):
+            step = self._script.pop(0)
+            if isinstance(step, BaseException):
+                raise step  # KeyboardInterrupt 也必须抛出而非返回
+            return step
+
+    from app.evolution import human_evaluator as he_mod
+
+    monkeypatch.setattr(he_mod, "HumanKnowledgeEvaluator", _FakeEvaluator)
+    monkeypatch.setattr(settings_mod, "human_eval_worker_cleanup_interval_seconds", cleanup_interval)
+    observed: list[dict] = []
+    monkeypatch.setattr(
+        "app.observability.metrics.set_human_eval_stats",
+        lambda stats: observed.append(stats),
+    )
+    monkeypatch.setattr(_time, "sleep", lambda s: None)
+    svc = {"store": store, "extractor": None, "scorer": None, "generation_store": None}
+    rc = run_evolution._cmd_human_eval_worker(svc, poll_seconds=0, max_jobs=0)
+    assert rc == 0
+    return observed, store
+
+
+def test_eval_worker_survives_store_exception_and_reports_stats(monkeypatch):
+    """store.stats() 抛异常 → 循环仅记日志继续；后续空闲周期恢复上报与清理。"""
+
+    class _FlakyStatsStore(_FakeEvalWorkerStore):
+        def __init__(self):
+            super().__init__()
+            self._stats_calls = 0
+
+        def stats(self):
+            self._stats_calls += 1
+            if self._stats_calls == 1:
+                raise RuntimeError("stats boom")
+            return super().stats()
+
+    store = _FlakyStatsStore()
+    # 第1轮空闲 stats 抛错 → 捕获；第2轮空闲正常上报；第3轮 KeyboardInterrupt 退出
+    observed, store = _run_eval_worker(
+        monkeypatch,
+        process_once_script=[False, False, KeyboardInterrupt()],
+        store=store,
+        cleanup_interval=10**9,
+    )
+    assert len(observed) >= 1
+    assert observed[-1]["queue_depth"] == 1
+    assert store.cleanup_calls  # 异常后的空闲周期恢复执行过清理
+
+
+def test_eval_worker_cleanup_throttled_by_interval(monkeypatch):
+    """cleanup 只按 monotonic 间隔触发：默认日频下多轮空闲仅清理一次。"""
+    store = _FakeEvalWorkerStore()
+    _observed, store = _run_eval_worker(
+        monkeypatch,
+        process_once_script=[False, False, False, KeyboardInterrupt()],
+        store=store,
+        cleanup_interval=10**9,  # 远大于测试时长 → 只有启动那次
+    )
+    assert len(store.cleanup_calls) == 1
+
+
+def test_eval_worker_cleanup_every_idle_when_interval_zero(monkeypatch):
+    """间隔 0 → 每个空闲周期都清理（校准/压测用极端配置）。"""
+    store = _FakeEvalWorkerStore()
+    _observed, store = _run_eval_worker(
+        monkeypatch,
+        process_once_script=[False, False, KeyboardInterrupt()],
+        store=store,
+        cleanup_interval=0,
+    )
+    assert len(store.cleanup_calls) >= 2
+
+
+def test_eval_worker_processes_jobs_between_failures(monkeypatch):
+    """异常轮与正常轮交错：任务照常计数（对齐发布 Worker 容错口径）。"""
+    store = _FakeEvalWorkerStore()
+    # 第1轮抛异常、第2轮处理成功、第3轮空闲、第4轮退出
+    observed, _store = _run_eval_worker(
+        monkeypatch,
+        process_once_script=[RuntimeError("boom"), True, False, KeyboardInterrupt()],
+        store=store,
+        cleanup_interval=10**9,
+    )
+    assert observed  # 异常后循环未死，空闲分支恢复了指标上报

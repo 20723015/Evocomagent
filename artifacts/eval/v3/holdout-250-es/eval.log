@@ -1,0 +1,305 @@
+{"event": "==============================================================================", "level": "info", "timestamp": "2026-09-18T00:36:27.968767Z"}
+{"event": "  检索质量评估（阶段七 7.6）", "level": "info", "timestamp": "2026-09-18T00:36:27.968767Z"}
+{"event": "  数据集    : E:\\ea\\app\\evaluation\\holdout_cases_v3.json", "level": "info", "timestamp": "2026-09-18T00:36:27.970190Z"}
+{"event": "  变体      : hybrid-rerank", "level": "info", "timestamp": "2026-09-18T00:36:27.970190Z"}
+{"event": "  top-k     : 5", "level": "info", "timestamp": "2026-09-18T00:36:27.970190Z"}
+{"event": "  后端      : es", "level": "info", "timestamp": "2026-09-18T00:36:27.970190Z"}
+{"event": "  hybrid    : True", "level": "info", "timestamp": "2026-09-18T00:36:27.970190Z"}
+{"event": "  reranker  : bge-reranker-v2-m3", "level": "info", "timestamp": "2026-09-18T00:36:27.971813Z"}
+{"event": "  最低分数  : 未配置", "level": "info", "timestamp": "2026-09-18T00:36:27.971813Z"}
+{"event": "  hard 阈值  : 与本次最低分数相同", "level": "info", "timestamp": "2026-09-18T00:36:27.971813Z"}
+{"event": "==============================================================================", "level": "info", "timestamp": "2026-09-18T00:36:27.971813Z"}
+{"event": "\n[1/3] 加载检索用例集...", "level": "info", "timestamp": "2026-09-18T00:36:27.971813Z"}
+{"event": "   共 250 条用例", "level": "info", "timestamp": "2026-09-18T00:36:27.971813Z"}
+{"event": "\n[2/3] 构建检索器...", "level": "info", "timestamp": "2026-09-18T00:36:27.971813Z"}
+{"event": "   检索器就绪", "level": "info", "timestamp": "2026-09-18T00:36:29.040593Z"}
+{"event": "\n[3/3] 逐用例评估（top_k=5）...", "level": "info", "timestamp": "2026-09-18T00:36:29.040593Z"}
+{"event": "\n==============================================================================", "level": "info", "timestamp": "2026-09-18T00:38:09.666043Z"}
+{"event": "  逐用例检索指标（正例 ranking / 负例 rejection）", "level": "info", "timestamp": "2026-09-18T00:38:09.666043Z"}
+{"event": "==============================================================================", "level": "info", "timestamp": "2026-09-18T00:38:09.666043Z"}
+{"event": "  用例                       recall@k     MRR   nDCG@k  查询", "level": "info", "timestamp": "2026-09-18T00:38:09.666043Z"}
+{"event": "  holdout_001                100.0%  100.0%   100.0%  3C数码商品的赠品出问题能退换吗", "level": "info", "timestamp": "2026-09-18T00:38:09.666043Z"}
+{"event": "  holdout_002                100.0%   50.0%    63.1%  哪些商品不支持七天无理由退货", "level": "info", "timestamp": "2026-09-18T00:38:09.666043Z"}
+{"event": "  holdout_003                100.0%  100.0%   100.0%  上门取件需要提前多久预约", "level": "info", "timestamp": "2026-09-18T00:38:09.666043Z"}
+{"event": "  holdout_004                100.0%  100.0%   100.0%  乐器类目退换货有什么特殊要求", "level": "info", "timestamp": "2026-09-18T00:38:09.666043Z"}
+{"event": "  holdout_005                100.0%  100.0%   100.0%  乐器配件里的耗材损坏了能保修吗", "level": "info", "timestamp": "2026-09-18T00:38:09.666043Z"}
+{"event": "  holdout_006                100.0%  100.0%   100.0%  晒单可以拿什么奖励", "level": "info", "timestamp": "2026-09-18T00:38:09.666567Z"}
+{"event": "  holdout_007                100.0%  100.0%   100.0%  二手商品的成色等级是怎么划分的", "level": "info", "timestamp": "2026-09-18T00:38:09.666567Z"}
+{"event": "  holdout_008                100.0%  100.0%   100.0%  五金建材类的安装服务收费吗", "level": "info", "timestamp": "2026-09-18T00:38:09.666567Z"}
+{"event": "  holdout_009                100.0%   33.3%    50.0%  买到假货平台会怎么赔付", "level": "info", "timestamp": "2026-09-18T00:38:09.666567Z"}
+{"event": "  holdout_010                100.0%  100.0%   100.0%  哪些类目的商品不参与价保", "level": "info", "timestamp": "2026-09-18T00:38:09.666567Z"}
+{"event": "  holdout_011                100.0%  100.0%   100.0%  企业采购需要提交什么资质材料", "level": "info", "timestamp": "2026-09-18T00:38:09.666567Z"}
+{"event": "  holdout_012                100.0%  100.0%   100.0%  企业采购的售后响应和普通订单有区别吗", "level": "info", "timestamp": "2026-09-18T00:38:09.666567Z"}
+{"event": "  holdout_013                100.0%   50.0%    63.1%  优惠券过期了还能用吗", "level": "info", "timestamp": "2026-09-18T00:38:09.666567Z"}
+{"event": "  holdout_014                100.0%  100.0%   100.0%  订单退款成功后优惠券会退回来吗", "level": "info", "timestamp": "2026-09-18T00:38:09.666567Z"}
+{"event": "  holdout_015                100.0%  100.0%   100.0%  钻石会员的价保期限能延长吗", "level": "info", "timestamp": "2026-09-18T00:38:09.666567Z"}
+{"event": "  holdout_016                100.0%  100.0%   100.0%  安平保险的运费险承保哪些责任", "level": "info", "timestamp": "2026-09-18T00:38:09.666567Z"}
+{"event": "  holdout_017                100.0%  100.0%   100.0%  偏远地区订单的运费由谁承担", "level": "info", "timestamp": "2026-09-18T00:38:09.666567Z"}
+{"event": "  holdout_018                100.0%  100.0%   100.0%  健身器材的大件三包包含什么", "level": "info", "timestamp": "2026-09-18T00:38:09.666567Z"}
+{"event": "  holdout_019                100.0%  100.0%   100.0%  儿童安全座椅需要什么认证资质", "level": "info", "timestamp": "2026-09-18T00:38:09.666567Z"}
+{"event": "  holdout_020                100.0%  100.0%   100.0%  先用后付的还款时间怎么算", "level": "info", "timestamp": "2026-09-18T00:38:09.666567Z"}
+{"event": "  holdout_021                100.0%  100.0%   100.0%  先用后付的额度分哪几档", "level": "info", "timestamp": "2026-09-18T00:38:09.666567Z"}
+{"event": "  holdout_022                100.0%  100.0%   100.0%  冷链商品的包装标准是什么", "level": "info", "timestamp": "2026-09-18T00:38:09.666567Z"}
+{"event": "  holdout_023                100.0%  100.0%   100.0%  平台有哪些分期免息活动", "level": "info", "timestamp": "2026-09-18T00:38:09.666567Z"}
+{"event": "  holdout_024                100.0%  100.0%   100.0%  办公设备的硒鼓墨盒能退吗", "level": "info", "timestamp": "2026-09-18T00:38:09.666567Z"}
+{"event": "  holdout_025                100.0%  100.0%   100.0%  平台对发货包装有什么标准要求", "level": "info", "timestamp": "2026-09-18T00:38:09.666567Z"}
+{"event": "  holdout_026                100.0%  100.0%   100.0%  医药保健类目经营需要什么资质", "level": "info", "timestamp": "2026-09-18T00:38:09.666567Z"}
+{"event": "  holdout_027                100.0%  100.0%   100.0%  星海电器的三包期限是多久", "level": "info", "timestamp": "2026-09-18T00:38:09.666567Z"}
+{"event": "  holdout_028                100.0%  100.0%   100.0%  厨具的材质安全有什么要求", "level": "info", "timestamp": "2026-09-18T00:38:09.666567Z"}
+{"event": "  holdout_029                100.0%  100.0%   100.0%  厨房小家电退换货有什么特殊规定", "level": "info", "timestamp": "2026-09-18T00:38:09.666567Z"}
+{"event": "  holdout_030                100.0%  100.0%   100.0%  电子发票怎么申请开具", "level": "info", "timestamp": "2026-09-18T00:38:09.666567Z"}
+{"event": "  holdout_031                100.0%  100.0%   100.0%  同城闪送覆盖哪些城市区域", "level": "info", "timestamp": "2026-09-18T00:38:09.666567Z"}
+{"event": "  holdout_032                100.0%  100.0%   100.0%  光驰数码的官方延保怎么购买", "level": "info", "timestamp": "2026-09-18T00:38:09.666567Z"}
+{"event": "  holdout_033                100.0%  100.0%   100.0%  品类券可以在哪些类目下使用", "level": "info", "timestamp": "2026-09-18T00:38:09.666567Z"}
+{"event": "  holdout_034                100.0%  100.0%   100.0%  售后纠纷的举证责任怎么分配", "level": "info", "timestamp": "2026-09-18T00:38:09.666567Z"}
+{"event": "  holdout_035                100.0%   33.3%    50.0%  家电过了保修期还能维修吗", "level": "info", "timestamp": "2026-09-18T00:38:09.666567Z"}
+{"event": "  holdout_036                100.0%  100.0%   100.0%  怎么查询商品的溯源信息", "level": "info", "timestamp": "2026-09-18T00:38:09.667094Z"}
+{"event": "  holdout_037                100.0%  100.0%   100.0%  商家入驻平台需要交多少保证金", "level": "info", "timestamp": "2026-09-18T00:38:09.667094Z"}
+{"event": "  holdout_038                100.0%  100.0%   100.0%  种子种苗有质量问题怎么售后", "level": "info", "timestamp": "2026-09-18T00:38:09.667094Z"}
+{"event": "  holdout_039                100.0%  100.0%   100.0%  联名商品拆封了还能退吗", "level": "info", "timestamp": "2026-09-18T00:38:09.667094Z"}
+{"event": "  holdout_040                100.0%  100.0%   100.0%  购买的电子课程能退款吗", "level": "info", "timestamp": "2026-09-18T00:38:09.667094Z"}
+{"event": "  holdout_041                100.0%  100.0%   100.0%  大件家电的安装费怎么收取", "level": "info", "timestamp": "2026-09-18T00:38:09.667094Z"}
+{"event": "  holdout_042                100.0%  100.0%   100.0%  大促期间的价保期限是几天", "level": "info", "timestamp": "2026-09-18T00:38:09.667094Z"}
+{"event": "  holdout_043                100.0%  100.0%   100.0%  双11大促的关键时间节点有哪些", "level": "info", "timestamp": "2026-09-18T00:38:09.667094Z"}
+{"event": "  holdout_044                100.0%  100.0%   100.0%  大促活动的优惠可以叠加吗", "level": "info", "timestamp": "2026-09-18T00:38:09.667094Z"}
+{"event": "  holdout_045                100.0%  100.0%   100.0%  跨店满减是怎么结算的", "level": "info", "timestamp": "2026-09-18T00:38:09.667094Z"}
+{"event": "  holdout_046                100.0%  100.0%   100.0%  大额订单的退款要多久到账", "level": "info", "timestamp": "2026-09-18T00:38:09.667094Z"}
+{"event": "  holdout_047                100.0%  100.0%   100.0%  随机保修和加购延保的覆盖范围有什么区别", "level": "info", "timestamp": "2026-09-18T00:38:09.667094Z"}
+{"event": "  holdout_048                100.0%  100.0%   100.0%  定制商品可以加急生产吗", "level": "info", "timestamp": "2026-09-18T00:38:09.667094Z"}
+{"event": "  holdout_049                100.0%  100.0%   100.0%  宠物智能设备坏了保修多久", "level": "info", "timestamp": "2026-09-18T00:38:09.667094Z"}
+{"event": "  holdout_050                100.0%  100.0%   100.0%  宠物粮开封后能退吗", "level": "info", "timestamp": "2026-09-18T00:38:09.667094Z"}
+{"event": "  holdout_051                100.0%  100.0%   100.0%  平台客服的首响时效是多久", "level": "info", "timestamp": "2026-09-18T00:38:09.667094Z"}
+{"event": "  holdout_052                100.0%   50.0%    63.1%  家纺尺寸不合适能换吗", "level": "info", "timestamp": "2026-09-18T00:38:09.667094Z"}
+{"event": "  holdout_053                100.0%  100.0%   100.0%  清洁剂的成分标注有什么要求", "level": "info", "timestamp": "2026-09-18T00:38:09.667094Z"}
+{"event": "  holdout_054                100.0%  100.0%   100.0%  家用电器的三包期限怎么算", "level": "info", "timestamp": "2026-09-18T00:38:09.667094Z"}
+{"event": "  holdout_055                100.0%  100.0%   100.0%  定制的家纺工期是多久", "level": "info", "timestamp": "2026-09-18T00:38:09.667094Z"}
+{"event": "  holdout_056                100.0%  100.0%   100.0%  PRO会员有什么专属权益", "level": "info", "timestamp": "2026-09-18T00:38:09.667094Z"}
+{"event": "  holdout_057                100.0%  100.0%   100.0%  平台分期购每月几号出账", "level": "info", "timestamp": "2026-09-18T00:38:09.667094Z"}
+{"event": "  holdout_058                100.0%  100.0%   100.0%  商家售假会被平台怎么处罚", "level": "info", "timestamp": "2026-09-18T00:38:09.667094Z"}
+{"event": "  holdout_059                100.0%  100.0%   100.0%  店铺积分怎么兑换商品", "level": "info", "timestamp": "2026-09-18T00:38:09.667094Z"}
+{"event": "  holdout_060                100.0%  100.0%   100.0%  平台券和店铺券能同时用在一单吗", "level": "info", "timestamp": "2026-09-18T00:38:09.667094Z"}
+{"event": "  holdout_061                100.0%  100.0%   100.0%  关注店铺后能领店铺红包吗", "level": "info", "timestamp": "2026-09-18T00:38:09.667094Z"}
+{"event": "  holdout_062                100.0%  100.0%   100.0%  华顺快递延误了有赔偿吗", "level": "info", "timestamp": "2026-09-18T00:38:09.667094Z"}
+{"event": "  holdout_063                100.0%  100.0%   100.0%  商品拆封后影响退货吗", "level": "info", "timestamp": "2026-09-18T00:38:09.667094Z"}
+{"event": "  holdout_064                100.0%   50.0%    63.1%  二手相机怎么判断成色", "level": "info", "timestamp": "2026-09-18T00:38:09.667094Z"}
+{"event": "  holdout_065                100.0%  100.0%   100.0%  发现账户有异常交易怎么处理", "level": "info", "timestamp": "2026-09-18T00:38:09.667094Z"}
+{"event": "  holdout_066                100.0%  100.0%   100.0%  汇付宝账户安全险怎么申请理赔", "level": "info", "timestamp": "2026-09-18T00:38:09.667094Z"}
+{"event": "  holdout_067                100.0%  100.0%   100.0%  盲盒拆了还能退吗", "level": "info", "timestamp": "2026-09-18T00:38:09.667094Z"}
+{"event": "  holdout_068                100.0%  100.0%   100.0%  教辅书买错了版本能换吗", "level": "info", "timestamp": "2026-09-18T00:38:09.667094Z"}
+{"event": "  holdout_069                100.0%  100.0%   100.0%  智能穿戴设备的健康数据安全吗", "level": "info", "timestamp": "2026-09-18T00:38:09.667094Z"}
+{"event": "  holdout_070                100.0%  100.0%   100.0%  服装定制的量体尺寸错了怎么办", "level": "info", "timestamp": "2026-09-18T00:38:09.667094Z"}
+{"event": "  holdout_071                100.0%  100.0%   100.0%  衣服洗后缩水算质量问题吗", "level": "info", "timestamp": "2026-09-18T00:38:09.667094Z"}
+{"event": "  holdout_072                100.0%  100.0%   100.0%  到店服务的券没使用能退吗", "level": "info", "timestamp": "2026-09-18T00:38:09.667094Z"}
+{"event": "  holdout_073                100.0%  100.0%   100.0%  极速退款最多能退多少金额", "level": "info", "timestamp": "2026-09-18T00:38:09.667619Z"}
+{"event": "  holdout_074                100.0%  100.0%   100.0%  校园专区学生认证需要什么材料", "level": "info", "timestamp": "2026-09-18T00:38:09.667619Z"}
+{"event": "  holdout_075                100.0%  100.0%   100.0%  母婴洗护产品用了过敏能退吗", "level": "info", "timestamp": "2026-09-18T00:38:09.667619Z"}
+{"event": "  holdout_076                100.0%   50.0%    63.1%  婴儿推车有质量问题怎么售后", "level": "info", "timestamp": "2026-09-18T00:38:09.667619Z"}
+{"event": "  holdout_077                100.0%  100.0%   100.0%  泳镜的防雾涂层掉了能换吗", "level": "info", "timestamp": "2026-09-18T00:38:09.667619Z"}
+{"event": "  holdout_078                100.0%  100.0%   100.0%  活体宠物的退换规则是什么", "level": "info", "timestamp": "2026-09-18T00:38:09.667619Z"}
+{"event": "  holdout_079                100.0%  100.0%   100.0%  海外直邮的行邮税怎么缴纳", "level": "info", "timestamp": "2026-09-18T00:38:09.667619Z"}
+{"event": "  holdout_080                100.0%  100.0%   100.0%  鱼竿断了能保修吗", "level": "info", "timestamp": "2026-09-18T00:38:09.667619Z"}
+{"event": "  holdout_081                100.0%  100.0%   100.0%  港澳台订单的配送时效是多久", "level": "info", "timestamp": "2026-09-18T00:38:09.667619Z"}
+{"event": "  holdout_082                100.0%   50.0%    63.1%  滑雪板可以租赁吗", "level": "info", "timestamp": "2026-09-18T00:38:09.667619Z"}
+{"event": "  holdout_083                100.0%  100.0%   100.0%  灯具的电压规格选错了能退吗", "level": "info", "timestamp": "2026-09-18T00:38:09.667619Z"}
+{"event": "  holdout_084                100.0%   50.0%    63.1%  物流停滞多久可以发起催单", "level": "info", "timestamp": "2026-09-18T00:38:09.667619Z"}
+{"event": "  holdout_085                100.0%   50.0%    63.1%  普通快递的承诺时效是几天", "level": "info", "timestamp": "2026-09-18T00:38:09.667619Z"}
+{"event": "  holdout_086                100.0%  100.0%   100.0%  玩具的安全认证要求是什么", "level": "info", "timestamp": "2026-09-18T00:38:09.667619Z"}
+{"event": "  holdout_087                  0.0%    0.0%     0.0%  手表进水了在保修范围内吗", "level": "info", "timestamp": "2026-09-18T00:38:09.667619Z"}
+{"event": "  holdout_088                100.0%  100.0%   100.0%  篮球气压不足算质量问题吗", "level": "info", "timestamp": "2026-09-18T00:38:09.667619Z"}
+{"event": "  holdout_089                100.0%  100.0%   100.0%  冷冻分割肉的分割标准是什么", "level": "info", "timestamp": "2026-09-18T00:38:09.667619Z"}
+{"event": "  holdout_090                100.0%  100.0%   100.0%  生鲜商品签收后多久内可以申请售后", "level": "info", "timestamp": "2026-09-18T00:38:09.667619Z"}
+{"event": "  holdout_091                100.0%  100.0%   100.0%  云讯电信的话费余额可以退吗", "level": "info", "timestamp": "2026-09-18T00:38:09.667619Z"}
+{"event": "  holdout_092                100.0%  100.0%   100.0%  电动自行车上牌需要什么手续", "level": "info", "timestamp": "2026-09-18T00:38:09.667619Z"}
+{"event": "  holdout_093                100.0%  100.0%   100.0%  百亿补贴的商品有什么购买限制", "level": "info", "timestamp": "2026-09-18T00:38:09.667619Z"}
+{"event": "  holdout_094                100.0%  100.0%   100.0%  直播间抽奖的中奖资格是什么", "level": "info", "timestamp": "2026-09-18T00:38:09.667619Z"}
+{"event": "  holdout_095                100.0%  100.0%   100.0%  近视镜片可以定制吗", "level": "info", "timestamp": "2026-09-18T00:38:09.667619Z"}
+{"event": "  holdout_096                100.0%  100.0%   100.0%  果园种出来的水果有问题能售后吗", "level": "info", "timestamp": "2026-09-18T00:38:09.667619Z"}
+{"event": "  holdout_097                100.0%   50.0%    63.1%  签收后多久内可以申请破损赔付", "level": "info", "timestamp": "2026-09-18T00:38:09.667619Z"}
+{"event": "  holdout_098                100.0%  100.0%   100.0%  礼品卡的有效期是多久", "level": "info", "timestamp": "2026-09-18T00:38:09.667619Z"}
+{"event": "  holdout_099                100.0%  100.0%   100.0%  社区团购下单后多久可以取货", "level": "info", "timestamp": "2026-09-18T00:38:09.667619Z"}
+{"event": "  holdout_100                100.0%  100.0%   100.0%  平台积分可以抵扣多少钱", "level": "info", "timestamp": "2026-09-18T00:38:09.667619Z"}
+{"event": "  holdout_101                100.0%  100.0%   100.0%  中鉴检测的鉴定流程是怎样的", "level": "info", "timestamp": "2026-09-18T00:38:09.667619Z"}
+{"event": "  holdout_102                100.0%  100.0%   100.0%  真皮包怎么鉴别材质", "level": "info", "timestamp": "2026-09-18T00:38:09.667619Z"}
+{"event": "  holdout_103                100.0%  100.0%   100.0%  大米缺斤少两怎么赔付", "level": "info", "timestamp": "2026-09-18T00:38:09.667619Z"}
+{"event": "  holdout_104                100.0%  100.0%   100.0%  怎么举报商家售假", "level": "info", "timestamp": "2026-09-18T00:38:09.667619Z"}
+{"event": "  holdout_105                100.0%  100.0%   100.0%  美妆产品用了过敏怎么处理", "level": "info", "timestamp": "2026-09-18T00:38:09.667619Z"}
+{"event": "  holdout_106                100.0%  100.0%   100.0%  云翼航空托运行李损坏怎么申请赔偿", "level": "info", "timestamp": "2026-09-18T00:38:09.667619Z"}
+{"event": "  holdout_107                100.0%  100.0%   100.0%  茶叶的保质期标注有什么要求", "level": "info", "timestamp": "2026-09-18T00:38:09.667619Z"}
+{"event": "  holdout_108                100.0%   50.0%    63.1%  游戏点卡充错了能退吗", "level": "info", "timestamp": "2026-09-18T00:38:09.667619Z"}
+{"event": "  holdout_109                100.0%  100.0%   100.0%  购物车的降价提醒怎么设置", "level": "info", "timestamp": "2026-09-18T00:38:09.667619Z"}
+{"event": "  holdout_110                100.0%  100.0%   100.0%  跨境商品一般多久能送到", "level": "info", "timestamp": "2026-09-18T00:38:09.667619Z"}
+{"event": "  holdout_111                100.0%  100.0%   100.0%  跨境订单清关需要多久", "level": "info", "timestamp": "2026-09-18T00:38:09.667619Z"}
+{"event": "  holdout_112                100.0%   50.0%    63.1%  跨境商品退货的运费由谁承担", "level": "info", "timestamp": "2026-09-18T00:38:09.667619Z"}
+{"event": "  holdout_113                100.0%  100.0%   100.0%  汽车配件买错型号可以退吗", "level": "info", "timestamp": "2026-09-18T00:38:09.667619Z"}
+{"event": "  holdout_114                100.0%  100.0%   100.0%  边境地区有哪些禁运商品", "level": "info", "timestamp": "2026-09-18T00:38:09.668144Z"}
+{"event": "  holdout_115                100.0%   50.0%    63.1%  帐篷有质量问题怎么售后", "level": "info", "timestamp": "2026-09-18T00:38:09.668144Z"}
+{"event": "  holdout_116                100.0%  100.0%   100.0%  商家赠送的运费险怎么赔付", "level": "info", "timestamp": "2026-09-18T00:38:09.668144Z"}
+{"event": "  holdout_117                100.0%   33.3%    50.0%  运费险怎么申请理赔", "level": "info", "timestamp": "2026-09-18T00:38:09.668144Z"}
+{"event": "  holdout_118                100.0%  100.0%   100.0%  各支付渠道的退款到账时间分别是多久", "level": "info", "timestamp": "2026-09-18T00:38:09.668144Z"}
+{"event": "  holdout_119                  0.0%    0.0%     0.0%  七天无理由退货的运费由谁承担", "level": "info", "timestamp": "2026-09-18T00:38:09.668144Z"}
+{"event": "  holdout_120                100.0%  100.0%   100.0%  退货运费按什么标准计算", "level": "info", "timestamp": "2026-09-18T00:38:09.668144Z"}
+{"event": "  holdout_121                100.0%  100.0%   100.0%  酒类商品的销售限制是什么", "level": "info", "timestamp": "2026-09-18T00:38:09.668144Z"}
+{"event": "  holdout_122                100.0%  100.0%   100.0%  华信银行信用卡分期怎么申请", "level": "info", "timestamp": "2026-09-18T00:38:09.668144Z"}
+{"event": "  holdout_123                100.0%  100.0%   100.0%  恒丰银行储蓄卡被盗刷怎么赔付", "level": "info", "timestamp": "2026-09-18T00:38:09.668144Z"}
+{"event": "  holdout_124                100.0%  100.0%   100.0%  门店自提的流程是怎样的", "level": "info", "timestamp": "2026-09-18T00:38:09.668144Z"}
+{"event": "  holdout_125                100.0%  100.0%   100.0%  我的个人信息会被共享给谁", "level": "info", "timestamp": "2026-09-18T00:38:09.668144Z"}
+{"event": "  holdout_126                100.0%  100.0%   100.0%  露营用的气罐可以快递吗", "level": "info", "timestamp": "2026-09-18T00:38:09.668144Z"}
+{"event": "  holdout_127                  0.0%    0.0%     0.0%  预售商品和现货有什么区别", "level": "info", "timestamp": "2026-09-18T00:38:09.668144Z"}
+{"event": "  holdout_128                100.0%  100.0%   100.0%  预售付了定金还能退吗", "level": "info", "timestamp": "2026-09-18T00:38:09.668144Z"}
+{"event": "  holdout_129                100.0%  100.0%   100.0%  临期食品可以正常购买吗", "level": "info", "timestamp": "2026-09-18T00:38:09.668144Z"}
+{"event": "  holdout_130                100.0%  100.0%   100.0%  香薰蜡烛夏天运输会融化吗", "level": "info", "timestamp": "2026-09-18T00:38:09.668144Z"}
+{"event": "  holdout_131                100.0%  100.0%   100.0%  公路车的配件坏了能保修吗", "level": "info", "timestamp": "2026-09-18T00:38:09.668144Z"}
+{"event": "  holdout_132                100.0%  100.0%   100.0%  3C数码激活后怎么清理个人数据", "level": "info", "timestamp": "2026-09-18T00:38:09.668144Z"}
+{"event": "  holdout_133                100.0%  100.0%   100.0%  晒单审核需要多久", "level": "info", "timestamp": "2026-09-18T00:38:09.668144Z"}
+{"event": "  holdout_134                100.0%  100.0%   100.0%  二手商品有平台保障吗", "level": "info", "timestamp": "2026-09-18T00:38:09.668144Z"}
+{"event": "  holdout_135                100.0%  100.0%   100.0%  怎么查询商品是否属于价保除外类目", "level": "info", "timestamp": "2026-09-18T00:38:09.668144Z"}
+{"event": "  holdout_136                100.0%  100.0%   100.0%  企业团购的起订量是多少", "level": "info", "timestamp": "2026-09-18T00:38:09.668144Z"}
+{"event": "  holdout_137                100.0%  100.0%   100.0%  偏远地区订单的配送时效是多久", "level": "info", "timestamp": "2026-09-18T00:38:09.668144Z"}
+{"event": "  holdout_138                100.0%  100.0%   100.0%  儿童安全座椅的安装服务怎么预约", "level": "info", "timestamp": "2026-09-18T00:38:09.668144Z"}
+{"event": "  holdout_139                100.0%  100.0%   100.0%  分期逾期会收取什么费用", "level": "info", "timestamp": "2026-09-18T00:38:09.668144Z"}
+{"event": "  holdout_140                100.0%  100.0%   100.0%  包装材料有什么环保要求", "level": "info", "timestamp": "2026-09-18T00:38:09.668144Z"}
+{"event": "  holdout_141                100.0%  100.0%   100.0%  保健品的宣传有什么限制", "level": "info", "timestamp": "2026-09-18T00:38:09.668144Z"}
+{"event": "  holdout_142                100.0%  100.0%   100.0%  星海电器的免费安装包含哪些项目", "level": "info", "timestamp": "2026-09-18T00:38:09.668144Z"}
+{"event": "  holdout_143                100.0%  100.0%   100.0%  不粘锅涂层脱落了能退吗", "level": "info", "timestamp": "2026-09-18T00:38:09.668144Z"}
+{"event": "  holdout_144                100.0%  100.0%   100.0%  用了品类券的订单退款后券会退回吗", "level": "info", "timestamp": "2026-09-18T00:38:09.668144Z"}
+{"event": "  holdout_145                100.0%  100.0%   100.0%  售后纠纷受理后多久会有结果", "level": "info", "timestamp": "2026-09-18T00:38:09.668144Z"}
+{"event": "  holdout_146                100.0%  100.0%   100.0%  保证金在什么情况下会被扣罚", "level": "info", "timestamp": "2026-09-18T00:38:09.668144Z"}
+{"event": "  holdout_147                100.0%  100.0%   100.0%  大促报名有什么门槛", "level": "info", "timestamp": "2026-09-18T00:38:09.668144Z"}
+{"event": "  holdout_148                100.0%  100.0%   100.0%  PRO会员申请退款会退会费吗", "level": "info", "timestamp": "2026-09-18T00:38:09.668144Z"}
+{"event": "  holdout_149                100.0%   50.0%    63.1%  平台分期购和先用后付有什么区别", "level": "info", "timestamp": "2026-09-18T00:38:09.668144Z"}
+{"event": "  holdout_150                100.0%  100.0%   100.0%  店铺券和平台券叠加时先扣哪张", "level": "info", "timestamp": "2026-09-18T00:38:09.668144Z"}
+{"event": "  holdout_151                100.0%   50.0%    63.1%  买回来的鞋码子小了咋整", "level": "info", "timestamp": "2026-09-18T00:38:09.668144Z"}
+{"event": "  holdout_152                  0.0%    0.0%     0.0%  快递好几天不动了咋办", "level": "info", "timestamp": "2026-09-18T00:38:09.668144Z"}
+{"event": "  holdout_153                100.0%   50.0%    63.1%  退的钱咋还没到账", "level": "info", "timestamp": "2026-09-18T00:38:09.668144Z"}
+{"event": "  holdout_154                100.0%   33.3%    50.0%  运费险能赔多少", "level": "info", "timestamp": "2026-09-18T00:38:09.668663Z"}
+{"event": "  holdout_155                100.0%  100.0%   100.0%  店铺的积分咋攒", "level": "info", "timestamp": "2026-09-18T00:38:09.668663Z"}
+{"event": "  holdout_156                100.0%   25.0%    43.1%  券咋突然用不了了", "level": "info", "timestamp": "2026-09-18T00:38:09.668663Z"}
+{"event": "  holdout_157                100.0%   33.3%    50.0%  收到货发现少了件咋整", "level": "info", "timestamp": "2026-09-18T00:38:09.668663Z"}
+{"event": "  holdout_158                100.0%  100.0%   100.0%  先用后付的钱咋还", "level": "info", "timestamp": "2026-09-18T00:38:09.668663Z"}
+{"event": "  holdout_159                100.0%  100.0%   100.0%  闪送咋收费的", "level": "info", "timestamp": "2026-09-18T00:38:09.668663Z"}
+{"event": "  holdout_160                100.0%  100.0%   100.0%  冷链的东西到了咋签收", "level": "info", "timestamp": "2026-09-18T00:38:09.668663Z"}
+{"event": "  holdout_161                100.0%  100.0%   100.0%  自提咋弄", "level": "info", "timestamp": "2026-09-18T00:38:09.668663Z"}
+{"event": "  holdout_162                100.0%  100.0%   100.0%  跨境买的坏了咋退", "level": "info", "timestamp": "2026-09-18T00:38:09.668663Z"}
+{"event": "  holdout_163                100.0%   50.0%    63.1%  大促的满减咋算", "level": "info", "timestamp": "2026-09-18T00:38:09.668663Z"}
+{"event": "  holdout_164                100.0%  100.0%   100.0%  积分能抵钱花吗", "level": "info", "timestamp": "2026-09-18T00:38:09.668663Z"}
+{"event": "  holdout_165                100.0%  100.0%   100.0%  活体宠物咋运过来的", "level": "info", "timestamp": "2026-09-18T00:38:09.668663Z"}
+{"event": "  holdout_166                100.0%   50.0%    63.1%  一单里同时用了店铺券和平台券，订单取消后这…", "level": "info", "timestamp": "2026-09-18T00:38:09.668663Z"}
+{"event": "  holdout_167                100.0%  100.0%   100.0%  大促买的商品又降价了，还能申请价保补差价吗", "level": "info", "timestamp": "2026-09-18T00:38:09.668663Z"}
+{"event": "  holdout_168                100.0%   33.3%    50.0%  钻石会员买的商品超过了7天才降价，能补差吗", "level": "info", "timestamp": "2026-09-18T00:38:09.668663Z"}
+{"event": "  holdout_169                100.0%  100.0%   100.0%  先用后付的订单逾期了还没还清，会有什么影响", "level": "info", "timestamp": "2026-09-18T00:38:09.668663Z"}
+{"event": "  holdout_170                100.0%   50.0%    63.1%  预售付了定金后商品下架了，定金还能退吗", "level": "info", "timestamp": "2026-09-18T00:38:09.668663Z"}
+{"event": "  holdout_171                100.0%  100.0%   100.0%  企业采购的订单出了问题，售后和普通用户一样吗", "level": "info", "timestamp": "2026-09-18T00:38:09.668663Z"}
+{"event": "  holdout_172                100.0%  100.0%   100.0%  港澳台订单要退货，运费该谁承担", "level": "info", "timestamp": "2026-09-18T00:38:09.668663Z"}
+{"event": "  holdout_173                100.0%  100.0%   100.0%  冷链商品签收时就发现化冻了，可以拒收吗", "level": "info", "timestamp": "2026-09-18T00:38:09.668663Z"}
+{"event": "  holdout_174                100.0%   50.0%    63.1%  跨境商品拆封后发现质量问题还能退吗", "level": "info", "timestamp": "2026-09-18T00:38:09.668663Z"}
+{"event": "  holdout_175                100.0%  100.0%   100.0%  活体宠物在运输途中出了问题，责任怎么划分", "level": "info", "timestamp": "2026-09-18T00:38:09.668663Z"}
+{"event": "  holdout_176                100.0%  100.0%   100.0%  定制家具约定的工期延误了，能要赔偿吗", "level": "info", "timestamp": "2026-09-18T00:38:09.668663Z"}
+{"event": "  holdout_177                100.0%  100.0%   100.0%  大件家电安装时师傅说要另外收费，合理吗", "level": "info", "timestamp": "2026-09-18T00:38:09.668663Z"}
+{"event": "  holdout_178                  0.0%    0.0%     0.0%  百亿补贴买的东西降价了，能退差价吗", "level": "info", "timestamp": "2026-09-18T00:38:09.668663Z"}
+{"event": "  holdout_179                100.0%  100.0%   100.0%  同城闪送超过承诺时间没送到，能赔多少", "level": "info", "timestamp": "2026-09-18T00:38:09.668663Z"}
+{"event": "  holdout_180                  0.0%    0.0%     0.0%  生鲜签收超过24小时才发现坏了，还能赔吗", "level": "info", "timestamp": "2026-09-18T00:38:09.668663Z"}
+{"event": "  holdout_181                100.0%  100.0%   100.0%  刚收到货就发现外包装瘪了一块", "level": "info", "timestamp": "2026-09-18T00:38:09.668663Z"}
+{"event": "  holdout_182                100.0%  100.0%   100.0%  退货运费到底谁掏", "level": "info", "timestamp": "2026-09-18T00:38:09.668663Z"}
+{"event": "  holdout_183                100.0%  100.0%   100.0%  买手机加钱买的延长保修能用吗", "level": "info", "timestamp": "2026-09-18T00:38:09.668663Z"}
+{"event": "  holdout_184                100.0%   50.0%    63.1%  东西买完两天就降价了，差价能要回来吗", "level": "info", "timestamp": "2026-09-18T00:38:09.668663Z"}
+{"event": "  holdout_185                100.0%   50.0%    63.1%  包装盒拆了还能退吗", "level": "info", "timestamp": "2026-09-18T00:38:09.668663Z"}
+{"event": "  holdout_186                100.0%  100.0%   100.0%  快递显示签收了但我没拿到", "level": "info", "timestamp": "2026-09-18T00:38:09.668663Z"}
+{"event": "  holdout_187                100.0%   50.0%    63.1%  点了短信链接钱被转走了", "level": "info", "timestamp": "2026-09-18T00:38:09.668663Z"}
+{"event": "  holdout_188                100.0%  100.0%   100.0%  旧手机能折价换新吗", "level": "info", "timestamp": "2026-09-18T00:38:09.668663Z"}
+{"event": "  holdout_189                100.0%   25.0%    43.1%  商家一直不发货有赔偿吗", "level": "info", "timestamp": "2026-09-18T00:38:09.668663Z"}
+{"event": "  holdout_190                100.0%  100.0%   100.0%  抽奖中的实物奖品多久寄出", "level": "info", "timestamp": "2026-09-18T00:38:09.668663Z"}
+{"event": "  holdout_191                100.0%  100.0%   100.0%  现在买光驰手机还有官方延保可以加购吗", "level": "info", "timestamp": "2026-09-18T00:38:09.668663Z"}
+{"event": "  holdout_192                100.0%   33.3%    50.0%  现在运费险理赔最高能赔多少", "level": "info", "timestamp": "2026-09-18T00:38:09.668663Z"}
+{"event": "  holdout_193                100.0%  100.0%   100.0%  现在哪些商品还能七天无理由退货", "level": "info", "timestamp": "2026-09-18T00:38:09.669183Z"}
+{"event": "  holdout_194                100.0%  100.0%   100.0%  现在极速退款的上限还是200元吗", "level": "info", "timestamp": "2026-09-18T00:38:09.669183Z"}
+{"event": "  holdout_195                100.0%  100.0%   100.0%  现在大促价保还是15天吗", "level": "info", "timestamp": "2026-09-18T00:38:09.669183Z"}
+{"event": "  holdout_196                100.0%  100.0%   100.0%  现在砍价免费拿还是24小时有效吗", "level": "info", "timestamp": "2026-09-18T00:38:09.669183Z"}
+{"event": "  holdout_197                100.0%  100.0%   100.0%  现在快递丢件的赔偿标准是多少", "level": "info", "timestamp": "2026-09-18T00:38:09.669183Z"}
+{"event": "  holdout_198                100.0%  100.0%   100.0%  现在大额订单退款需要多久", "level": "info", "timestamp": "2026-09-18T00:38:09.669183Z"}
+{"event": "  holdout_199                100.0%  100.0%   100.0%  现在客服人工响应要等多久", "level": "info", "timestamp": "2026-09-18T00:38:09.669183Z"}
+{"event": "  holdout_200                100.0%  100.0%   100.0%  现在发票还是邮寄纸质版吗", "level": "info", "timestamp": "2026-09-18T00:38:09.669183Z"}
+{"event": "  holdout_201                ACCEPT           0.6533  账号注销了，里面的余额和优惠券还能找回来吗", "level": "info", "timestamp": "2026-09-18T00:38:09.669183Z"}
+{"event": "  holdout_202                ACCEPT           0.1543  未成年人注册账号下单可以吗", "level": "info", "timestamp": "2026-09-18T00:38:09.669183Z"}
+{"event": "  holdout_203                ACCEPT           0.0853  帮朋友代付的订单，退款会退到谁的账户", "level": "info", "timestamp": "2026-09-18T00:38:09.669183Z"}
+{"event": "  holdout_204                ACCEPT           0.3633  同一个订单可以拆成两单发到不同的地址吗", "level": "info", "timestamp": "2026-09-18T00:38:09.669183Z"}
+{"event": "  holdout_205                ACCEPT           0.7936  快递在途中，能拦截改送到别的地址吗", "level": "info", "timestamp": "2026-09-18T00:38:09.669183Z"}
+{"event": "  holdout_206                ACCEPT           0.0022  直播回放可以下载保存吗", "level": "info", "timestamp": "2026-09-18T00:38:09.669183Z"}
+{"event": "  holdout_207                ACCEPT           0.1460  平台积分能转赠给朋友吗", "level": "info", "timestamp": "2026-09-18T00:38:09.669183Z"}
+{"event": "  holdout_208                ACCEPT           0.0304  店铺粉丝数量多了能提现吗", "level": "info", "timestamp": "2026-09-18T00:38:09.669183Z"}
+{"event": "  holdout_209                ACCEPT           0.5427  卖家说先确认收货再补发赠品，靠谱吗", "level": "info", "timestamp": "2026-09-18T00:38:09.669183Z"}
+{"event": "  holdout_210                ACCEPT           0.0675  商品显示已下架，还能申请售后吗", "level": "info", "timestamp": "2026-09-18T00:38:09.669183Z"}
+{"event": "  holdout_211                ACCEPT           0.0331  页面显示有货，下单却失败是为什么", "level": "info", "timestamp": "2026-09-18T00:38:09.669183Z"}
+{"event": "  holdout_212                ACCEPT           0.0035  平台总部在哪里，可以参观吗", "level": "info", "timestamp": "2026-09-18T00:38:09.669183Z"}
+{"event": "  holdout_213                ACCEPT           0.0016  平台的招聘信息在哪里看", "level": "info", "timestamp": "2026-09-18T00:38:09.669183Z"}
+{"event": "  holdout_214                ACCEPT           0.0177  APP里的开屏广告怎么关掉", "level": "info", "timestamp": "2026-09-18T00:38:09.669183Z"}
+{"event": "  holdout_215                ACCEPT           0.0039  青少年模式在哪里开启", "level": "info", "timestamp": "2026-09-18T00:38:09.669183Z"}
+{"event": "  holdout_216                ACCEPT           0.0750  别人盗用我的照片开店卖货怎么办", "level": "info", "timestamp": "2026-09-18T00:38:09.669183Z"}
+{"event": "  holdout_217                ACCEPT           0.2610  卖家要求先补差价才发货，怎么投诉", "level": "info", "timestamp": "2026-09-18T00:38:09.669183Z"}
+{"event": "  holdout_218                ACCEPT           0.0724  店铺粉丝群怎么加入", "level": "info", "timestamp": "2026-09-18T00:38:09.669183Z"}
+{"event": "  holdout_219                ACCEPT           0.3014  卖家威胁说不给好评就不发货怎么办", "level": "info", "timestamp": "2026-09-18T00:38:09.669183Z"}
+{"event": "  holdout_220                ACCEPT           0.0048  平台界面能切换成繁体中文吗", "level": "info", "timestamp": "2026-09-18T00:38:09.669183Z"}
+{"event": "  holdout_221                ACCEPT           0.0059  平台支持少数民族语言界面吗", "level": "info", "timestamp": "2026-09-18T00:38:09.669183Z"}
+{"event": "  holdout_222                ACCEPT           0.0130  差几块钱才包邮，有凑单推荐吗", "level": "info", "timestamp": "2026-09-18T00:38:09.669183Z"}
+{"event": "  holdout_223                ACCEPT           0.1301  节假日商家还发货吗", "level": "info", "timestamp": "2026-09-18T00:38:09.669183Z"}
+{"event": "  holdout_224                ACCEPT           0.3085  主播推荐的商品质量有保障吗", "level": "info", "timestamp": "2026-09-18T00:38:09.669183Z"}
+{"event": "  holdout_225                ACCEPT           0.0744  同一件商品不同店价格差很多，怎么判断", "level": "info", "timestamp": "2026-09-18T00:38:09.669183Z"}
+{"event": "  holdout_226                ACCEPT           0.2670  平台有旧手机回收业务吗", "level": "info", "timestamp": "2026-09-18T00:38:09.669183Z"}
+{"event": "  holdout_227                ACCEPT           0.0185  买东西送的赠品需要交税吗", "level": "info", "timestamp": "2026-09-18T00:38:09.669183Z"}
+{"event": "  holdout_228                ACCEPT           0.0496  能用别人的银行卡代付吗", "level": "info", "timestamp": "2026-09-18T00:38:09.669183Z"}
+{"event": "  holdout_229                ACCEPT           0.5517  店铺关店了，优惠券还能用吗", "level": "info", "timestamp": "2026-09-18T00:38:09.669183Z"}
+{"event": "  holdout_230                ACCEPT           0.2943  投诉商家会泄露我的个人信息吗", "level": "info", "timestamp": "2026-09-18T00:38:09.669183Z"}
+{"event": "  holdout_231                ACCEPT           0.0484  闪送能帮我代买代付吗", "level": "info", "timestamp": "2026-09-18T00:38:09.669183Z"}
+{"event": "  holdout_232                ACCEPT           0.1862  帮朋友砍价会消耗我的金币吗", "level": "info", "timestamp": "2026-09-18T00:38:09.669183Z"}
+{"event": "  holdout_233                ACCEPT           0.6313  618和双11哪个活动力度更大", "level": "info", "timestamp": "2026-09-18T00:38:09.669722Z"}
+{"event": "  holdout_234                ACCEPT           0.0116  搜索结果是怎么排序的", "level": "info", "timestamp": "2026-09-18T00:38:09.669722Z"}
+{"event": "  holdout_235                ACCEPT           0.0393  直播间看到的商品和收到的实物不一样怎么办", "level": "info", "timestamp": "2026-09-18T00:38:09.669722Z"}
+{"event": "  holdout_236                ACCEPT           0.0037  房贷利率下调后，月供会自动减少吗", "level": "info", "timestamp": "2026-09-18T00:38:09.669722Z"}
+{"event": "  holdout_237                ACCEPT           0.1607  银行卡被ATM机吞了怎么取回来", "level": "info", "timestamp": "2026-09-18T00:38:09.669722Z"}
+{"event": "  holdout_238                ACCEPT           0.0097  医保卡里的个人账户余额能取出来吗", "level": "info", "timestamp": "2026-09-18T00:38:09.669722Z"}
+{"event": "  holdout_239                ACCEPT           0.0425  退休金每个月几号发放", "level": "info", "timestamp": "2026-09-18T00:38:09.669722Z"}
+{"event": "  holdout_240                ACCEPT           0.0020  年终奖单独计税和并入综合所得哪个划算", "level": "info", "timestamp": "2026-09-18T00:38:09.669722Z"}
+{"event": "  holdout_241                ACCEPT           0.2617  汽车年检需要带哪些材料", "level": "info", "timestamp": "2026-09-18T00:38:09.669722Z"}
+{"event": "  holdout_242                ACCEPT           0.0041  火车票学生票的优惠区间怎么填写", "level": "info", "timestamp": "2026-09-18T00:38:09.669722Z"}
+{"event": "  holdout_243                ACCEPT           0.0684  公交卡丢了能补办吗", "level": "info", "timestamp": "2026-09-18T00:38:09.669722Z"}
+{"event": "  holdout_244                ACCEPT           0.0203  演唱会门票买多了能转卖吗", "level": "info", "timestamp": "2026-09-18T00:38:09.669722Z"}
+{"event": "  holdout_245                ACCEPT           0.0146  酒店订单可以免费取消吗", "level": "info", "timestamp": "2026-09-18T00:38:09.669722Z"}
+{"event": "  holdout_246                ACCEPT           0.1099  托运行李超重怎么收费", "level": "info", "timestamp": "2026-09-18T00:38:09.669722Z"}
+{"event": "  holdout_247                ACCEPT           0.0237  宠物疫苗在哪里打比较便宜", "level": "info", "timestamp": "2026-09-18T00:38:09.669722Z"}
+{"event": "  holdout_248                ACCEPT           0.0228  装修公司跑路了怎么维权", "level": "info", "timestamp": "2026-09-18T00:38:09.669722Z"}
+{"event": "  holdout_249                ACCEPT           0.1080  对交通事故责任认定不服怎么办", "level": "info", "timestamp": "2026-09-18T00:38:09.669722Z"}
+{"event": "  holdout_250                ACCEPT           0.2893  劳动仲裁需要准备什么材料", "level": "info", "timestamp": "2026-09-18T00:38:09.669722Z"}
+{"event": "\n==============================================================================", "level": "info", "timestamp": "2026-09-18T00:38:09.669722Z"}
+{"event": "  汇总", "level": "info", "timestamp": "2026-09-18T00:38:09.669722Z"}
+{"event": "==============================================================================", "level": "info", "timestamp": "2026-09-18T00:38:09.669722Z"}
+{"event": "  用例数             : 250", "level": "info", "timestamp": "2026-09-18T00:38:09.669722Z"}
+{"event": "  正例 recall@k      :  97.0%", "level": "info", "timestamp": "2026-09-18T00:38:09.669722Z"}
+{"event": "  正例 MRR           :  88.4%", "level": "info", "timestamp": "2026-09-18T00:38:09.669722Z"}
+{"event": "  正例 nDCG@k        :  90.6%", "level": "info", "timestamp": "2026-09-18T00:38:09.669722Z"}
+{"event": "  困难正例 recall@k :  94.0%", "level": "info", "timestamp": "2026-09-18T00:38:09.669722Z"}
+{"event": "  负例拒绝率         :   0.0%", "level": "info", "timestamp": "2026-09-18T00:38:09.669722Z"}
+{"event": "报告已留档: E:\\ea\\artifacts\\eval\\v3\\holdout-250-es\\report.json", "level": "info", "timestamp": "2026-09-18T00:38:09.703774Z"}
+{"event": "检索 manifest 已留档: E:\\ea\\artifacts\\eval\\v3\\holdout-250-es\\manifest.json", "level": "info", "timestamp": "2026-09-18T00:38:09.704786Z"}
+{"event": "\n❌ 检索质量门禁未通过：", "level": "info", "timestamp": "2026-09-18T00:38:09.704786Z"}
+{"event": "  - 正例 MRR  88.4% <  90.0%", "level": "info", "timestamp": "2026-09-18T00:38:09.704786Z"}
+{"event": "  - 数据集包含负例，但未配置 --min-score / RAG_MIN_RELEVANCE_SCORE", "level": "info", "timestamp": "2026-09-18T00:38:09.704786Z"}
+{"event": "  - 负例拒绝率   0.0% <  90.0%", "level": "info", "timestamp": "2026-09-18T00:38:09.704786Z"}
+{"event": "  · holdout_087: expected=['珠宝钟表类目规则.md'] hits=['品牌官方延保服务条款.md', '厂家全国联保三包政策.md', '售后维修与延保.md', '官方延保服务范围对照.md', '售后纠纷处理SOP.md'] top_score=0.6670392", "level": "info", "timestamp": "2026-09-18T00:38:09.704786Z"}
+{"event": "  · holdout_119: expected=['退货运费承担方判定规则.md'] hits=['客服SOP与应答手册.md', '退换货政策.md', '七天无理由商品清单.md', '售后纠纷处理SOP.md', '跨境退货特别流程.md'] top_score=0.9961606", "level": "info", "timestamp": "2026-09-18T00:38:09.704786Z"}
+{"event": "  · holdout_127: expected=['预售商品规则.md'] hits=['客服SOP与应答手册.md', '常见问题FAQ.md', '售后纠纷处理SOP.md', '大促活动总规则.md', '优惠券与促销规则.md'] top_score=0.9302051", "level": "info", "timestamp": "2026-09-18T00:38:09.704786Z"}
+{"event": "  · holdout_152: expected=['物流异常与投诉处理.md'] hits=['配送说明.md', '客服SOP与应答手册.md', '常见问题FAQ.md', '快递公司延误与丢件赔偿标准.md'] top_score=0.22627032", "level": "info", "timestamp": "2026-09-18T00:38:09.704786Z"}
+{"event": "  · holdout_178: expected=['百亿补贴规则.md'] hits=['常见问题FAQ.md', '价保与赔付规则.md', '会员价保升级规则.md', '大促作战手册.md', '大促价保特别条款.md'] top_score=0.8795612", "level": "info", "timestamp": "2026-09-18T00:38:09.704786Z"}
+{"event": "  · holdout_180: expected=['生鲜与定制商品规则.md'] hits=['售后纠纷处理SOP.md', '冷链配送标准.md', '破损赔付标准细则.md', '社区团购履约规则.md'] top_score=0.87652874", "level": "info", "timestamp": "2026-09-18T00:38:09.704786Z"}
+{"event": "  · holdout_201: expected=[] hits=['常见问题FAQ.md', '商家入驻与保证金管理规范.docx', '优惠券与促销规则.md', '售后纠纷处理SOP.md', '优惠券退回与补发规则.md'] top_score=0.6533481", "level": "info", "timestamp": "2026-09-18T00:38:09.704786Z"}
+{"event": "  · holdout_202: expected=[] hits=['酒类商品规则.md', '支付与账户安全.md', '先用后付与分期付款.md', '隐私与个人信息.md', '平台治理与处罚总则.pdf'] top_score=0.15431228", "level": "info", "timestamp": "2026-09-18T00:38:09.704786Z"}
+{"event": "  · holdout_203: expected=[] hits=['商家入驻与保证金管理规范.docx', '退换货政策.md', '支付与账户安全.md', '售后纠纷处理SOP.md'] top_score=0.085251234", "level": "info", "timestamp": "2026-09-18T00:38:09.704786Z"}
+{"event": "  · holdout_204: expected=[] hits=['客服SOP与应答手册.md', '包装与发货规范.md', '大促满减与跨店规则.md', '大促作战手册.md'] top_score=0.36330795", "level": "info", "timestamp": "2026-09-18T00:38:09.704786Z"}
+{"event": "  · holdout_205: expected=[] hits=['客服SOP与应答手册.md', '边境地区配送限制.md', '常见问题FAQ.md', '上门取件服务说明.md'] top_score=0.79358625", "level": "info", "timestamp": "2026-09-18T00:38:09.704786Z"}
+{"event": "  · holdout_206: expected=[] hits=['图书文教类目规则.md', '售后纠纷处理SOP.md', '平台治理与处罚总则.pdf', '直播与限时活动规则.md', '客服SOP与应答手册.md'] top_score=0.0022083889", "level": "info", "timestamp": "2026-09-18T00:38:09.704786Z"}
+{"event": "  · holdout_207: expected=[] hits=['积分兑换与抵扣规则.md', '砍价与游戏玩法规则.md', '礼品卡与储值卡.md', '店铺会员积分兑换细则.md', '客服SOP与应答手册.md'] top_score=0.14596547", "level": "info", "timestamp": "2026-09-18T00:38:09.704786Z"}
+{"event": "  · holdout_208: expected=[] hits=['平台治理与处罚总则.pdf', '店铺粉丝与会员.md', '店铺会员积分兑换细则.md', '积分兑换与抵扣规则.md', '门店自提规则.md'] top_score=0.03038675", "level": "info", "timestamp": "2026-09-18T00:38:09.704786Z"}
+{"event": "  · holdout_209: expected=[] hits=['客服SOP与应答手册.md', '先用后付与分期付款.md', '平台治理与处罚总则.pdf', '先用后付额度规则.md'] top_score=0.54265124", "level": "info", "timestamp": "2026-09-18T00:38:09.704786Z"}
+{"event": "  · holdout_210: expected=[] hits=['客服SOP与应答手册.md', '渔具类目规则.md', '母婴用品类目规则.md', '商家入驻与保证金管理规范.docx', '直播与限时活动规则.md'] top_score=0.067546695", "level": "info", "timestamp": "2026-09-18T00:38:09.704786Z"}
+{"event": "  · holdout_211: expected=[] hits=['平台治理与处罚总则.pdf', '客服SOP与应答手册.md', '大促作战手册.md', '常见问题FAQ.md', '优惠券退回与补发规则.md'] top_score=0.03314852", "level": "info", "timestamp": "2026-09-18T00:38:09.704786Z"}
+{"event": "  · holdout_212: expected=[] hits=['平台治理与处罚总则.pdf', '大促作战手册.md', '商家入驻与保证金管理规范.docx'] top_score=0.0034564096", "level": "info", "timestamp": "2026-09-18T00:38:09.704786Z"}
+{"event": "  · holdout_213: expected=[] hits=['校园专区规则.md', '平台治理与处罚总则.pdf', '大促作战手册.md', '商家入驻与保证金管理规范.docx'] top_score=0.0016420668", "level": "info", "timestamp": "2026-09-18T00:38:09.704786Z"}
+{"event": "  · holdout_214: expected=[] hits=['平台付费会员（PRO）权益.md', '平台治理与处罚总则.pdf', '隐私与个人信息.md', '支付与账户安全.md'] top_score=0.017712299", "level": "info", "timestamp": "2026-09-18T00:38:09.704786Z"}

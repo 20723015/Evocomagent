@@ -58,9 +58,9 @@ class RecordingToolManager:
         self.peak = 0
         self.calls: list[tuple[str, float, float]] = []  # (name, start, end)
 
-    tool_definitions: list = []  # SubAgent.handle 会读取（fake 传空即可）
+    tool_definitions: list = []  # ReAct 循环会读取（fake 传空即可）
 
-    def execute_tool(self, name, arguments, ctx=None, timeout=None, internal_args=None):
+    def execute_tool(self, name, arguments, ctx=None, timeout=None):
         with self._lock:
             self._active += 1
             self.peak = max(self.peak, self._active)
@@ -197,7 +197,7 @@ def test_executor_readonly_timeout_discards_result():
     executor = ToolBatchExecutor(parallelism=2, max_concurrent=16)
 
     class SlowManager:
-        def execute_tool(self, name, arguments, ctx=None, timeout=None, internal_args=None):
+        def execute_tool(self, name, arguments, ctx=None, timeout=None):
             time.sleep(0.5)  # 慢于 budget
             return '{"ok": "late"}'
 
@@ -267,7 +267,8 @@ def test_dist_stats_mean_median_percentiles():
     stats = _dist_stats([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
     assert stats["mean"] == 5.5
     assert stats["median"] == 5.5
-    assert stats["p90"] == 10  # nearest-rank：int(0.9*10)=9 → 第 9 项（0-based）=10
+    # 最近秩法（低危修复 C6）：P90 = 第 ceil(0.9*10)=9 项（1-based）= 9
+    assert stats["p90"] == 9
     assert stats["p95"] == 10
     assert stats["n"] == 10
     assert _dist_stats([]) == {"mean": 0.0, "median": 0, "p90": 0, "p95": 0, "n": 0}
@@ -545,71 +546,6 @@ def test_close_makes_no_llm_calls_and_releases_resources(reset_settings, tmp_pat
     # 自建执行器关闭 + 幂等
     agent.close()
     assert agent.tool_executor.closed is True
-
-
-# ============================================================
-# 改造一/二：SubAgent 与 orchestrator
-# ============================================================
-def test_subagent_handle_returns_steps_and_no_hardcode(reset_settings):
-    from app.multi_agent.agents import SubAgent
-
-    settings.max_react_steps = 3
-    script = [
-        _FakeMsg("先查订单", tool_calls=[_FakeToolCall("call_1", "query_order",
-                                                       '{"order_id": "A"}')]),
-        _FakeMsg("最终答复"),
-    ]
-    sub = SubAgent(name="售后", system_prompt="p",
-                   tool_manager=RecordingToolManager(delay=0),
-                   client=_ScriptedLLMClient(script), model="fake", temperature=0.0)
-
-    content, new_messages, steps = sub.handle(
-        [{"role": "user", "content": "查我的单"}], ctx=None,
-        executor=ToolBatchExecutor(parallelism=2, max_concurrent=16),
-        state=ToolTurnState(),
-    )
-    assert content == "最终答复"
-    assert steps == 2  # 实际步数：第一次带工具、第二次终结
-    tool_msgs = [m for m in new_messages if m["role"] == "tool"]
-    assert tool_msgs and tool_msgs[-1]["tool_call_id"] == "call_1"
-    assert new_messages[-1]["role"] == "assistant"
-    assert _read_calls(sub.tool_manager) == ["query_order"]
-
-
-def test_subagent_budget_expired_raises():
-    from app.multi_agent.agents import SubAgent
-    from app.agent.turn_budget import LLMBudgetExhausted
-
-    sub = SubAgent(name="售后", system_prompt="p", tool_manager=object(),
-                   client=_ScriptedLLMClient([_FakeMsg("x")]), model="fake",
-                   temperature=0.0)
-    with pytest.raises(LLMBudgetExhausted):
-        sub.handle([{"role": "user", "content": "hi"}],
-                   budget=TurnBudget(deadline=time.monotonic() - 1))
-
-
-def test_orchestrator_accumulates_react_steps(tmp_path):
-    from app.multi_agent.orchestrator import MultiAgentOrchestrator
-    from tests.unit.conftest import sample_response
-
-    agent = MultiAgentOrchestrator(
-        session_path=str(tmp_path / "s.json"),
-        memory_enabled=False, use_mcp=False, temperature=0.0,
-    )
-    first = list(agent.agents.keys())[0]
-    agent.router.route = lambda user_input, messages: first
-    for sub in agent.agents.values():
-        sub.handle = lambda messages, ctx=None, max_steps=5, executor=None, state=None, budget=None: (
-            "您的退款已处理。", [], 3,
-        )
-    agent._extract_structured_response = lambda text: sample_response(
-        reply="您的退款已处理。"
-    )
-    result = agent.chat("我要退款")
-
-    assert agent._react_steps_count == 3  # 不再恒为 1
-    assert result.reply == "您的退款已处理。"
-    assert agent._last_citation_verdict is not None  # 引用校验已接入
 
 
 # ============================================================

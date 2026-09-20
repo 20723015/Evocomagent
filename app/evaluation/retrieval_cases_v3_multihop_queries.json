@@ -1,0 +1,242 @@
+{
+ "protocol": "retrieval-multihop-overlay-v1",
+ "source_dataset": "app/evaluation/retrieval_cases_v3.json",
+ "drafting_discipline": "起草只依据 source_dataset 的 query 文本与 KB 文档命名空间（文档名/标题词），未依据 expected 字段起草。例外披露：前期数据集探查曾以统计口径打印过 4 条样例（hard_confusion_03/04/05、hard_multi_01）的完整用例（含 expected）；该 4 例的子查询仍按 query 文本独立起草，且 20% 人工抽检以 query-only 口径复核（见 RESULT-gate.md 诚实边界）。review 修复（2026-09-16）：复核发现 45/59 例含与 KB 文档名 stem 逐字相同的子查询（52/116 条）——虽符合「可读文档命名空间」纪律，但会让 B 轮测得过多「标题字面命中」而非真实拆解增益；已全部按 query 主题改写为 query 词汇表述（不参照 expected），改写后 0 条与任何文档 stem 逐字相同，并顺带修正 1 例主题错配（c_078 价保用例原子查询为 3C 数码类目）。",
+ "note": "值为原 query 之外的补充子查询（≤2 条；原 query 占首位，总计 ≤3 条与线上 MAX_SUBQUERIES 一致）。review 修复后的子查询均为 query 词汇表述，不含文档名 stem 逐字形式。",
+ "overlay": {
+  "retrieval_退换货政策_9": [
+   "退款到账时间"
+  ],
+  "retrieval_配送说明_13": [
+   "钻石会员运费特权"
+  ],
+  "retrieval_mixed_1": [
+   "钻石会员运费特权",
+   "退换货运费承担方"
+  ],
+  "retrieval_mixed_2": [
+   "黄金会员运费特权",
+   "偏远地区配送范围"
+  ],
+  "retrieval_mixed_6": [
+   "物流时效与赔付",
+   "价保补差规则"
+  ],
+  "retrieval_mixed_7": [
+   "偏远地区配送范围",
+   "价保规则"
+  ],
+  "retrieval_mixed_8": [
+   "保修期内坏了怎么寄回",
+   "保修寄回运费谁承担"
+  ],
+  "retrieval_mixed_11": [
+   "物流异常怎么催件",
+   "发货时限"
+  ],
+  "retrieval_mixed_13": [
+   "会员运费特权",
+   "退款到账时效"
+  ],
+  "retrieval_mixed_15": [
+   "偏远地区配送范围",
+   "会员运费特权"
+  ],
+  "retrieval_hard_confusion_03": [
+   "钻石会员运费特权",
+   "偏远地区运费"
+  ],
+  "retrieval_hard_confusion_04": [
+   "黄金会员运费特权",
+   "偏远地区运费"
+  ],
+  "retrieval_hard_confusion_05": [
+   "质量问题退货时效",
+   "退货运费承担方"
+  ],
+  "retrieval_hard_multi_01": [
+   "钻石会员运费特权",
+   "偏远地区配送时效"
+  ],
+  "retrieval_hard_multi_02": [
+   "发货时限",
+   "取消订单退款处理"
+  ],
+  "retrieval_v3_hard_c_001": [
+   "跨境退货国际运费谁承担",
+   "运费险赔付范围"
+  ],
+  "retrieval_v3_hard_c_002": [
+   "价保除外类目",
+   "官方延保服务范围"
+  ],
+  "retrieval_v3_hard_c_003": [
+   "跨店满减部分退货怎么算",
+   "退掉的商品优惠券怎么退回"
+  ],
+  "retrieval_v3_hard_c_004": [
+   "价保补差基数",
+   "大促订单价保适用条件"
+  ],
+  "retrieval_v3_hard_c_005": [
+   "冷链配送化冻怎么赔",
+   "生鲜变质赔付"
+  ],
+  "retrieval_v3_hard_c_006": [
+   "冷链配送范围",
+   "生鲜变质赔付"
+  ],
+  "retrieval_v3_hard_c_007": [
+   "清关后跨境退货怎么办理",
+   "退货清关税费怎么扣"
+  ],
+  "retrieval_v3_hard_c_008": [
+   "海外直邮税费怎么算",
+   "税费多退少补"
+  ],
+  "retrieval_v3_hard_c_009": [
+   "香港订单退货流程",
+   "港澳台退款到账时间"
+  ],
+  "retrieval_v3_hard_c_010": [
+   "百亿补贴商品能价保吗",
+   "价保补差申请"
+  ],
+  "retrieval_v3_hard_c_011": [
+   "大件家电保修几年",
+   "保修找平台还是品牌方"
+  ],
+  "retrieval_v3_hard_c_012": [
+   "上门取件费用怎么算",
+   "运费险赔付范围"
+  ],
+  "retrieval_v3_hard_c_013": [
+   "外包装破损怎么赔付",
+   "签收验收规范"
+  ],
+  "retrieval_v3_hard_c_014": [
+   "平台丢件赔付标准",
+   "快递公司丢件自己赔多少"
+  ],
+  "retrieval_v3_hard_c_015": [
+   "物流无轨迹怎么催",
+   "物流投诉找谁"
+  ],
+  "retrieval_v3_hard_c_016": [
+   "店铺积分什么时候过期",
+   "平台积分和店铺积分能混用吗"
+  ],
+  "retrieval_v3_hard_c_017": [
+   "PRO会员积分怎么算",
+   "积分下单抵扣比例"
+  ],
+  "retrieval_v3_hard_c_018": [
+   "白银会员价保天数",
+   "大促期间价保天数"
+  ],
+  "retrieval_v3_hard_c_019": [
+   "企业采购开增值税专票",
+   "开票申请流程"
+  ],
+  "retrieval_v3_hard_c_020": [
+   "企业采购售后响应时效",
+   "企业批量采购运费险标准"
+  ],
+  "retrieval_v3_hard_c_021": [
+   "同城闪送超时赔偿",
+   "发货超时怎么赔"
+  ],
+  "retrieval_v3_hard_c_022": [
+   "社区团购生鲜变质怎么赔",
+   "生鲜变质赔付"
+  ],
+  "retrieval_v3_hard_c_023": [
+   "定制家具工期最长多久",
+   "定制商品质量问题能退吗"
+  ],
+  "retrieval_v3_hard_c_024": [
+   "先用后付逾期会怎样",
+   "分期手续费怎么收"
+  ],
+  "retrieval_v3_hard_c_025": [
+   "礼品卡没绑定能退吗",
+   "虚拟卡密激活后能退吗"
+  ],
+  "retrieval_v3_hard_c_026": [
+   "直播间奖品多久发货",
+   "优惠券使用有效期"
+  ],
+  "retrieval_v3_hard_c_027": [
+   "品类券退款怎么退回",
+   "退款后优惠券退回补发"
+  ],
+  "retrieval_v3_hard_c_028": [
+   "百亿补贴商品能用店铺券吗",
+   "平台券和店铺券叠加上限"
+  ],
+  "retrieval_v3_hard_c_029": [
+   "边境地址能配送吗",
+   "偏远地区附加费"
+  ],
+  "retrieval_v3_hard_c_030": [
+   "乌鲁木齐门店自提",
+   "自提商品保留几天"
+  ],
+  "retrieval_v3_hard_c_076": [
+   "退款多久到账",
+   "运费险赔付额度"
+  ],
+  "retrieval_v3_hard_c_077": [
+   "七天无理由退货条件",
+   "退货运费承担方"
+  ],
+  "retrieval_v3_hard_c_078": [
+   "手机降价能价保吗",
+   "退款一般多久到账"
+  ],
+  "retrieval_v3_hard_c_085": [
+   "极速退款上限多少",
+   "极速退款到账时间"
+  ],
+  "retrieval_v3_hard_c_086": [
+   "大额订单怎么定义",
+   "大额订单退款等多久"
+  ],
+  "retrieval_v3_hard_c_087": [
+   "定制鞋工期多久",
+   "定制商品能七天无理由退吗"
+  ],
+  "retrieval_v3_hard_c_089": [
+   "买家自购运费险赔付上限",
+   "商家送运费险赔付上限"
+  ],
+  "retrieval_v3_hard_c_091": [
+   "平台丢件怎么处理",
+   "快递公司丢件赔偿标准"
+  ],
+  "retrieval_v3_hard_c_096": [
+   "企业采购需要什么资质",
+   "企业采购能开专票吗"
+  ],
+  "retrieval_v3_hard_c_097": [
+   "企业批量订单换货流程",
+   "企业订单运费险标准"
+  ],
+  "retrieval_v3_hard_c_104": [
+   "一单最多叠几张券",
+   "退款后优惠券怎么退回"
+  ],
+  "retrieval_v3_hard_c_106": [
+   "平台券和店铺券叠加上限",
+   "百亿补贴商品用券限制"
+  ],
+  "retrieval_v3_hard_c_109": [
+   "钻石会员无忧退次数",
+   "PRO会员无忧退次数"
+  ],
+  "retrieval_v3_hard_c_110": [
+   "跨境退货要填单号吗",
+   "跨境退款多久到账"
+  ]
+ }
+}

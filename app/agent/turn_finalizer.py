@@ -9,6 +9,9 @@
 6. 保存安全后的最终结果（TurnRepository.commit_turn）；
 7. 产生 Handoff 事件（指标 + 事件回调）。
 
+另有 begin_turn：轮次开始时先落库 user 消息 + pending_turn 草稿标记
+（掉线恢复），与上面的收尾管线互为两端。
+
 普通与 SSE 接口复用同一完成器：输出安全、Handoff 语义一致。
 """
 
@@ -17,7 +20,7 @@ from __future__ import annotations
 from app.agent.citations import apply_citation_policy
 from app.agent.fact_guard import ground_reply
 from app.agent.final_response import FinalResponseArgs
-from app.agent.input_policy import business_escalation
+from app.agent.input_policy import business_escalation, current_emotion
 from app.agent.reliability import (
     compute_reliability,
 )
@@ -44,6 +47,10 @@ class TurnFinalizer:
         self._repository = repository
 
     # ---------- 入口 ----------
+    def begin_turn(self, ctx: AgentTurnContext) -> None:
+        """轮次开始（ReAct 之前）：user 消息先落库 + pending_turn 草稿标记。"""
+        self._repository.begin_turn(ctx)
+
     def finalize(self, ctx: AgentTurnContext) -> CustomerServiceResponse:
         result = self._build_response(ctx)
         # 1. 写操作状态校验
@@ -87,6 +94,12 @@ class TurnFinalizer:
             requires_human=requires_human,
             follow_up_question=follow_up,
         )
+        # 1. 写操作状态校验（中危修复 B6）：预算耗尽/强制收尾前若有写结果未知
+        # （如写超时被预算截断），同样落账 indeterminate_writes 进可靠度信号与
+        # metadata。护栏/范围闸门路径无 indeterminate 写 → no-op；固定话术不
+        # 宣称退款成功 → final_reply_guard 不改写；handoff_reason 已在上文确定，
+        # _apply_write_op_state 的 or 语义不会覆盖。
+        self._apply_write_op_state(ctx, result)
         ctx.reliability = compute_reliability(ctx.reliability_signal)
         result.confidence = ctx.reliability
         self._repository.commit_turn(ctx, result)
@@ -108,14 +121,13 @@ class TurnFinalizer:
 
     def _apply_write_op_state(self, ctx: AgentTurnContext, result) -> None:
         tracker = ctx.write_ops
-        refund = tracker.refund
-        # 执行器写超时与状态机观察可能记录同一事件 → 按锚点去重
+        # 执行器写超时与状态机观察可能记录同一事件 → 按请求标识去重
         seen: set[tuple] = set()
         indeterminate: list[dict] = []
-        for entry in list(refund.indeterminate) + list(ctx.extra_indeterminate):
+        for entry in list(tracker.indeterminate) + list(ctx.extra_indeterminate):
             key = (
                 entry.get("tool"), entry.get("order_id"),
-                entry.get("idempotency_key"),
+                entry.get("application_id"), entry.get("client_request_id"),
             )
             if key in seen:
                 continue
@@ -126,13 +138,13 @@ class TurnFinalizer:
             result.requires_human = True
             ctx.handoff_reason = ctx.handoff_reason or "tool_indeterminate"
             ctx.indeterminate_writes = indeterminate
-        # 无本轮 committed 证据 → 禁止宣称退款成功（确定性改写）
-        safe_reply, rewritten = refund.final_reply_guard(result.reply)
+        # 无对应业务回执 → 禁止越级宣称退款状态（确定性改写）
+        safe_reply, rewritten = tracker.final_reply_guard(result.reply)
         if rewritten:
             result.reply = safe_reply
             result.requires_human = True
             ctx.reliability_signal.write_indeterminate = True
-            ctx.handoff_reason = ctx.handoff_reason or "refund_claim_without_commit"
+            ctx.handoff_reason = ctx.handoff_reason or "refund_claim_without_evidence"
             from app.observability.metrics import record_write_claim_blocked
 
             record_write_claim_blocked()
@@ -158,7 +170,9 @@ class TurnFinalizer:
                 else:
                     # 无证据数字被删：检索/证据不足档
                     ctx.reliability_signal.retrieval_insufficient = True
-                if fact_verdict.removed_sentences and "转人工" in cleaned:
+                # 升级判据用模型原文是否提转人工（mentions_handoff），不用
+                # cleaned——cleaned 可能含 fact_guard 自己追加的核实话术
+                if fact_verdict.removed_sentences and fact_verdict.mentions_handoff:
                     result.requires_human = True
         # 工具证据 → 可靠度基础档
         successful = ctx.successful_tools()
@@ -186,7 +200,8 @@ class TurnFinalizer:
             ctx.reliability_signal.retrieval_insufficient = True
         # 工具可重试错误（跳过/超时/错误码，非写副作用）
         for entry in ctx.tool_trace:
-            if entry.name in ("apply_refund",):
+            if entry.name in ("submit_refund_application",
+                              "cancel_refund_application"):
                 continue
             if entry.skipped or (not entry.ok):
                 ctx.reliability_signal.tool_retryable_error = True
@@ -206,13 +221,29 @@ class TurnFinalizer:
             ctx.escalation = "purchase"
             ctx.escalation_cap = ESCALATION_CAP
             ctx.handoff_reason = ctx.handoff_reason or "purchase_request"
+        # 情绪升级（P1-1）：angry/extreme → 转人工 + 上限 0.5。
+        # 与既有升级共用「首因优先不覆盖」约定（or 语义）：强投诉/强购买先命中时
+        # 保留其 handoff_reason，情绪只在无人认领时补位。情绪标签只进归因字段，
+        # 绝不写入回复正文（_build_response 之后无人改写 reply）。
+        verdict = current_emotion(ctx.sanitized_input or ctx.user_input)
+        if verdict is None:
+            return
+        ctx.emotion = verdict.level
+        ctx.emotion_source = verdict.source
+        if verdict.level in ("angry", "extreme"):
+            result.requires_human = True
+            ctx.escalation = ctx.escalation or "emotion"
+            ctx.escalation_cap = ESCALATION_CAP
+            ctx.handoff_reason = ctx.handoff_reason or "emotion_escalation"
 
     def _apply_output_safety(self, ctx: AgentTurnContext, result) -> None:
         from app.config.settings import settings
 
         if not settings.guardrails_enabled:
             return
-        verdict = check_output(result.reply)
+        # P3-3：复用本轮情绪分级结论——用户带攻击性（angry/extreme）时启用
+        # strict 扫描（追加 abuse 类目），正常轮次不扫，避免误伤安抚措辞。
+        verdict = check_output(result.reply, user_emotion=ctx.emotion)
         if verdict.blocked:
             ctx.guardrail_output_block = True
             result.reply = SAFE_FALLBACK_REPLY

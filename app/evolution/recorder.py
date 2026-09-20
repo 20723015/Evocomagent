@@ -7,7 +7,7 @@
 2. record：sanitizer 脱敏 → 原子写 turns/YYYYMMDD/<turn_id>.json
    （tmp + os.replace）。任何异常只打印警告，绝不阻断主流程。
 
-挂载于 chat.py / orchestrator.py 的结构化 assistant 消息 append 之后、
+挂载于 chat.py 的结构化 assistant 消息 append 之后、
 _compress_history 之前；历史压缩不丢候选（turn 已落盘）。
 """
 

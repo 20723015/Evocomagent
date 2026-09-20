@@ -96,6 +96,12 @@ class ChromaBackend(VectorBackend):
                         "parent_text": c.parent_text or "",
                         "heading_path": c.heading_path or "",
                         "parent_id": c.parent_id or "",
+                        "status": c.status or "",
+                        "authority": c.authority or "",
+                        "effective_date": c.effective_date or "",
+                        # 索引输入与展示文本分离（P1-1/P1-2）：落盘解析后的索引
+                        # 输入，BM25/重建导出侧无需再回退判断
+                        "index_text": c.index_input(),
                     }
                     for c in chunks
                 ],
@@ -133,6 +139,10 @@ class ChromaBackend(VectorBackend):
                 parent_text=meta.get("parent_text", ""),
                 heading_path=meta.get("heading_path", ""),
                 parent_id=meta.get("parent_id", ""),
+                status=meta.get("status", ""),
+                authority=meta.get("authority", ""),
+                effective_date=meta.get("effective_date", ""),
+                index_text=meta.get("index_text", ""),
             )
             score = 1.0 - float(dist)  # cosine distance → similarity
             out.append(RetrievedChunk(chunk=chunk, score=score))
@@ -201,6 +211,10 @@ class ChromaBackend(VectorBackend):
                     parent_text=meta.get("parent_text", ""),
                     heading_path=meta.get("heading_path", ""),
                     parent_id=meta.get("parent_id", ""),
+                    status=meta.get("status", ""),
+                    authority=meta.get("authority", ""),
+                    effective_date=meta.get("effective_date", ""),
+                    index_text=meta.get("index_text", ""),
                 )
             )
         return out

@@ -27,7 +27,8 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+import asyncio
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, HTTPException, Request
 
@@ -154,6 +155,14 @@ def _validate_conversation(item: HumanConversationItem) -> dict:
     ended_at = _parse_ts(item.ended_at, "ended_at")
     if started_at is not None and started_at > ended_at:
         raise HTTPException(status_code=422, detail="started_at 不得晚于 ended_at")
+    # 未来时间笔误（如 2027 写成 2037）校验：评审按「当日 00:00」过滤待评
+    # 会话，未来 ended_at 的会话永远等不到那一天，会在队列里静默积压。
+    # 容差 5 分钟：容忍客户端与服务器之间的时钟漂移。
+    if ended_at > datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(minutes=5):
+        raise HTTPException(
+            status_code=422,
+            detail="ended_at 不得晚于当前时间（5 分钟容差内放行）",
+        )
     return {
         "source": item.source.strip()[:64],
         "external_conversation_id": item.external_conversation_id.strip()[:128],
@@ -163,6 +172,15 @@ def _validate_conversation(item: HumanConversationItem) -> dict:
         "ended_at": ended_at,
         "messages": sanitized,
     }
+
+
+async def _run(store, method: str, *args, **kwargs):
+    """线程池执行同步 store 方法（执行模型 1.7，镜像 uploads._run）。
+
+    与 uploads._run 的差异：异常原样穿透——本文件的 HTTPException/业务
+    冲突映射（409/422/503）在端点层完成，不在此处收拢。
+    """
+    return await asyncio.to_thread(getattr(store, method), *args, **kwargs)
 
 
 def _acquire_ingest_fence(store, validated: list[dict]):
@@ -219,17 +237,19 @@ async def ingest_human_conversations(request: Request, body: HumanConversationBa
         )
     validated = [_validate_conversation(item) for item in body.conversations]
     store = _store(request)
-    fence = _acquire_ingest_fence(store, validated)
+    # fence 是连接级同步锁（GET_LOCK 最长 3s/键）→ 整体移出事件循环；
+    # acquire/release 同一 fence 对象（自带同一连接），跨 to_thread 无亲和问题
+    fence = await asyncio.to_thread(_acquire_ingest_fence, store, validated)
     try:
         try:
-            stored = store.ingest_conversations(validated)
+            stored = await _run(store, "ingest_conversations", validated)
         except HumanKnowledgeConflict as e:
             raise HTTPException(status_code=409, detail=e.detail) from e
         except Exception as exc:
             raise _storage_unavailable(exc) from exc
     finally:
         if fence is not None:
-            fence.release()
+            await asyncio.to_thread(fence.release)
     results = []
     for item, (record, outcome) in zip(body.conversations, stored, strict=True):
         results.append(
@@ -253,8 +273,9 @@ async def list_candidates(
 ):
     authorize_scopes(request, SCOPE_OPS)
     try:
-        rows, total = _store(request).list_candidates(
-            status=status, limit=limit, offset=offset
+        rows, total = await _run(
+            _store(request), "list_candidates",
+            status=status, limit=limit, offset=offset,
         )
     except Exception as exc:
         raise _storage_unavailable(exc) from exc
@@ -274,7 +295,8 @@ async def edit_candidate(
     authorize_scopes(request, SCOPE_OPS)
     _require_human_enabled()
     try:
-        row, current = _store(request).edit_candidate(
+        row, current = await _run(
+            _store(request), "edit_candidate",
             candidate_id,
             body.question.strip(),
             body.answer.strip(),
@@ -307,7 +329,7 @@ async def reject_candidate(candidate_id: int, request: Request, body: dict):
     _require_human_enabled()
     reason = str((body or {}).get("reason", "manual_review_reject"))
     try:
-        row = _store(request).reject_candidate(candidate_id, reason)
+        row = await _run(_store(request), "reject_candidate", candidate_id, reason)
     except Exception as exc:
         raise _storage_unavailable(exc) from exc
     if row is None:
@@ -320,7 +342,7 @@ async def get_candidate_detail(candidate_id: int, request: Request):
     """候选详情：基础 DTO + 证据/去重快照 + 最近 5 条评审任务 + 生命周期字段。"""
     authorize_scopes(request, SCOPE_OPS)
     try:
-        row = _store(request).get_candidate_detail(candidate_id)
+        row = await _run(_store(request), "get_candidate_detail", candidate_id)
     except Exception as exc:
         raise _storage_unavailable(exc) from exc
     if row is None:
@@ -335,12 +357,12 @@ async def retry_candidate_evaluation(candidate_id: int, request: Request):
     _require_human_enabled()
     store = _store(request)
     try:
-        job = store.latest_blocked_job_for_candidate(candidate_id)
+        job = await _run(store, "latest_blocked_job_for_candidate", candidate_id)
         if job is None:
             raise HTTPException(
                 status_code=404, detail="候选不存在或无 blocked 评审任务"
             )
-        retried = store.retry_blocked_job(int(job["id"]))
+        retried = await _run(store, "retry_blocked_job", int(job["id"]))
     except HTTPException:
         raise
     except Exception as exc:
@@ -356,7 +378,8 @@ async def retire_candidate(candidate_id: int, request: Request, body: HumanCandi
     principal = authorize_scopes(request, SCOPE_OPS)
     _require_human_enabled()
     try:
-        batch, items = _store(request).create_retire_batch(
+        batch, items = await _run(
+            _store(request), "create_retire_batch",
             [
                 {
                     "candidate_id": candidate_id,
@@ -387,7 +410,7 @@ async def retry_evaluation_job(job_id: int, request: Request):
     authorize_scopes(request, SCOPE_OPS)
     _require_human_enabled()
     try:
-        job = _store(request).retry_blocked_job(job_id)
+        job = await _run(_store(request), "retry_blocked_job", job_id)
     except Exception as exc:
         raise _storage_unavailable(exc) from exc
     if job is None:
@@ -411,7 +434,8 @@ async def create_publish_batch(request: Request, body: HumanPublishBatchRequest)
         )
     store = _store(request)
     try:
-        batch, items = store.create_publish_batch(
+        batch, items = await _run(
+            store, "create_publish_batch",
             [
                 {"candidate_id": it.candidate_id, "revision": it.revision}
                 for it in body.items
@@ -435,7 +459,7 @@ async def create_publish_batch(request: Request, body: HumanPublishBatchRequest)
 async def get_publish_batch(batch_id: int, request: Request):
     authorize_scopes(request, SCOPE_OPS)
     try:
-        batch = _store(request).get_batch(batch_id)
+        batch = await _run(_store(request), "get_batch", batch_id)
     except Exception as exc:
         raise _storage_unavailable(exc) from exc
     if batch is None:
@@ -497,6 +521,7 @@ def _candidate_dto(row: dict) -> dict:
         "dedup_target_path": ((dedup.get("question") or {}) or {}).get("path", ""),
         "evidence_state": row.get("evidence_state", ""),
         "score_stale": bool(int(row.get("score_stale") or 0)),
+        "version_stale": bool(int(row.get("version_stale") or 0)),
         "revision": int(row.get("revision") or 0),
         "lifecycle_revision": int(row.get("lifecycle_revision") or 0),
         "eval_model": row.get("eval_model", ""),

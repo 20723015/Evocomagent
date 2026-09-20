@@ -13,18 +13,8 @@ from mcp.client.streamable_http import streamable_http_client
 
 from app.mcp_client.converter import mcp_tools_to_openai
 
-
-class MCPToolResult(str):
-    """工具正文字符串 + 仅进程内可见的 MCP 响应元数据。
-
-    保持 ``str`` 兼容现有调用方；ToolManager 会在返回模型前消费并剥离
-    internal_meta。这样确认凭证不进入工具正文、审计消息或 prompt。
-    """
-
-    def __new__(cls, value: str, internal_meta: dict | None = None):
-        obj = super().__new__(cls, value)
-        obj.internal_meta = dict(internal_meta or {})
-        return obj
+# connect 握手超时（秒）；模块常量便于测试注入
+_CONNECT_TIMEOUT_SECONDS = 30.0
 
 
 class MCPClient:
@@ -59,7 +49,18 @@ class MCPClient:
 
         self._thread = threading.Thread(target=run_loop, daemon=True)
         self._thread.start()
-        self._connected.wait(timeout=30)
+        if not self._connected.wait(timeout=_CONNECT_TIMEOUT_SECONDS):
+            # 握手超时：best-effort 触发后台协程收尾（若 initialize 仍挂起，
+            # 事件在其返回后立即生效），随后显式报错——静默返回空工具列表
+            # 会让上层误判「MCP 可用但无工具」
+            try:
+                self._loop.call_soon_threadsafe(self._close_event.set)
+            except Exception:  # noqa: BLE001 —— 回收失败不影响超时报错
+                pass
+            raise ConnectionError(
+                f"MCP 握手超时（{_CONNECT_TIMEOUT_SECONDS:.0f}s）："
+                f"{self._server_url} 未在时限内完成 initialize"
+            )
 
         if error_holder:
             raise error_holder[0]
@@ -106,7 +107,6 @@ class MCPClient:
     def call_tool(
         self, name: str, arguments: dict, timeout: float | None = None, *,
         actor_token: str | None = None, write: bool = False,
-        internal_args: dict | None = None,
     ) -> str:
         """调用 MCP 工具，返回 JSON 字符串结果（修复计划：读/写策略分离）。
 
@@ -114,27 +114,14 @@ class MCPClient:
         - write=True：写调用——timeout 缺省取 settings.tool_write_timeout_seconds，
           超时取消 future 并返回 status=indeterminate（结果未知，禁止自动重试），
           不再把「无超时参数」隐式转成 30s 成功/失败语义；
-        - actor_token：短期用户身份（meta 通道注入发送层，不进 schema/日志/结果）；
-        - internal_args：执行器内部参数（仅退款确认段），同样走 meta 通道，
-          不进入 MCP 工具 schema/模型消息。
+        - actor_token：短期用户身份（meta 通道注入发送层，不进 schema/日志/结果）。
         """
         if not self._session or not self._loop:
             return json.dumps({"error": "MCP 客户端未连接"}, ensure_ascii=False)
 
         kwargs: dict = {}
-        if actor_token or internal_args:
-            meta: dict = {}
-            if actor_token:
-                meta["actor"] = actor_token
-            if internal_args:
-                # 只允许确认执行器使用的三个内部字段，避免将未来新增
-                # 参数任意透传到 MCP 服务。
-                allowed = {"confirmation_token", "idempotency_key", "refund_id"}
-                meta["internal_args"] = {
-                    key: value for key, value in internal_args.items()
-                    if key in allowed and isinstance(value, str)
-                }
-            kwargs["meta"] = meta
+        if actor_token:
+            kwargs["meta"] = {"actor": actor_token}
         future = asyncio.run_coroutine_threadsafe(
             self._session.call_tool(name, arguments, **kwargs), self._loop
         )
@@ -168,7 +155,7 @@ class MCPClient:
             return json.dumps({"error": f"工具执行出错: {text}"}, ensure_ascii=False)
 
         text = result.content[0].text if result.content else "{}"
-        return MCPToolResult(text, getattr(result, "meta", None))
+        return text
 
     def close(self):
         """关闭 MCP 连接，清理后台线程。"""

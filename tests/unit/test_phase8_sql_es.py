@@ -259,9 +259,17 @@ def test_message_search_endpoint_owner_scoped(monkeypatch):
     ]
     msges = _MsgSearchES(docs)
 
+    from app.stores.sql.session_store import SqlSessionStore
+
+    engine = _engine()
+    SqlSessionStore(engine, outbox_enabled=True).save(
+        "u1", "trip", _state(session_id="uuid-trip",
+                             messages=[_msg("user", "我的订单到哪了")]),
+    )
     comps = _FakeComponents()
-    comps.es_client = msges
+    comps.es_provider = lambda: msges
     comps.message_index = "ecom-messages"
+    comps.db_engine = engine  # 修复计划·二轮 4：搜索需可读 tombstone（fail-closed）
     monkeypatch.setattr(main_mod, "build_pod_components", lambda: comps)
     monkeypatch.setattr(
         main_mod, "build_agent",
@@ -279,7 +287,8 @@ def test_message_search_endpoint_owner_scoped(monkeypatch):
         assert data["hits"][0]["ts"] > data["hits"][1]["ts"]  # ts 倒序
 
 
-def test_message_search_degrades_without_es(monkeypatch):
+def test_message_search_503_without_es(monkeypatch):
+    """修复计划·三：ES 不可用 → 503（不再返回易被误读为空结果的 200）。"""
     from fastapi.testclient import TestClient
     import app.server.main as main_mod
     from test_server_api import _FakeComponents
@@ -287,9 +296,7 @@ def test_message_search_degrades_without_es(monkeypatch):
     monkeypatch.setattr(main_mod, "build_pod_components", lambda: _FakeComponents())
     with TestClient(main_mod.create_app()) as client:
         resp = client.get("/v1/messages/search", params={"user_id": "u1", "q": "订单"})
-        assert resp.status_code == 200
-        data = resp.json()
-        assert data["degraded"] is True and data["hits"] == []
+        assert resp.status_code == 503
 
 
 # ============================================================
@@ -383,7 +390,9 @@ class _MiniES:
             )
             merged = self._rrf_merge([knn_rank, bm25_rank], size)
             return {"hits": {"hits": [
-                {"_id": d, "_score": 0.0,
+                # 真实 ES 8.x RRF 融合后 _score 为 null（中危修复 C2：
+                # 测试桩此前建模成 0.0，掩盖了「分数无语义」的行为）
+                {"_id": d, "_score": None,
                  "_source": {f: store["docs"][d].get(f, "") for f in
                              ("chunk_id", "doc", "section", "text", "source_path",
                               "provenance", "owner", "parent_text",
@@ -506,7 +515,8 @@ def test_es_native_hybrid_payload_and_retriever():
     assert call["size"] == 5  # 候选窗口：精排前至少取 recall_k 条，不能只回 top_k
     assert call["rank"] == {"rrf": {"window_size": 5, "rank_constant": 60}}
     assert call["knn"]["k"] == 5
-    assert call["query"] == {"match": {"text": "七天"}}
+    # BM25 吃索引输入字段（P1-1/P1-2）：text 只作证据原文，不参与词法匹配
+    assert call["query"] == {"match": {"index_text": "七天"}}
 
     # ESHybridRetriever：嵌入 → 原生混合查询 → （可选）rerank
     class _Embed:
@@ -517,6 +527,92 @@ def test_es_native_hybrid_payload_and_retriever():
     hybrid.load()
     results = hybrid.search("七天", top_k=2)
     assert len(results) == 2
+
+
+# ============================================================
+# 中危修复 C2：RRF 分数无绝对语义 → 门控跳过标志
+# ============================================================
+def test_es_hybrid_rrf_scores_skip_min_score_gate():
+    """ES 原生混合检索（RRF）_score=None 记 0.0——无精排时分数无绝对相关度
+    语义，rag_min_relevance_score>0 的门控不得清空全部结果；挂精排器
+    （精排分回填）后门控恢复生效。"""
+    from app.agent.rag.hybrid import ESHybridRetriever
+    from app.agent.rag.retriever_factory import final_search
+
+    es = _MiniES()
+    backend = ESBackend(es, index_prefix="ecom")
+    chunks = _backed_chunks()
+    vectors = [[1.0, 0, 0, 0, 0, 0, 0, 0], [0, 1.0, 0, 0, 0, 0, 0, 0]]
+    backend.upsert(chunks, vectors, "fake-model", index_name="ecom-kb-g1")
+
+    class _Embed:
+        def encode_one(self, text, timeout=None):
+            return vectors[0]
+
+    hybrid = ESHybridRetriever(_Embed(), backend, recall_k=5)
+    hybrid.load()
+    assert hybrid.scores_meaningful is False  # 无精排 → RRF 分无绝对语义
+
+    outcome = final_search(hybrid, "七天", top_k=2, min_score=0.99)
+    assert outcome.hits  # 修复前：RRF 0.0 分被 0.99 阈值全灭
+    assert outcome.gated_candidates == outcome.raw_candidates
+
+    # 挂精排器 → 精排分回填恢复绝对语义，门控照常生效
+    class _AllIrrelevantReranker:
+        def rerank(self, query, hits, top_k, timeout=None):
+            for h in hits:
+                h.score = 0.0  # 精排判为全部不相关
+            return hits[:top_k]
+
+    gated_hybrid = ESHybridRetriever(
+        _Embed(), backend, recall_k=5, reranker=_AllIrrelevantReranker(),
+    )
+    gated_hybrid.load()
+    assert gated_hybrid.scores_meaningful is True
+    outcome2 = final_search(gated_hybrid, "七天", top_k=2, min_score=0.99)
+    assert not outcome2.hits  # 精排分 0.0 < 0.99 → 全部被门控剔除
+
+
+def test_final_search_default_gates_when_no_flag():
+    """无 scores_meaningful 属性的检索器（纯 kNN/numpy 路径）默认门控生效。"""
+    from app.agent.rag.backends.base import RetrievedChunk
+    from app.agent.rag.chunker import Chunk
+    from app.agent.rag.retriever_factory import final_search
+
+    class _PlainKnnRetriever:
+        def search(self, query, top_k=3, timeout=None):
+            return [RetrievedChunk(
+                chunk=Chunk(chunk_id="c1", doc="退货", section="七天",
+                            text="七天无理由可退"),
+                score=0.1,  # 真实余弦分（低于阈值）
+            )]
+
+    outcome = final_search(_PlainKnnRetriever(), "七天", top_k=2, min_score=0.99)
+    assert not outcome.hits  # 门控行为不变
+
+
+def test_multi_query_search_skips_gate_for_rrf_scores(monkeypatch):
+    """knowledge._multi_query_search 同口径：RRF 检索器跳过阈值门控。"""
+    from app.agent.rag.backends.base import RetrievedChunk
+    from app.agent.rag.chunker import Chunk
+    from app.agent.tools import knowledge as knowledge_mod
+
+    class _RRFRetriever:
+        scores_meaningful = False
+
+        def search(self, query, top_k=3, timeout=None):
+            return [RetrievedChunk(
+                chunk=Chunk(chunk_id="c1", doc="退货", section="七天",
+                            text="七天无理由可退", source_path="policy.md"),
+                score=0.0,  # RRF 尺度分
+            )]
+
+    monkeypatch.setattr(knowledge_mod.settings, "rag_min_relevance_score", 0.99)
+    pack = knowledge_mod._multi_query_search(
+        _RRFRetriever(), ["七天无理由退货"], top_k=2, timeout=None,
+    )
+    assert pack.items  # 修复前：0.0 分被 0.99 阈值清空 → 检索静默失效
+    assert pack.items[0].score == 0.0
 
 
 def test_es_backend_missing_alias_raises_filenotfound():
@@ -586,7 +682,7 @@ def test_sql_ltm_preserves_original_created_at():
 
 
 def test_outbox_failure_records_sync_error():
-    """ES 批量失败：synced_at 留空 + sync_error 落列（不再只有日志）。"""
+    """ES 批量失败（5xx）：退避重试 + sync_error 落列（不再只有日志）。"""
     from app.stores.sql.outbox import sync_outbox_to_es
 
     engine = _engine()
@@ -598,4 +694,75 @@ def test_outbox_failure_records_sync_error():
     with engine.connect() as conn:
         row = conn.execute(outbox_rows.select()).mappings().one()
     assert row["synced_at"] is None
-    assert "bulk errors=true" in (row["sync_error"] or "")  # 失败原因落列（不再只有日志）
+    assert row["status"] == "pending"  # 5xx → 退避重试（非 dead-letter）
+    assert row["attempts"] == 1
+    assert row["next_run_at"] is not None
+    assert "500" in (row["sync_error"] or "")  # 失败原因落列（不再只有日志）
+
+
+class _FailingBulkES(_MiniES):
+    """bulk 返回 errors=true（注入 per-item 失败，模拟 chunk_id 冲突）。"""
+
+    def bulk(self, operations=None, index=None, refresh=None):
+        n = len(operations) // 2
+        items = [{"create": {"status": 409 if i == 0 else 201}} for i in range(n)]
+        return {"errors": True, "items": items}
+
+
+def test_es_backend_upsert_raises_on_bulk_errors():
+    """review 修复：bulk errors=true 必须显式失败，不能静默丢 chunk。"""
+    es = _FailingBulkES()
+    backend = ESBackend(es, index_prefix="ecom")
+    chunks = _backed_chunks()
+    vectors = [[1.0, 0, 0, 0, 0, 0, 0, 0], [0, 1.0, 0, 0, 0, 0, 0, 0]]
+    with pytest.raises(RuntimeError, match="bulk 写入失败 1 项"):
+        backend.upsert(chunks, vectors, "fake-model", index_name="ecom-kb-fail")
+    # 失败后索引未 refresh（upsert 中途抛出），也不得建立 active 别名
+    assert not es._aliases
+
+
+# ============================================================
+# 低危修复 B4/B9：memory job SAVEPOINT 幂等 / 空 turn_id 不塌缩
+# ============================================================
+def test_sql_save_duplicate_enqueue_absorbed_by_unique():
+    """低危修复 B4：重复 (session_key, through_seq) 入队被唯一约束吸收
+    （SAVEPOINT 内入队，IntegrityError 只回滚 savepoint）——消息保存与
+    会话 CAS 不受影响，且无重复 job 行。"""
+    from app.stores.sql.schema import memory_jobs
+
+    engine = _engine()
+    store = SqlSessionStore(engine)
+    state = _state(messages=[_msg("user", "你好"), _msg("assistant", "答复")])
+    saved = store.save("u1", "s1", state, enqueue_memory_job=True)
+    assert saved.version == 1
+
+    # 预埋同 through_seq 的 job 行 → 下一次 save 的入队命中唯一约束
+    with engine.begin() as conn:
+        conn.execute(memory_jobs.insert().values(
+            session_key="u1/s1", user_id="u1", session_uuid="x",
+            through_seq=3, status="pending",
+        ))
+    saved2 = store.save(
+        "u1", "s1", saved,
+        new_messages=[_msg("user", "追问")],
+        enqueue_memory_job=True,
+    )
+    assert saved2.version == 2  # 消息保存与会话推进不受影响
+    with engine.connect() as conn:
+        seqs = sorted(r[0] for r in conn.execute(select(memory_jobs.c.through_seq)))
+    assert seqs == [2, 3]  # 首次 save 入队 through_seq=2；重复的 3 被吸收，无第三行
+
+
+def test_normalize_model_history_empty_turn_id_kept_separately():
+    """低危修复 B9：空 turn_id 的历史行各自独立成组——旧数据多轮的
+    user + 终答不再塌缩丢失（修复前整组只保留一条终答）。"""
+    from app.stores.sql.session_store import normalize_model_history
+
+    rows = [
+        ("", _msg("user", "q1")),
+        ("", _msg("assistant", "a1")),
+        ("", _msg("user", "q2")),
+        ("", _msg("assistant", "a2")),
+    ]
+    out = normalize_model_history(rows)
+    assert [m["content"] for m in out] == ["q1", "a1", "q2", "a2"]
